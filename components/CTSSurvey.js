@@ -46,7 +46,8 @@ const CTSSurveyApp = () => {
 
   const sections = [
     { id: 0, title: "Diagnostic Questions", icon: Hand },
-    { id: 1, title: "Hand Diagrams", icon: Hand }
+    { id: 1, title: "Hand Diagrams", icon: Hand },
+    { id: 2, title: "Survey Complete", icon: Hand }
   ];
 
   const drawHandOutline = (canvas, isLeft = false, isFront = true) => {
@@ -55,7 +56,7 @@ const CTSSurveyApp = () => {
     
     // Load the appropriate hand image
     const img = new Image();
-    const imagePath = isFront ? '/hand_front.png' : '/hand_back.png';
+    const imagePath = isFront ? 'hands/hands_front.png' : 'hands/hands_back.png';
     
     img.onload = () => {
       // Calculate crop dimensions - assuming image has both hands side by side
@@ -98,8 +99,8 @@ const CTSSurveyApp = () => {
     const y = e.clientY - rect.top;
     
     const ctx = canvas.getContext('2d');
-    ctx.strokeStyle = 'rgba(239, 68, 68, 0.8)';
-    ctx.lineWidth = 4;
+    ctx.strokeStyle = 'rgba(79, 38, 131, 0.5)';
+    ctx.lineWidth = 15;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     
@@ -171,22 +172,52 @@ const CTSSurveyApp = () => {
       case 1: // Hand Diagrams
         // Check if diagram ease question is answered
         return diagramEase !== '';
+
+      case 2: // Survey Complete (For now)
+        return true;
       
       default:
         return true;
     }
   };
 
+  const getIncompleteQuestions = () => {
+    const incompleteQuestions = []
+    if (currentSection === 0) {
+      diagnosticQuestions.forEach(question => {
+        if (diagnosticAnswers[question.id] === undefined) {
+          incompleteQuestions.push(question.id);
+        }
+      });
+
+      if (diagnosticEase === '') {
+        incompleteQuestions.push('ease');
+      }
+
+    } else if (currentSection === 1) {
+      const incompleteQuestions = [];
+      if (diagramEase === '') {
+        incompleteQuestions.push('diagramEase');
+      }
+    } 
+    return incompleteQuestions;
+  };
+
   const handleNextSection = () => {
     if (!isCurrentSectionComplete()) {
       setHighlightIncomplete(true);
+
       alert('Please complete all required fields highlighted in red before proceeding to the next section.');
       
       // Scroll to first incomplete question
       setTimeout(() => {
         const firstIncomplete = document.querySelector('.incomplete-question');
         if (firstIncomplete) {
-          firstIncomplete.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          firstIncomplete.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center',
+          inline: 'nearest'
+         });
         }
       }, 100);
       
@@ -356,18 +387,6 @@ const CTSSurveyApp = () => {
                   placeholder="Your feedback helps us improve this survey..."
                 />
               </div>
-              
-              {!isCurrentSectionComplete() && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-800">
-                  <p className="font-semibold flex items-center gap-2">
-                    <span className="text-xl">⚠️</span>
-                    Please complete all required fields
-                  </p>
-                  <p className="text-sm mt-1">
-                    You must answer all diagnostic questions and the ease rating question before proceeding to the next section.
-                  </p>
-                </div>
-              )}
             </div>
           </div>
         );
@@ -496,8 +515,14 @@ const CTSSurveyApp = () => {
             ))}
 
             <div className="bg-gradient-to-br from-green-50 to-emerald-100 p-6 rounded-xl border border-green-200 space-y-6">
-              <div>
-                <p className="font-semibold text-gray-800 mb-4 text-lg">
+              <div className={`${highlightIncomplete && diagramEase === '' ? 'incomplete-question bg-red-50 border-red-500 border-2 rounded-lg p-4 relative animate-pulse' : ''}`}>
+                <div className="absolute -top-2 right-4 bg-red-600 text-white px-3 py-1 rounded-full text-xs font-bold animate-bounce">
+                    REQUIRED
+                </div>
+                <p className={`font-semibold mb-4 text-lg flex items-center gap-3 ${highlightIncomplete && diagramEase === '' ? 'text-red-600' : 'text-gray-800'}`}>
+                  <span className={`w-6 h-6 rounded-full text-white text-xs font-bold flex items-center justify-center ${diagramEase !== '' ? 'bg-green-500' : highlightIncomplete ? 'bg-red-500 animate-pulse' : 'bg-gray-400'}`}>
+                    {diagramEase !== '' ? '✓' : highlightIncomplete ? '!' : '?'}
+                  </span>
                   Was it easy to answer the last six questions on the hand diagrams?
                 </p>
                 <div className="flex flex-wrap gap-6">
@@ -508,7 +533,7 @@ const CTSSurveyApp = () => {
                         name="diagram-ease"
                         value={option}
                         checked={diagramEase === option}
-                        onChange={(e) => setDiagramEase(e.target.value)}
+                        onChange={(e) => {setDiagramEase(e.target.value)}}
                         className="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500 focus:ring-2"
                       />
                       <span className="ml-3 text-gray-700 group-hover:text-green-600 font-medium">{option}</span>
@@ -526,12 +551,18 @@ const CTSSurveyApp = () => {
                   onChange={(e) => setDiagramComments(e.target.value)}
                   rows={4}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
-                  placeholder="Your feedback helps us improve the hand diagrams..."
+                  placeholder="Your feedback helps us improve the hand diagrams!"
                 />
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-indigo-50 to-blue-100 p-8 rounded-xl border border-indigo-200 text-center">
+            
+          </div>
+        );
+      
+      case 2:
+        return (
+          <div className="bg-gradient-to-br from-indigo-50 to-blue-100 p-8 rounded-xl border border-indigo-200 text-center">
               <h3 className="text-2xl font-bold text-indigo-800 mb-4">Survey Complete!</h3>
               <p className="text-indigo-700 mb-6 text-lg">
                 Thank you for completing the Carpal Tunnel Syndrome diagnostic survey. 
@@ -545,9 +576,7 @@ const CTSSurveyApp = () => {
                 Download Survey Data
               </button>
             </div>
-          </div>
         );
-
       default:
         return null;
     }
@@ -590,15 +619,17 @@ const CTSSurveyApp = () => {
               </button>
 
               <button
-                onClick={() => setCurrentSection(Math.min(sections.length - 1, currentSection + 1))}
+                onClick={handleNextSection}
                 disabled={currentSection === sections.length - 1 }
                 className={`flex items-center gap-3 px-8 py-4 rounded-xl transition-all duration-200 font-semibold ${
                   currentSection === sections.length - 1
                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : currentSection === 1
+                    ? 'bg-green-600 text-white hover:bg-green-700 shadow-lg hover:shadow-xl transform hover:-translate-y-1'
                     : 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-xl transform hover:-translate-y-1'
                 }`}
               >
-                Next
+                {currentSection == 1? 'Complete': 'Next'}
                 <ChevronRight className="w-5 h-5" />
               </button>
             </div>
