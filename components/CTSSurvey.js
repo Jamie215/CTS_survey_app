@@ -315,7 +315,7 @@ const CTSSurveyApp = () => {
                           onChange={() => handleDiagnosticAnswer(question.id, 'yes')}
                           className="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500 focus:ring-2"
                         />
-                        <span className="ml-3 text-gray-700 group-hover:text-green-600 font-medium">Yes</span>
+                        <span className="ml-3 text-gray-700 font-medium">Yes</span>
                       </label>
                       <label className="flex items-center cursor-pointer group">
                         <input
@@ -326,7 +326,7 @@ const CTSSurveyApp = () => {
                           onChange={() => handleDiagnosticAnswer(question.id, 'no')}
                           className="w-4 h-4 text-red-600 border-gray-300 focus:ring-red-500 focus:ring-2"
                         />
-                        <span className="ml-3 text-gray-700 group-hover:text-red-600 font-medium">No</span>
+                        <span className="ml-3 text-gray-700 font-medium">No</span>
                       </label>
                       {question.hasNotRelevant && (
                         <label className="flex items-center cursor-pointer group">
@@ -338,7 +338,7 @@ const CTSSurveyApp = () => {
                             onChange={() => handleDiagnosticAnswer(question.id, 'not-relevant')}
                             className="w-4 h-4 text-gray-600 border-gray-300 focus:ring-gray-500 focus:ring-2"
                           />
-                          <span className="ml-3 text-gray-700 group-hover:text-gray-600 font-medium">Not relevant to me</span>
+                          <span className="ml-3 text-gray-700 font-medium">Not relevant to me</span>
                         </label>
                       )}
                     </div>
@@ -369,7 +369,7 @@ const CTSSurveyApp = () => {
                         onChange={(e) => setDiagnosticEase(e.target.value)}
                         className="w-4 h-4 text-amber-600 border-gray-300 focus:ring-amber-500 focus:ring-2"
                       />
-                      <span className="ml-3 text-gray-700 group-hover:text-amber-600 font-medium">{option}</span>
+                      <span className="ml-3 text-gray-700 font-medium">{option}</span>
                     </label>
                   ))}
                 </div>
@@ -536,7 +536,7 @@ const CTSSurveyApp = () => {
                         onChange={(e) => setDiagramEase(e.target.value)}
                         className="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500 focus:ring-2"
                       />
-                      <span className="ml-3 text-gray-700 group-hover:text-green-600 font-medium">{option}</span>
+                      <span className="ml-3 text-gray-700 font-medium">{option}</span>
                     </label>
                   ))}
                 </div>
