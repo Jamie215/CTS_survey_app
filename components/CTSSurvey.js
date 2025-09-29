@@ -347,7 +347,7 @@ const CTSSurveyApp = () => {
               })}
             </div>
 
-            <div className="bg-gradient-to-br from-amber-50 to-orange-100 p-6 rounded-xl border border-amber-200 space-y-6">
+            <div className="bg-white-500 p-6 rounded-xl border border-amber-200 space-y-6">
               <div className={`${highlightIncomplete && diagnosticEase === '' ? 'incomplete-question bg-red-50 border-red-500 border-2 rounded-lg p-4 relative' : ''}`}>
                 {highlightIncomplete && diagnosticEase === '' && (
                   <div className="absolute -top-2 right-4 bg-red-600 text-white px-3 py-1 rounded-full text-xs font-bold animate-pulse">
@@ -405,8 +405,8 @@ const CTSSurveyApp = () => {
             </div>
             
             {[
-              { type: 'tingling', label: 'TINGLING (pins and needles sensation)', color: 'red', bgColor: 'bg-red-50', borderColor: 'border-red-200' },
-              { type: 'numbness', label: 'NUMBNESS (no feeling or dead feeling)', color: 'blue', bgColor: 'bg-blue-50', borderColor: 'border-blue-200' },
+              { type: 'tingling', label: 'TINGLING (pins and needles sensation)', color: 'orange', bgColor: 'bg-orange-50', borderColor: 'border-orange-200' },
+              { type: 'numbness', label: 'NUMBNESS (no feeling or dead feeling)', color: 'orange', bgColor: 'bg-orange-50', borderColor: 'border-orange-200' },
               { type: 'pain', label: 'PAIN', color: 'orange', bgColor: 'bg-orange-50', borderColor: 'border-orange-200' }
             ].map((symptom) => (
               <div key={symptom.type} className={`${symptom.bgColor} ${symptom.borderColor} border-2 rounded-xl p-6 space-y-6`}>
@@ -514,7 +514,7 @@ const CTSSurveyApp = () => {
               </div>
             ))}
 
-            <div className="bg-gradient-to-br from-amber-50 to-orange-100 p-6 rounded-xl border border-amber-200 space-y-6">
+            <div className="bg-white-500 p-6 rounded-xl border border-amber-200 space-y-6">
               <div className={`${highlightIncomplete && diagramEase === '' ? 'incomplete-question bg-red-50 border-red-500 border-2 rounded-lg p-4 relative' : ''}`}>
                 {highlightIncomplete && diagramEase === '' && (
                   <div className="absolute -top-2 right-4 bg-red-600 text-white px-3 py-1 rounded-full text-xs font-bold animate-pulse">
