@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Download, Hand, Check, AlertCircle, Activity, Brain, FileText } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Hand, Check, AlertCircle } from 'lucide-react';
 
 const CTSSurveyApp = () => {
   const [currentSection, setCurrentSection] = useState(0);
@@ -31,73 +31,317 @@ const CTSSurveyApp = () => {
     painBackRight: useRef(null),
   };
 
-  // Detailed anatomical regions for LEFT hand (palm view)
-  // Based on the actual hand images provided
-  const leftHandRegionsFront = {
-    thumb: {
-      distal: { x: [60, 100], y: [320, 380] },      // Tip of thumb
-      proximal: { x: [50, 110], y: [380, 450] },    // Base of thumb
-      thenar: { x: [40, 120], y: [450, 520] }       // Thumb muscle area
-    },
-    index: {
-      distal: { x: [110, 145], y: [180, 230] },     // Fingertip
-      middle: { x: [105, 150], y: [230, 290] },     // Middle phalanx
-      proximal: { x: [100, 155], y: [290, 360] }    // Proximal phalanx
-    },
-    middle: {
-      distal: { x: [155, 190], y: [160, 210] },     // Fingertip
-      middle: { x: [150, 195], y: [210, 270] },     // Middle phalanx  
-      proximal: { x: [145, 200], y: [270, 340] }    // Proximal phalanx
-    },
-    ring: {
-      distal: { x: [200, 235], y: [170, 220] },
-      middle: { x: [195, 240], y: [220, 280] },
-      proximal: { x: [190, 245], y: [280, 350] }
-    },
-    pinky: {
-      distal: { x: [245, 280], y: [200, 250] },
-      middle: { x: [240, 285], y: [250, 310] },
-      proximal: { x: [235, 290], y: [310, 380] }
-    },
-    palm: {
-      central: { x: [100, 230], y: [360, 480] },    // Central palm
-      hypothenar: { x: [230, 290], y: [420, 520] }  // Pinky side muscle
-    },
-    wrist: { x: [90, 240], y: [520, 600] }
+  const isPointInRotatedRect = (point, region) => {
+    const { center, width, height, rotation = 0 } = region;
+    const rad = rotation * Math.PI / 180;
+
+      // Translate point to origin
+    const dx = point.x - center.x;
+    const dy = point.y - center.y;
+    
+    // Rotate point back
+    const rotX = dx * Math.cos(-rad) - dy * Math.sin(-rad);
+    const rotY = dx * Math.sin(-rad) + dy * Math.cos(-rad);
+    
+    // Check if in axis-aligned rectangle
+    return Math.abs(rotX) <= width / 2 && Math.abs(rotY) <= height / 2;
   };
 
-  // RIGHT hand regions (palm view) - mirror of left
-  const rightHandRegionsFront = {
+  const isPointInPolygon = (point, polygon) => {
+    let inside = false;
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+      const xi = polygon[i].x, yi = polygon[i].y;
+      const xj = polygon[j].x, yj = polygon[j].y;
+      
+      const intersect = ((yi > point.y) !== (yj > point.y))
+          && (point.x < (xj - xi) * (point.y - yi) / (yj - yi) + xi);
+      if (intersect) inside = !inside;
+    }
+    return inside;
+  };
+
+  // Detailed anatomical regions for left hand (palm view)
+  const leftHandRegionsFront = {
     thumb: {
-      distal: { x: [200, 240], y: [320, 380] },
-      proximal: { x: [190, 250], y: [380, 450] },
-      thenar: { x: [180, 260], y: [450, 520] }
+      distal: { 
+        type: 'rect',
+        center: { x: 53, y: 136 },
+        width: 19,
+        height: 25,
+        rotation: -45  // Thumb angles outward
+      },
+      proximal: { 
+        type: 'rect',
+        center: { x: 41, y: 162 },
+        width: 23,
+        height: 32,
+        rotation: -30
+      },
+      thenar: { 
+        type: 'polygon',
+        points: [
+          {x: 21, y: 173}, {x: 55, y: 176}, 
+          {x: 60, y: 217}, {x: 23, y: 222}
+        ]
+      }
     },
     index: {
-      distal: { x: [155, 190], y: [180, 230] },
-      middle: { x: [150, 195], y: [230, 290] },
-      proximal: { x: [145, 200], y: [290, 360] }
+      distal: { 
+        type: 'rect',
+        center: { x: 76, y: 58 },
+        width: 14,
+        height: 23,
+        rotation: -3
+      },
+      middle: { 
+        type: 'rect',
+        center: { x: 76, y: 83 },
+        width: 15,
+        height: 25,
+        rotation: -3
+      },
+      proximal: { 
+        type: 'rect',
+        center: { x: 76, y: 113 },
+        width: 17,
+        height: 32,
+        rotation: -3
+      }
     },
     middle: {
-      distal: { x: [110, 145], y: [160, 210] },
-      middle: { x: [105, 150], y: [210, 270] },
-      proximal: { x: [100, 155], y: [270, 340] }
+      distal: { 
+        type: 'rect',
+        center: { x: 101, y: 48 },
+        width: 15,
+        height: 25,
+        rotation: 0
+      },
+      middle: { 
+        type: 'rect',
+        center: { x: 101, y: 76 },
+        width: 16,
+        height: 28,
+        rotation: 0
+      },
+      proximal: { 
+        type: 'rect',
+        center: { x: 100, y: 108 },
+        width: 18,
+        height: 35,
+        rotation: 0
+      }
     },
     ring: {
-      distal: { x: [65, 100], y: [170, 220] },
-      middle: { x: [60, 105], y: [220, 280] },
-      proximal: { x: [55, 110], y: [280, 350] }
+      distal: { 
+        type: 'rect',
+        center: { x: 126, y: 53 },
+        width: 14,
+        height: 23,
+        rotation: 3
+      },
+      middle: { 
+        type: 'rect',
+        center: { x: 126, y: 78 },
+        width: 15,
+        height: 25,
+        rotation: 3
+      },
+      proximal: { 
+        type: 'rect',
+        center: { x: 125, y: 108 },
+        width: 17,
+        height: 32,
+        rotation: 3
+      }
     },
     pinky: {
-      distal: { x: [20, 55], y: [200, 250] },
-      middle: { x: [15, 60], y: [250, 310] },
-      proximal: { x: [10, 65], y: [310, 380] }
+      distal: { 
+        type: 'rect',
+        center: { x: 149, y: 71 },
+        width: 12,
+        height: 21,
+        rotation: 15  // Pinky angles outward
+      },
+      middle: { 
+        type: 'rect',
+        center: { x: 146, y: 94 },
+        width: 13,
+        height: 23,
+        rotation: 12
+      },
+      proximal: { 
+        type: 'rect',
+        center: { x: 142, y: 122 },
+        width: 15,
+        height: 30,
+        rotation: 10
+      }
     },
     palm: {
-      central: { x: [70, 200], y: [360, 480] },
-      hypothenar: { x: [10, 70], y: [420, 520] }
+      central: { 
+        type: 'polygon',
+        points: [
+          {x: 60, y: 138}, {x: 133, y: 138},
+          {x: 131, y: 194}, {x: 57, y: 194}
+        ]
+      },
+      hypothenar: { 
+        type: 'polygon',
+        points: [
+          {x: 133, y: 143}, {x: 161, y: 143},
+          {x: 163, y: 208}, {x: 131, y: 208}
+        ]
+      }
     },
-    wrist: { x: [60, 210], y: [520, 600] }
+    wrist: { 
+      type: 'polygon',
+      points: [
+        {x: 55, y: 222}, {x: 138, y: 222},
+        {x: 142, y: 277}, {x: 51, y: 277}
+      ]
+    }
+  };
+
+  // Right hand regions (palm view) - mirror of left
+  const rightHandRegionsFront = {
+    thumb: {
+      distal: { 
+        type: 'rect',
+        center: { x: 247, y: 136 },
+        width: 19,
+        height: 25,
+        rotation: 45  // Mirror rotation
+      },
+      proximal: { 
+        type: 'rect',
+        center: { x: 259, y: 162 },
+        width: 23,
+        height: 32,
+        rotation: 30
+      },
+      thenar: { 
+        type: 'polygon',
+        points: [
+          {x: 279, y: 173}, {x: 245, y: 176}, 
+          {x: 240, y: 217}, {x: 277, y: 222}
+        ]
+      }
+    },
+    index: {
+      distal: { 
+        type: 'rect',
+        center: { x: 224, y: 58 },
+        width: 14,
+        height: 23,
+        rotation: 3
+      },
+      middle: { 
+        type: 'rect',
+        center: { x: 224, y: 83 },
+        width: 15,
+        height: 25,
+        rotation: 3
+      },
+      proximal: { 
+        type: 'rect',
+        center: { x: 224, y: 113 },
+        width: 17,
+        height: 32,
+        rotation: 3
+      }
+    },
+    middle: {
+      distal: { 
+        type: 'rect',
+        center: { x: 199, y: 48 },
+        width: 15,
+        height: 25,
+        rotation: 0
+      },
+      middle: { 
+        type: 'rect',
+        center: { x: 199, y: 76 },
+        width: 16,
+        height: 28,
+        rotation: 0
+      },
+      proximal: { 
+        type: 'rect',
+        center: { x: 200, y: 108 },
+        width: 18,
+        height: 35,
+        rotation: 0
+      }
+    },
+    ring: {
+      distal: { 
+        type: 'rect',
+        center: { x: 174, y: 53 },
+        width: 14,
+        height: 23,
+        rotation: -3
+      },
+      middle: { 
+        type: 'rect',
+        center: { x: 174, y: 78 },
+        width: 15,
+        height: 25,
+        rotation: -3
+      },
+      proximal: { 
+        type: 'rect',
+        center: { x: 175, y: 108 },
+        width: 17,
+        height: 32,
+        rotation: -3
+      }
+    },
+    pinky: {
+      distal: { 
+        type: 'rect',
+        center: { x: 151, y: 71 },
+        width: 12,
+        height: 21,
+        rotation: -15  // Mirror rotation
+      },
+      middle: { 
+        type: 'rect',
+        center: { x: 154, y: 94 },
+        width: 13,
+        height: 23,
+        rotation: -12
+      },
+      proximal: { 
+        type: 'rect',
+        center: { x: 158, y: 122 },
+        width: 15,
+        height: 30,
+        rotation: -10
+      }
+    },
+    palm: {
+      central: { 
+        type: 'polygon',
+        points: [
+          {x: 240, y: 138}, {x: 167, y: 138},
+          {x: 169, y: 194}, {x: 243, y: 194}
+        ]
+      },
+      hypothenar: { 
+        type: 'polygon',
+        points: [
+          {x: 167, y: 143}, {x: 139, y: 143},
+          {x: 137, y: 208}, {x: 169, y: 208}
+        ]
+      }
+    },
+    wrist: { 
+      type: 'polygon',
+      points: [
+        {x: 245, y: 222}, {x: 162, y: 222},
+        {x: 158, y: 277}, {x: 249, y: 277}
+      ]
+    }
   };
 
   const diagnosticQuestions = [
@@ -117,9 +361,9 @@ const CTSSurveyApp = () => {
   ];
 
   const sections = [
-    { id: 0, title: "Diagnostic Questions" },
-    { id: 1, title: "Hand Diagrams" },
-    { id: 2, title: "CTS Assessment" },
+    { id: 0, title: "Section 1" },
+    { id: 1, title: "Section 2" },
+    { id: 2, title: "Result" },
   ];
 
   // Calculate CTS scores based on hand diagram data
@@ -399,7 +643,7 @@ const CTSSurveyApp = () => {
     const y = e.clientY - rect.top;
     
     const ctx = canvas.getContext('2d');
-    ctx.strokeStyle = 'rgba(255, 0, 0, 0.6)'; // Red for symptoms
+    ctx.strokeStyle = 'rgba(171, 51, 222, 0.6)'; // Red for symptoms
     ctx.lineWidth = 12;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
@@ -674,26 +918,6 @@ const CTSSurveyApp = () => {
               <p className="text-purple-700 text-lg mb-2">
                 Please mark the areas where you experience symptoms on the hand diagrams below.
               </p>
-              {diagnosticAnswers[0] === 'No' && (
-                <div className="bg-blue-100 border-l-4 border-blue-500 p-4 mt-4">
-                  <p className="text-sm font-semibold text-blue-800">
-                    ℹ️ Since you indicated no numbness or tingling, only pain diagrams are shown.
-                  </p>
-                </div>
-              )}
-              {diagnosticAnswers[0] !== 'No' && (
-                <div className="bg-yellow-100 border-l-4 border-yellow-500 p-4 mt-4">
-                  <p className="text-sm font-semibold text-yellow-800 mb-2">
-                    🎯 Key Areas for CTS Detection:
-                  </p>
-                  <ul className="text-sm text-yellow-700 space-y-1">
-                    <li>• <strong>Thumb:</strong> Especially the tip (distal phalanx)</li>
-                    <li>• <strong>Index finger:</strong> Distal and middle sections</li>
-                    <li>• <strong>Middle finger:</strong> Most sensitive indicator - mark carefully!</li>
-                    <li>• Note: The highlighted yellow areas show typical median nerve distribution</li>
-                  </ul>
-                </div>
-              )}
             </div>
 
             {symptoms.map((symptom) => (
@@ -828,12 +1052,8 @@ const CTSSurveyApp = () => {
           <div className="space-y-8">
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-200">
               <h2 className="text-2xl font-bold text-blue-800 mb-4 flex items-center gap-3">
-                <Activity className="w-8 h-8" />
                 Your CTS Assessment Results
               </h2>
-              <p className="text-blue-700 text-lg">
-                Based on validated clinical scoring systems from research studies.
-              </p>
             </div>
 
             {ctsScores && (
@@ -841,7 +1061,6 @@ const CTSSurveyApp = () => {
                 {['left', 'right'].map(hand => (
                   <div key={hand} className="bg-white rounded-xl shadow-lg p-6">
                     <h3 className="text-xl font-bold mb-4 capitalize flex items-center gap-2">
-                      <Hand className="w-6 h-6" />
                       {hand} Hand Assessment
                     </h3>
                     
