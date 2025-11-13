@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Download, Hand, Check, AlertCircle, Activity, Brain, FileText } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Hand, Check, AlertCircle } from 'lucide-react';
 
 const CTSSurveyApp = () => {
   const [currentSection, setCurrentSection] = useState(0);
@@ -48,10 +48,9 @@ const CTSSurveyApp = () => {
   ];
 
   const sections = [
-    { id: 0, title: "Diagnostic Questions", icon: Hand },
-    { id: 1, title: "Hand Diagrams", icon: Hand },
-    { id: 2, title: "CTS Assessment", icon: Activity },
-    { id: 3, title: "Survey Complete", icon: FileText }
+    { id: 0, title: "Page 1" },
+    { id: 1, title: "Page 2" },
+    { id: 2, title: "Results" },
   ];
 
   // Load SVG regions on mount
@@ -567,7 +566,6 @@ const CTSSurveyApp = () => {
           <div className="space-y-6">
             <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-xl border border-green-200">
               <h2 className="text-2xl font-bold text-green-800 mb-4 flex items-center gap-3">
-                <Brain className="w-8 h-8" />
                 Diagnostic Questions
               </h2>
               <p className="text-green-700 text-lg">
@@ -595,7 +593,6 @@ const CTSSurveyApp = () => {
                       {getQuestionIndicator(diagnosticAnswers[question.id] !== undefined && diagnosticAnswers[question.id] !== '')}
                       <span className="flex-1">
                         {question.text}
-                        {question.isScreening && <span className="ml-2 text-sm text-blue-600 font-normal">(Screening Question)</span>}
                       </span>
                     </p>
                     <div className="flex flex-wrap gap-6">
@@ -697,26 +694,6 @@ const CTSSurveyApp = () => {
               <p className="text-purple-700 text-lg mb-2">
                 Please mark the areas where you experience symptoms on the hand diagrams below.
               </p>
-              {diagnosticAnswers[0] === 'No' && (
-                <div className="bg-blue-100 border-l-4 border-blue-500 p-4 mt-4">
-                  <p className="text-sm font-semibold text-blue-800">
-                    ℹ️ Since you indicated no numbness or tingling, only pain diagrams are shown.
-                  </p>
-                </div>
-              )}
-              {diagnosticAnswers[0] !== 'No' && (
-                <div className="bg-yellow-100 border-l-4 border-yellow-500 p-4 mt-4">
-                  <p className="text-sm font-semibold text-yellow-800 mb-2">
-                    🎯 Key Areas for CTS Detection:
-                  </p>
-                  <ul className="text-sm text-yellow-700 space-y-1">
-                    <li>• <strong>Thumb:</strong> Tip (distal phalanx)</li>
-                    <li>• <strong>Index finger:</strong> Tip area</li>
-                    <li>• <strong>Middle finger:</strong> Most sensitive indicator - mark carefully!</li>
-                    <li>• Note: The highlighted areas show typical median nerve distribution</li>
-                  </ul>
-                </div>
-              )}
             </div>
 
             {symptoms.map((symptom) => (
@@ -804,7 +781,6 @@ const CTSSurveyApp = () => {
           <div className="space-y-8">
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-200">
               <h2 className="text-2xl font-bold text-blue-800 mb-4 flex items-center gap-3">
-                <Activity className="w-8 h-8" />
                 Alternative CTS Scoring Assessment
               </h2>
               <p className="text-blue-700 text-lg">
@@ -892,23 +868,6 @@ const CTSSurveyApp = () => {
           </div>
         );
       
-      case 3:
-        return (
-          <div className="bg-gradient-to-br from-indigo-50 to-blue-100 p-8 rounded-xl border border-indigo-200 text-center">
-            <h3 className="text-2xl font-bold text-indigo-800 mb-4">Survey Complete!</h3>
-            <p className="text-indigo-700 mb-6 text-lg">
-              Thank you for completing the Carpal Tunnel Syndrome diagnostic survey.
-            </p>
-            <button
-              onClick={exportData}
-              className="inline-flex items-center gap-3 px-8 py-4 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700"
-            >
-              <Download className="w-5 h-5" />
-              Download Complete Assessment
-            </button>
-          </div>
-        );
-      
       default:
         return null;
     }
@@ -922,9 +881,6 @@ const CTSSurveyApp = () => {
             <Hand className="w-10 h-10 text-blue-600" />
             Carpal Tunnel Syndrome Diagnostic Tool
           </h1>
-          <p className="text-gray-600 mt-2 text-lg">
-            Alternative scoring method with SVG-based region detection
-          </p>
         </div>
       </header>
 
@@ -945,7 +901,6 @@ const CTSSurveyApp = () => {
                       : 'bg-gray-50 text-gray-500'
                   }`}
                 >
-                  <section.icon className="w-5 h-5" />
                   <span className="font-medium">{section.title}</span>
                   {currentSection > index && <Check className="w-4 h-4 ml-auto" />}
                 </div>
