@@ -838,7 +838,6 @@ const CTSSurveyApp = () => {
                       {getQuestionIndicator(diagnosticAnswers[question.id] !== undefined && diagnosticAnswers[question.id] !== '')}
                       <span className="flex-1">
                         {question.text}
-                        {question.isScreening}
                       </span>
                     </p>
                     <div className="flex flex-wrap gap-6">
