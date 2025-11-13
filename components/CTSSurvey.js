@@ -31,11 +31,12 @@ const CTSSurveyApp = () => {
     painBackRight: useRef(null),
   };
 
+  // Helper function to check if point is inside rotated rectangle
   const isPointInRotatedRect = (point, region) => {
-    const { center, width, height, rotation = 0 } = region;
+    const {center, width, height, rotation = 0} = region;
     const rad = rotation * Math.PI / 180;
-
-      // Translate point to origin
+    
+    // Translate point to origin
     const dx = point.x - center.x;
     const dy = point.y - center.y;
     
@@ -47,6 +48,7 @@ const CTSSurveyApp = () => {
     return Math.abs(rotX) <= width / 2 && Math.abs(rotY) <= height / 2;
   };
 
+  // Helper function to check if point is inside polygon
   const isPointInPolygon = (point, polygon) => {
     let inside = false;
     for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
@@ -60,7 +62,9 @@ const CTSSurveyApp = () => {
     return inside;
   };
 
-  // Detailed anatomical regions for left hand (palm view)
+  // Detailed anatomical regions for LEFT hand (palm view)
+  // Using rotated rectangles for diagonal fingers and polygons for irregular areas
+  // Coordinates scaled for 300x400 canvas (original image is 650x600 per hand, scaled to ~300x277)
   const leftHandRegionsFront = {
     thumb: {
       distal: { 
@@ -202,7 +206,8 @@ const CTSSurveyApp = () => {
     }
   };
 
-  // Right hand regions (palm view) - mirror of left
+  // RIGHT hand regions (palm view) - mirror of left
+  // Coordinates scaled for 300x400 canvas
   const rightHandRegionsFront = {
     thumb: {
       distal: { 
@@ -500,10 +505,23 @@ const CTSSurveyApp = () => {
     return symptoms;
   };
 
-  // Helper function to check if a point is within a region
+  // Universal helper function to check if a point is within a region
   const isPointInRegion = (point, region) => {
-    return point.x >= region.x[0] && point.x <= region.x[1] &&
-           point.y >= region.y[0] && point.y <= region.y[1];
+    if (!region) return false;
+    
+    if (region.type === 'rect') {
+      return isPointInRotatedRect(point, region);
+    } else if (region.type === 'polygon') {
+      return isPointInPolygon(point, region.points);
+    }
+    
+    // Fallback for old format (shouldn't be needed with new regions)
+    if (region.x && region.y) {
+      return point.x >= region.x[0] && point.x <= region.x[1] &&
+             point.y >= region.y[0] && point.y <= region.y[1];
+    }
+    
+    return false;
   };
 
   // Implement Katz scoring algorithm with detailed finger analysis
@@ -598,26 +616,33 @@ const CTSSurveyApp = () => {
 
       // Add semi-transparent overlays to highlight key median nerve areas
       if (isFront) {
-        ctx.fillStyle = 'rgba(255, 255, 0, 0.1)'; // Yellow tint for median nerve areas
-        
         // Highlight median nerve distribution areas
         const regions = isLeft ? leftHandRegionsFront : rightHandRegionsFront;
         
-        // Thumb area
-        ctx.fillRect(regions.thumb.distal.x[0], regions.thumb.distal.y[0], 
-                    regions.thumb.distal.x[1] - regions.thumb.distal.x[0], 
-                    regions.thumb.distal.y[1] - regions.thumb.distal.y[0]);
+        // Helper to draw rotated rectangle highlight
+        const drawRotatedRectHighlight = (region, fillStyle) => {
+          if (region.type === 'rect') {
+            ctx.save();
+            ctx.fillStyle = fillStyle;
+            ctx.translate(region.center.x, region.center.y);
+            ctx.rotate((region.rotation || 0) * Math.PI / 180);
+            ctx.fillRect(-region.width / 2, -region.height / 2, region.width, region.height);
+            ctx.restore();
+          }
+        };
+        
+        // Thumb area (lighter yellow)
+        ctx.fillStyle = 'rgba(255, 255, 0, 0.1)';
+        drawRotatedRectHighlight(regions.thumb.distal, 'rgba(255, 255, 0, 0.1)');
+        drawRotatedRectHighlight(regions.thumb.proximal, 'rgba(255, 255, 0, 0.1)');
         
         // Index finger
-        ctx.fillRect(regions.index.distal.x[0], regions.index.distal.y[0],
-                    regions.index.distal.x[1] - regions.index.distal.x[0],
-                    regions.index.middle.y[1] - regions.index.distal.y[0]);
+        drawRotatedRectHighlight(regions.index.distal, 'rgba(255, 255, 0, 0.1)');
+        drawRotatedRectHighlight(regions.index.middle, 'rgba(255, 255, 0, 0.1)');
         
-        // Middle finger (most important)
-        ctx.fillStyle = 'rgba(255, 200, 0, 0.15)'; // Stronger highlight
-        ctx.fillRect(regions.middle.distal.x[0], regions.middle.distal.y[0],
-                    regions.middle.distal.x[1] - regions.middle.distal.x[0],
-                    regions.middle.middle.y[1] - regions.middle.distal.y[0]);
+        // Middle finger (most important - stronger highlight)
+        drawRotatedRectHighlight(regions.middle.distal, 'rgba(255, 200, 0, 0.15)');
+        drawRotatedRectHighlight(regions.middle.middle, 'rgba(255, 200, 0, 0.15)');
       }
     };
     img.src = imagePath;
@@ -643,7 +668,7 @@ const CTSSurveyApp = () => {
     const y = e.clientY - rect.top;
     
     const ctx = canvas.getContext('2d');
-    ctx.strokeStyle = 'rgba(171, 51, 222, 0.6)'; // Red for symptoms
+    ctx.strokeStyle = 'rgba(255, 0, 0, 0.6)'; // Red for symptoms
     ctx.lineWidth = 12;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
