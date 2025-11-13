@@ -117,10 +117,9 @@ const CTSSurveyApp = () => {
   ];
 
   const sections = [
-    { id: 0, title: "Diagnostic Questions", icon: Hand },
-    { id: 1, title: "Hand Diagrams", icon: Hand },
-    { id: 2, title: "CTS Assessment", icon: Activity },
-    { id: 3, title: "Survey Complete", icon: FileText }
+    { id: 0, title: "Diagnostic Questions" },
+    { id: 1, title: "Hand Diagrams" },
+    { id: 2, title: "CTS Assessment" },
   ];
 
   // Calculate CTS scores based on hand diagram data
@@ -543,7 +542,6 @@ const CTSSurveyApp = () => {
           <div className="space-y-6">
             <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-xl border border-green-200">
               <h2 className="text-2xl font-bold text-green-800 mb-4 flex items-center gap-3">
-                <Brain className="w-8 h-8" />
                 Diagnostic Questions
               </h2>
               <p className="text-green-700 text-lg">
@@ -571,7 +569,7 @@ const CTSSurveyApp = () => {
                       {getQuestionIndicator(diagnosticAnswers[question.id] !== undefined && diagnosticAnswers[question.id] !== '')}
                       <span className="flex-1">
                         {question.text}
-                        {question.isScreening && <span className="ml-2 text-sm text-blue-600 font-normal">(Screening Question)</span>}
+                        {question.isScreening}
                       </span>
                     </p>
                     <div className="flex flex-wrap gap-6">
@@ -961,23 +959,6 @@ const CTSSurveyApp = () => {
           </div>
         );
       
-      case 3:
-        return (
-          <div className="bg-gradient-to-br from-indigo-50 to-blue-100 p-8 rounded-xl border border-indigo-200 text-center">
-            <h3 className="text-2xl font-bold text-indigo-800 mb-4">Survey Complete!</h3>
-            <p className="text-indigo-700 mb-6 text-lg">
-              Thank you for completing the Carpal Tunnel Syndrome diagnostic survey.
-            </p>
-            <button
-              onClick={exportData}
-              className="inline-flex items-center gap-3 px-8 py-4 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700"
-            >
-              <Download className="w-5 h-5" />
-              Download Complete Assessment
-            </button>
-          </div>
-        );
-      
       default:
         return null;
     }
@@ -1014,7 +995,6 @@ const CTSSurveyApp = () => {
                       : 'bg-gray-50 text-gray-500'
                   }`}
                 >
-                  <section.icon className="w-5 h-5" />
                   <span className="font-medium">{section.title}</span>
                   {currentSection > index && <Check className="w-4 h-4 ml-auto" />}
                 </div>
