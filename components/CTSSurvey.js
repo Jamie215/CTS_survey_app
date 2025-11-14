@@ -344,7 +344,7 @@ const CTSSurveyApp = () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     const img = new Image();
-    const imagePath = '/hands/hands_front.png'; // or .svg
+    const imagePath = '/hands/hands_front.svg'; // or .svg
 
     img.onload = () => {
       // Draw the appropriate hand from the image
@@ -425,7 +425,7 @@ const CTSSurveyApp = () => {
     const y = e.clientY - rect.top;
     
     const ctx = canvas.getContext('2d');
-    ctx.strokeStyle = 'rgba(255, 0, 0, 0.6)';
+    ctx.strokeStyle = 'rgba(122, 81, 245, 0.6)';
     ctx.lineWidth = 12;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
@@ -781,10 +781,10 @@ const CTSSurveyApp = () => {
           <div className="space-y-8">
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-200">
               <h2 className="text-2xl font-bold text-blue-800 mb-4 flex items-center gap-3">
-                Alternative CTS Scoring Assessment
+                Assessment Result
               </h2>
               <p className="text-blue-700 text-lg">
-                Based on your hand diagram markings, here is your CTS assessment:
+                Based on your hand diagram markings, here is your assessment for carpal tunnel syndrome:
               </p>
             </div>
 
@@ -801,7 +801,7 @@ const CTSSurveyApp = () => {
                       'bg-green-50 border-2 border-green-300'
                     }`}>
                       <div className="flex items-center justify-between mb-4">
-                        <h4 className="font-semibold text-xl">Alternative Score:</h4>
+                        <h4 className="font-semibold text-xl">Score:</h4>
                         <div className={`text-4xl font-bold ${
                           ctsScores[hand].alternativeScore.score === 2 ? 'text-red-700' :
                           ctsScores[hand].alternativeScore.score === 1 ? 'text-yellow-700' :
@@ -860,7 +860,7 @@ const CTSSurveyApp = () => {
               </h4>
               <p className="text-sm">
                 This assessment tool is for screening purposes only and should not replace professional medical diagnosis.
-                The alternative scoring method counts how many median nerve digits (thumb, index, middle) show significant 
+                This scoring method counts how many median nerve digits (thumb, index, middle) show significant 
                 symptoms (&gt;30% coverage). If you have concerns about your symptoms, please consult with a healthcare 
                 provider for proper evaluation including nerve conduction studies if indicated.
               </p>
