@@ -428,13 +428,31 @@ const CTSSurveyApp = () => {
     
     let affectedDigits = 0;
     
-    if (coverage['thumb_distal'] > threshold) affectedDigits++;
-    if (coverage['index_distal'] > threshold) affectedDigits++;
-    if (coverage['middle_distal'] > threshold) affectedDigits++;
+    // Thumb: "some of the distal phalanx"
+    const thumbAffected = (coverage['thumb_distal'] || 0) > 10; // >10% threshold for "some"
+    if (thumbAffected) affectedDigits++;
+    
+    // Index: ">50% of middle phalanx and/or some of distal"
+    const indexMiddle50 = (coverage['index_middle'] || 0) > 50;
+    const indexDistalSome = (coverage['index_distal'] || 0) > 10;
+    const indexAffected = indexMiddle50 || indexDistalSome;
+    if (indexAffected) affectedDigits++;
+    
+    // Middle: ">50% of middle phalanx and/or some of distal" (most important)
+    const middleMiddle50 = (coverage['middle_middle'] || 0) > 50;
+    const middleDistalSome = (coverage['middle_distal'] || 0) > 10;
+    const middleAffected = middleMiddle50 || middleDistalSome;
+    if (middleAffected) affectedDigits++;
 
     return {
       medianDigitsAffected: affectedDigits,
-      detailedCoverage: coverage
+      detailedCoverage: coverage,
+      // Add detail for display
+      digitDetails: {
+        thumb: { affected: thumbAffected, distal: coverage['thumb_distal'] || 0 },
+        index: { affected: indexAffected, distal: coverage['index_distal'] || 0, middle: coverage['index_middle'] || 0 },
+        middle: { affected: middleAffected, distal: coverage['middle_distal'] || 0, middle: coverage['middle_middle'] || 0 }
+      }
     };
   };
 
@@ -467,7 +485,7 @@ const CTSSurveyApp = () => {
     }
   };
 
-  const drawHandOutline = (canvas, isLeft = false) => {
+  const drawHandOutline = (canvas, isLeft = false, isBack = false) => {
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
