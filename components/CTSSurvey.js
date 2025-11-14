@@ -8,15 +8,10 @@ const CTSSurveyApp = () => {
   const CANVAS_WIDTH = 300;
   const CANVAS_HEIGHT = 400;
   
-  // SVG dimensions for region scaling
-  const SVG_HAND_WIDTH = 1048.5; // Half of 2097
-  const SVG_HEIGHT = 847;
-  
   const [currentSection, setCurrentSection] = useState(0);
   const [participantId] = useState(`CTS-${Date.now()}`);
   const [diagnosticAnswers, setDiagnosticAnswers] = useState({});
   const [diagnosticEase, setDiagnosticEase] = useState('');
-  const [diagnosticComments, setDiagnosticComments] = useState('');
   const [handDiagramData, setHandDiagramData] = useState({});
   const [diagramEase, setDiagramEase] = useState('');
   const [diagramComments, setDiagramComments] = useState('');
@@ -52,7 +47,7 @@ const CTSSurveyApp = () => {
   };
 
   const diagnosticQuestions = [
-    { id: 0, text: "Do you ever have numbness and tingling in your finger?", isScreening: true },
+    { id: 0, text: "Do you ever have numbness and tingling in your finger?", hasNumbnessOrTingling: false },
     { id: 1, text: "Do you wake up because of pain in your wrist?" },
     { id: 2, text: "Do you wake up because of tingling or numbness in your fingers?", requiresNumbnessOrTingling: true },
     { id: 3, text: "Do you have tingling or numbness in your fingers when you first wake up?", requiresNumbnessOrTingling: true },
@@ -384,7 +379,7 @@ const CTSSurveyApp = () => {
       return {
         score: 2,
         level: 'Significant Involvement',
-        description: 'Moderate to high probability of CTS. Clinical correlation and nerve conduction studies recommended.'
+        description: 'Moderate to high probability of CTS. Further evaluation strongly recommended.'
       };
     }
   };
@@ -568,10 +563,8 @@ const CTSSurveyApp = () => {
       timestamp: new Date().toISOString(),
       diagnosticAnswers,
       diagnosticEase,
-      diagnosticComments,
       handDiagramData,
       diagramEase,
-      diagramComments,
       ctsScores
     };
 
@@ -679,7 +672,7 @@ const CTSSurveyApp = () => {
                       highlightIncomplete && !diagnosticAnswers[question.id]
                         ? 'border-red-500 bg-red-50 animate-pulse'
                         : 'border-gray-200'
-                    } ${question.isScreening ? 'border-blue-300 bg-blue-50' : ''}`}
+                    } ${question.hasNumbnessOrTingling ? 'border-blue-300 bg-blue-50' : ''}`}
                   >
                     <p className="font-semibold mb-4 text-lg flex items-center gap-3">
                       {getQuestionIndicator(diagnosticAnswers[question.id] !== undefined && diagnosticAnswers[question.id] !== '')}
@@ -696,7 +689,7 @@ const CTSSurveyApp = () => {
                           checked={diagnosticAnswers[question.id] === 'Yes'}
                           onChange={(e) => {
                             const newAnswers = { ...diagnosticAnswers, [question.id]: e.target.value };
-                            if (question.isScreening) {
+                            if (question.hasNumbnessOrTingling) {
                               setHasNumbnessOrTingling(true);
                             }
                             setDiagnosticAnswers(newAnswers);
@@ -713,7 +706,7 @@ const CTSSurveyApp = () => {
                           checked={diagnosticAnswers[question.id] === 'No'}
                           onChange={(e) => {
                             const newAnswers = { ...diagnosticAnswers, [question.id]: e.target.value };
-                            if (question.isScreening) {
+                            if (question.hasNumbnessOrTingling) {
                               setHasNumbnessOrTingling(false);
                             }
                             setDiagnosticAnswers(newAnswers);
@@ -920,7 +913,7 @@ const CTSSurveyApp = () => {
               <h2 className="text-2xl font-bold text-blue-800 mb-4">Assessment Result</h2>
               <div className="flex items-center gap-2 mb-2">
                 <AlertCircle className="w-5 h-5 text-blue-700" />
-                <h4 className="font-bold text-lg">Important Note</h4>
+                <h4 className="font-bold text-blue-lg">Important Note</h4>
               </div>
               <p className="text-sm text-blue-700">
                 This assessment tool is for screening purposes only and should not replace professional medical diagnosis.
