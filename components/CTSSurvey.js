@@ -370,7 +370,7 @@ const CTSSurveyApp = () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     const img = new Image();
-    const imagePath = '/hands/hands_front.svg'; // or .svg
+    const imagePath = '/hands/hands_front.png'; // or .svg
 
     img.onload = () => {
       // Draw the appropriate hand from the image
@@ -809,6 +809,16 @@ const CTSSurveyApp = () => {
               <h2 className="text-2xl font-bold text-blue-800 mb-4 flex items-center gap-3">
                 Assessment Result
               </h2>
+              <h4 className="font-bold text-lg mb-2 flex items-center gap-2">
+                <AlertCircle className="w-6 h-6" />
+                Important Note
+              </h4>
+              <p className="text-sm">
+                This assessment tool is for screening purposes only and should not replace professional medical diagnosis.
+                This scoring method counts how many median nerve digits (thumb, index, middle) show significant 
+                symptoms (&gt;50% coverage). If you have concerns about your symptoms, please consult with a healthcare 
+                provider for proper evaluation including nerve conduction studies if indicated.
+              </p>
             </div>
 
             {ctsScores && (
@@ -867,27 +877,11 @@ const CTSSurveyApp = () => {
                           );
                         })}
                       </div>
-                      <p className="text-xs text-gray-600 mt-3">
-                        * Regions with &gt;50% coverage are considered significant for CTS assessment
-                      </p>
                     </div>
                   </div>
                 ))}
               </div>
             )}
-
-            <div className="bg-blue-100 border-l-4 border-blue-500 p-6 rounded-lg">
-              <h4 className="font-bold text-lg mb-2 flex items-center gap-2">
-                <AlertCircle className="w-6 h-6" />
-                Important Note
-              </h4>
-              <p className="text-sm">
-                This assessment tool is for screening purposes only and should not replace professional medical diagnosis.
-                This scoring method counts how many median nerve digits (thumb, index, middle) show significant 
-                symptoms (&gt;30% coverage). If you have concerns about your symptoms, please consult with a healthcare 
-                provider for proper evaluation including nerve conduction studies if indicated.
-              </p>
-            </div>
           </div>
         );
       
