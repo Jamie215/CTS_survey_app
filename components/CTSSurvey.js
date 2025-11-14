@@ -170,24 +170,6 @@ const CTSSurveyApp = () => {
     }
   };
 
-
-  // Scale SVG path to canvas size - FIXED for proper right hand scaling
-              y = y * scaleY;
-            }
-            
-            result += ' ' + x.toFixed(2) + ' ' + y.toFixed(2);
-            i += 2;
-            coordCount -= 2;
-          }
-        }
-      } else {
-        i++;
-      }
-    }
-    
-    return result;
-  };
-
   // Calculate coverage of a region
   const calculateRegionCoverage = (drawings, regionPath) => {
     if (!drawings || drawings.length === 0) {
