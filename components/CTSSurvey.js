@@ -47,7 +47,7 @@ const CTSSurveyApp = () => {
   };
 
   const diagnosticQuestions = [
-    { id: 0, text: "Do you ever have numbness and tingling in your finger?", hasNumbnessOrTingling: false },
+    { id: 0, text: "Do you ever have numbness and tingling in your finger?", hasNumbnessOrTingling: true },
     { id: 1, text: "Do you wake up because of pain in your wrist?" },
     { id: 2, text: "Do you wake up because of tingling or numbness in your fingers?", requiresNumbnessOrTingling: true },
     { id: 3, text: "Do you have tingling or numbness in your fingers when you first wake up?", requiresNumbnessOrTingling: true },
@@ -528,7 +528,17 @@ const CTSSurveyApp = () => {
   const handleNextSection = () => {
     if (!isCurrentSectionComplete()) {
       setHighlightIncomplete(true);
-      setTimeout(() => setHighlightIncomplete(false), 3000);
+      alert('Please complete all required fields before proceeding to the next section.');
+      setTimeout(() => {
+        const firstIncomplete = document.querySelector('.incomplete-question');
+        if (firstIncomplete) {
+          firstIncomplete.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center',
+            inline: 'nearest'
+          });
+        }
+      }, 100);
       return;
     }
 
@@ -738,7 +748,7 @@ const CTSSurveyApp = () => {
               <div className={`${highlightIncomplete && diagnosticEase === '' ? 'bg-red-50 border-red-500 border-2 rounded-lg p-4' : ''}`}>
                 <p className="font-semibold mb-4 text-lg flex items-center gap-3">
                   {getQuestionIndicator(diagnosticEase !== '')}
-                  <span>How easy was it to answer these questions?</span>
+                  <span>Was it easy to answer these questions about your hand symptoms?</span>
                 </p>
                 <div className="flex flex-wrap gap-6">
                   {['Very easy', 'Somewhat easy', 'Somewhat difficult', 'Very difficult'].map((option) => (
@@ -755,6 +765,19 @@ const CTSSurveyApp = () => {
                     </label>
                   ))}
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-lg font-semibold text-gray-800 mb-3">
+                  If you have any comments on how to improve the questions, please write them below:
+                </label>
+                <textarea
+                  value={diagnosticComments}
+                  onChange={(e) => setDiagnosticComments(e.target.value)}
+                  rows={4}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
+                  placeholder="Your feedback helps us improve this survey..."
+                />
               </div>
             </div>
           </div>
@@ -885,7 +908,7 @@ const CTSSurveyApp = () => {
             <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
               <p className="font-semibold mb-4 text-lg flex items-center gap-3">
                 {getQuestionIndicator(diagramEase !== '')}
-                <span>How easy was it to mark the diagrams?</span>
+                <span>Was it easy to answer to mark the diagrams?</span>
               </p>
               <div className="flex flex-wrap gap-6">
                 {['Very easy', 'Somewhat easy', 'Somewhat difficult', 'Very difficult'].map((option) => (
@@ -902,6 +925,19 @@ const CTSSurveyApp = () => {
                   </label>
                 ))}
               </div>
+            </div>
+
+            <div>
+                <label className="block text-lg font-semibold text-gray-800 mb-3">
+                  If you have any comments on how to improve the hand diagrams, please write them below:
+                </label>
+                <textarea
+                  value={diagramComments}
+                  onChange={(e) => setDiagramComments(e.target.value)}
+                  rows={4}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+                  placeholder="Your feedback helps us improve the hand diagrams!"
+                />
             </div>
           </div>
         );
