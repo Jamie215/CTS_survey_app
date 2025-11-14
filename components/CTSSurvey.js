@@ -62,12 +62,33 @@ const CTSSurveyApp = () => {
     try {
       // Adjust path based on your setup
       const response = await fetch('/hands/hands_front.svg');
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       const svgText = await response.text();
+
+      if (!svgText || svgText.length === 0) {
+        throw new Error('SVG file is empty');
+      }
       const parser = new DOMParser();
       const svgDoc = parser.parseFromString(svgText, 'image/svg+xml');
+
+      // Check for parsing errors
+      const parserError = svgDoc.querySelector('parsererror');
+      if (parserError) {
+        throw new Error('SVG parsing failed: ' + parserError.textContent);
+      }
       
-      // Extract all paths and convert to Path2D objects
       const paths = svgDoc.querySelectorAll('path[inkscape\\:label]');
+      
+      if (paths.length === 0) {
+        throw new Error('No labeled paths found in SVG. Make sure paths have inkscape:label attributes.');
+      }
+      
+      console.log(`Found ${paths.length} labeled paths in SVG`);
+      
       const leftRegions = {};
       const rightRegions = {};
       
@@ -296,8 +317,8 @@ const CTSSurveyApp = () => {
       });
     });
 
-    // Count how many median nerve digits have >30% coverage
-    const threshold = 30; // 30% coverage threshold
+    // Count how many median nerve digits have >50% coverage
+    const threshold = 50; // 50% coverage threshold
     let affectedDigits = 0;
     
     if (coverage['thumb_distal'] > threshold) affectedDigits++;
@@ -318,7 +339,7 @@ const CTSSurveyApp = () => {
       return {
         score: 0,
         level: 'No Involvement',
-        description: 'No median nerve digits show significant symptoms (>30% coverage)',
+        description: 'No median nerve digits show significant symptoms (>50% coverage)',
         interpretation: 'CTS is unlikely based on hand diagram'
       };
     } else if (affected === 1) {
@@ -783,9 +804,6 @@ const CTSSurveyApp = () => {
               <h2 className="text-2xl font-bold text-blue-800 mb-4 flex items-center gap-3">
                 Assessment Result
               </h2>
-              <p className="text-blue-700 text-lg">
-                Based on your hand diagram markings, here is your assessment for carpal tunnel syndrome:
-              </p>
             </div>
 
             {ctsScores && (
@@ -824,7 +842,7 @@ const CTSSurveyApp = () => {
                         {['thumb_distal', 'index_distal', 'middle_distal'].map((region) => {
                           const coverage = ctsScores[hand].detailedCoverage[region] || 0;
                           const label = region.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
-                          const isSignificant = coverage > 30;
+                          const isSignificant = coverage > 50;
                           
                           return (
                             <div key={region}>
@@ -845,7 +863,7 @@ const CTSSurveyApp = () => {
                         })}
                       </div>
                       <p className="text-xs text-gray-600 mt-3">
-                        * Regions with &gt;30% coverage are considered significant for CTS assessment
+                        * Regions with &gt;50% coverage are considered significant for CTS assessment
                       </p>
                     </div>
                   </div>
