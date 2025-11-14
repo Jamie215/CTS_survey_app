@@ -371,23 +371,20 @@ const CTSSurveyApp = () => {
       return {
         score: 0,
         level: 'No Involvement',
-        description: 'No median nerve digits show significant symptoms (>50% coverage)',
-        interpretation: 'CTS is unlikely based on hand diagram'
+        description: 'CTS is unlikely based on hand diagram'
       };
     } else if (affected === 1) {
       return {
         score: 1,
         level: 'Minimal Involvement',
-        description: 'Exactly 1 median nerve digit affected',
-        interpretation: 'Low probability of CTS. Consider other diagnoses or early-stage CTS.'
+        description: 'Low probability of CTS. Consider other diagnoses or early-stage CTS.'
       };
     } else {
       // affected >= 2
       return {
         score: 2,
         level: 'Significant Involvement',
-        description: '2 or more median nerve digits affected',
-        interpretation: 'Moderate to high probability of CTS. Clinical correlation and nerve conduction studies recommended.'
+        description: 'Moderate to high probability of CTS. Clinical correlation and nerve conduction studies recommended.'
       };
     }
   };
@@ -606,11 +603,6 @@ const CTSSurveyApp = () => {
     img.onload = () => {
       // Draw the image
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      
-      // Draw SVG region highlights
-      if (Object.keys(svgRegions.leftFront).length > 0 || Object.keys(svgRegions.rightFront).length > 0) {
-        drawSVGRegionsOverlay(canvas, isLeft);
-      }
       
       // Define colors for each symptom type
       const symptomColors = {
@@ -991,7 +983,6 @@ const CTSSurveyApp = () => {
                           <div className="space-y-2">
                             <p className="font-semibold text-lg">{ctsScores[hand].alternativeScore.level}</p>
                             <p className="text-sm">{ctsScores[hand].alternativeScore.description}</p>
-                            <p className="text-sm mt-3 italic">{ctsScores[hand].alternativeScore.interpretation}</p>
                           </div>
                         </div>
                       </div>
@@ -1043,7 +1034,7 @@ const CTSSurveyApp = () => {
                           
                           {/* Index Distal */}
                           <div className="mb-3">
-                            <p className="text-sm font-medium text-gray-700 mb-2">Distal (tip):</p>
+                            <p className="text-sm font-medium text-gray-900 mb-2">Distal Phalanx:</p>
                             <div className="space-y-2">
                               {['tingling', 'numbness', 'pain'].map(symptom => {
                                 const coverage = ctsScores[hand].alternativeScore.coverageBySymptom?.[symptom]?.['index_distal'] || 0;
@@ -1074,7 +1065,7 @@ const CTSSurveyApp = () => {
 
                           {/* Index Middle */}
                           <div>
-                            <p className="text-sm font-medium text-gray-700 mb-2">Middle phalanx:</p>
+                            <p className="text-sm font-medium text-gray-900 mb-2">Middle Phalanx:</p>
                             <div className="space-y-2">
                               {['tingling', 'numbness', 'pain'].map(symptom => {
                                 const coverage = ctsScores[hand].alternativeScore.coverageBySymptom?.[symptom]?.['index_middle'] || 0;
@@ -1110,7 +1101,7 @@ const CTSSurveyApp = () => {
                           
                           {/* Middle Distal */}
                           <div className="mb-3">
-                            <p className="text-sm font-medium text-gray-700 mb-2">Distal (tip):</p>
+                            <p className="text-sm font-medium text-gray-900 mb-2">Distal Phalanx:</p>
                             <div className="space-y-2">
                               {['tingling', 'numbness', 'pain'].map(symptom => {
                                 const coverage = ctsScores[hand].alternativeScore.coverageBySymptom?.[symptom]?.['middle_distal'] || 0;
