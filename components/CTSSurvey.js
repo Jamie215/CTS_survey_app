@@ -272,7 +272,10 @@ const CTSSurveyApp = () => {
     const symptoms = analyzeSymptomDistribution(hand);
     
     return {
-      alternativeScore: calculateAlternativeScore(symptoms),
+      alternativeScore: {
+        ...calculateAlternativeScore(symptoms),
+        coverageBySymptom: symptoms.coverageBySymptom  // Add this here
+      },
       detailedCoverage: symptoms.detailedCoverage
     };
   };
@@ -549,13 +552,15 @@ const CTSSurveyApp = () => {
   };
 
   const handlePreviousSection = () => {
+    // Cannot go back from results page (section 2)
+    if (currentSection === 2) {
+      return; // Results are locked
+    }
+    
     if (currentSection > 0) {
       setCurrentSection(currentSection - 1);
       setHighlightIncomplete(false);
       window.scrollTo(0, 0);
-    }
-    if (currentSection === 2) {
-      return;
     }
   };
 
@@ -1231,19 +1236,23 @@ const CTSSurveyApp = () => {
                 <button
                   onClick={handleNextSection}
                   className={`flex items-center gap-3 px-8 py-4 rounded-xl font-semibold ${
-                    currentSection === 2
+                    currentSection === 1
                       ? 'bg-green-600 text-white hover:bg-green-700'
                       : 'bg-blue-600 text-white hover:bg-blue-700'
                   }`}
                 >
-                  {currentSection === 1 ? 'Complete' : 'Next'}
+                  {currentSection === 1 ? 'Calculate CTS Scores' : 'Next'}
                   <ChevronRight className="w-5 h-5" />
                 </button>
               )}
 
               {currentSection === 2 && (
-                <button onClick={exportData}>
-                  <Download /> Download Results
+                <button
+                  onClick={exportData}
+                  className="flex items-center gap-3 px-8 py-4 rounded-xl font-semibold bg-indigo-600 text-white hover:bg-indigo-700"
+                >
+                  <Download className="w-5 h-5" />
+                  Download Results
                 </button>
               )}
             </div>
