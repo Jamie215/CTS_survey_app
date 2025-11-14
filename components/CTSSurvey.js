@@ -4,12 +4,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Download, Hand, Check, AlertCircle } from 'lucide-react';
 
 const CTSSurveyApp = () => {
-  // Canvas dimensions - maintain SVG aspect ratio to prevent distortion
+  // Canvas dimensions - using pre-split images that match exactly
   const CANVAS_WIDTH = 300;
+  const CANVAS_HEIGHT = 400;
+  
+  // SVG dimensions for region scaling
   const SVG_HAND_WIDTH = 1048.5; // Half of 2097
   const SVG_HEIGHT = 847;
-  const SVG_ASPECT_RATIO = SVG_HAND_WIDTH / SVG_HEIGHT; // ~1.238
-  const CANVAS_HEIGHT = Math.round(CANVAS_WIDTH / SVG_ASPECT_RATIO); // ~242
   
   const [currentSection, setCurrentSection] = useState(0);
   const [participantId] = useState(`CTS-${Date.now()}`);
@@ -73,201 +74,104 @@ const CTSSurveyApp = () => {
 
   const loadSVGRegions = async () => {
     try {
-      // Adjust path based on your setup
-      const response = await fetch('/hands/hands_front.svg');
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const svgText = await response.text();
-
-      if (!svgText || svgText.length === 0) {
-        throw new Error('SVG file is empty');
-      }
-      const parser = new DOMParser();
-      const svgDoc = parser.parseFromString(svgText, 'image/svg+xml');
-
-      // Check for parsing errors
-      const parserError = svgDoc.querySelector('parsererror');
-      if (parserError) {
-        throw new Error('SVG parsing failed: ' + parserError.textContent);
-      }
-      
-      const paths = svgDoc.querySelectorAll('path');
-      paths.forEach(path => {
-        let label = path.getAttribute('inkscape:label') || 
-                    path.getAttributeNS('http://www.inkscape.org/namespaces/inkscape', 'label') ||
-                    path.getAttribute('id');
-      });
-      
-      if (paths.length === 0) {
-        throw new Error('No labeled paths found in SVG. Make sure paths have inkscape:label attributes.');
-      }
-      
-      console.log(`Found ${paths.length} labeled paths in SVG`);
-      
       const leftRegions = {};
       const rightRegions = {};
       
-      // Use uniform scale to prevent distortion
-      const scale = CANVAS_WIDTH / SVG_HAND_WIDTH;
-      const scaleX = scale;
-      const scaleY = scale;
+      // Load left hand SVG (already 300×400!)
+      console.log('Loading left hand SVG...');
+      const leftResponse = await fetch('/hands/hand_front_left.svg');
+      if (!leftResponse.ok) {
+        throw new Error(`Failed to load left SVG: ${leftResponse.status}`);
+      }
+      const leftSvgText = await leftResponse.text();
+      const leftParser = new DOMParser();
+      const leftSvgDoc = leftParser.parseFromString(leftSvgText, 'image/svg+xml');
       
-      console.log('SVG Scaling:', { 
-        svgSize: `${SVG_HAND_WIDTH}×${SVG_HEIGHT}`,
-        canvasSize: `${CANVAS_WIDTH}×${CANVAS_HEIGHT}`,
-        scale: scale.toFixed(4),
-        aspectRatio: SVG_ASPECT_RATIO.toFixed(3)
-      });
+      if (leftSvgDoc.querySelector('parsererror')) {
+        throw new Error('Left SVG parsing failed');
+      }
       
-      paths.forEach(path => {
-        const label = path.getAttribute('inkscape:label');
+      // Load right hand SVG (already 300×400!)
+      console.log('Loading right hand SVG...');
+      const rightResponse = await fetch('/hands/hand_front_right.svg');
+      if (!rightResponse.ok) {
+        throw new Error(`Failed to load right SVG: ${rightResponse.status}`);
+      }
+      const rightSvgText = await rightResponse.text();
+      const rightParser = new DOMParser();
+      const rightSvgDoc = rightParser.parseFromString(rightSvgText, 'image/svg+xml');
+      
+      if (rightSvgDoc.querySelector('parsererror')) {
+        throw new Error('Right SVG parsing failed');
+      }
+      
+      // Process left hand paths - NO SCALING NEEDED!
+      const leftPaths = leftSvgDoc.querySelectorAll('path');
+      console.log('Left hand paths found:', leftPaths.length);
+      
+      leftPaths.forEach(path => {
+        const label = path.getAttribute('inkscape:label') || 
+                     path.getAttributeNS('http://www.inkscape.org/namespaces/inkscape', 'label') ||
+                     path.getAttribute('id');
         const d = path.getAttribute('d');
         
         if (label && d) {
-          // Determine if left or right hand
-          const isRight = label.includes('_R');
-          const isLeft = label.includes('_L');
-          
-          if (isLeft || isRight) {
-            // Scale and translate the path
-            const offsetX = isRight ? SVG_HAND_WIDTH : 0;
-            const scaledPath = scaleSVGPath(d, scaleX, scaleY, offsetX);
-            const path2D = new Path2D(scaledPath);
-            
-            // Remove _L or _R suffix
-            const regionName = label.replace(/_[LR]$/, '');
-            
-            if (isLeft) {
-              leftRegions[regionName] = { path2D, pathString: scaledPath, label };
-            } else if (isRight) {
-              rightRegions[regionName] = { path2D, pathString: scaledPath, label };
-            }
-          }
+          const path2D = new Path2D(d);
+          leftRegions[label] = { path2D, pathString: d, label };
+          console.log('✓ Left region:', label);
         }
       });
+      
+      // Process right hand paths - NO SCALING NEEDED!
+      const rightPaths = rightSvgDoc.querySelectorAll('path');
+      console.log('Right hand paths found:', rightPaths.length);
+      
+      rightPaths.forEach(path => {
+        const label = path.getAttribute('inkscape:label') || 
+                     path.getAttributeNS('http://www.inkscape.org/namespaces/inkscape', 'label') ||
+                     path.getAttribute('id');
+        const d = path.getAttribute('d');
+        
+        if (label && d) {
+          const path2D = new Path2D(d);
+          rightRegions[label] = { path2D, pathString: d, label };
+          console.log('✓ Right region:', label);
+        }
+      });
+      
+      console.log('✅ Loaded regions:', {
+        left: Object.keys(leftRegions),
+        right: Object.keys(rightRegions)
+      });
+      
+      if (Object.keys(leftRegions).length === 0 && Object.keys(rightRegions).length === 0) {
+        throw new Error('No valid regions found in SVG files');
+      }
       
       setSvgRegions({
         leftFront: leftRegions,
         rightFront: rightRegions
       });
       
-      console.log('Loaded SVG regions:', { 
-        left: Object.keys(leftRegions), 
-        right: Object.keys(rightRegions) 
-      });
-      
-      // Redraw canvases after regions are loaded
+      // Redraw canvases
       setTimeout(() => {
         Object.entries(canvasRefs).forEach(([key, ref]) => {
           if (ref.current) {
             const isLeft = key.includes('Left');
-            drawHandOutline(ref.current, isLeft);
+            const isBack = key.includes('Back');
+            drawHandOutline(ref.current, isLeft, isBack);
           }
         });
       }, 100);
+      
     } catch (error) {
-      console.error('Failed to load SVG regions:', error);
+      console.error('❌ Failed to load SVG regions:', error);
+      alert(`Error: ${error.message}\n\nCheck:\n1. /hands/hand_front_left.svg\n2. /hands/hand_front_right.svg`);
     }
   };
 
+
   // Scale SVG path to canvas size - FIXED for proper right hand scaling
-  const scaleSVGPath = (pathData, scaleX, scaleY, offsetX = 0) => {
-    // Track position in path string and current command
-    let result = '';
-    let currentX = 0, currentY = 0;
-    let currentCommand = '';
-    
-    // Split path into commands and coordinates
-    const tokens = pathData.match(/[a-zA-Z]|[-]?[0-9]*\.?[0-9]+/g);
-    
-    if (!tokens) return pathData;
-    
-    let i = 0;
-    while (i < tokens.length) {
-      const token = tokens[i];
-      
-      // Check if it's a command letter
-      if (/[a-zA-Z]/.test(token)) {
-        currentCommand = token;
-        result += token;
-        i++;
-        
-        // Process coordinates based on command type
-        let coordCount = 0;
-        switch (currentCommand.toUpperCase()) {
-          case 'M': case 'L': case 'T':
-            coordCount = 2; // x, y
-            break;
-          case 'H':
-            coordCount = 1; // x only
-            break;
-          case 'V':
-            coordCount = 1; // y only  
-            break;
-          case 'C':
-            coordCount = 6; // x1, y1, x2, y2, x, y
-            break;
-          case 'S': case 'Q':
-            coordCount = 4; // x1, y1, x, y
-            break;
-          case 'A':
-            coordCount = 7; // rx, ry, rotation, large-arc, sweep, x, y
-            break;
-          case 'Z':
-            coordCount = 0;
-            break;
-        }
-        
-        // Process coordinate pairs
-        while (coordCount > 0 && i < tokens.length && !/[a-zA-Z]/.test(tokens[i])) {
-          const isAbsolute = currentCommand === currentCommand.toUpperCase();
-          
-          if (currentCommand.toUpperCase() === 'H') {
-            // Horizontal line - x only
-            let x = parseFloat(tokens[i]);
-            if (isAbsolute) {
-              x = (x - offsetX) * scaleX;
-            } else {
-              x = x * scaleX;
-            }
-            result += ' ' + x.toFixed(2);
-            i++;
-            coordCount--;
-          } else if (currentCommand.toUpperCase() === 'V') {
-            // Vertical line - y only
-            let y = parseFloat(tokens[i]);
-            if (isAbsolute) {
-              y = y * scaleY;
-            } else {
-              y = y * scaleY;
-            }
-            result += ' ' + y.toFixed(2);
-            i++;
-            coordCount--;
-          } else if (currentCommand.toUpperCase() === 'A') {
-            // Arc command: rx, ry, rotation, large-arc, sweep, x, y
-            for (let j = 0; j < 7 && i < tokens.length; j++, i++) {
-              let val = parseFloat(tokens[i]);
-              if (j === 0) val = val * scaleX; // rx
-              else if (j === 1) val = val * scaleY; // ry
-              else if (j === 5) val = isAbsolute ? (val - offsetX) * scaleX : val * scaleX; // x
-              else if (j === 6) val = isAbsolute ? val * scaleY : val * scaleY; // y
-              result += ' ' + val.toFixed(2);
-            }
-            coordCount = 0;
-          } else {
-            // Regular coordinate pair (x, y)
-            let x = parseFloat(tokens[i]);
-            let y = parseFloat(tokens[i + 1]);
-            
-            if (isAbsolute) {
-              x = (x - offsetX) * scaleX;
-              y = y * scaleY;
-            } else {
-              x = x * scaleX;
               y = y * scaleY;
             }
             
@@ -500,16 +404,17 @@ const CTSSurveyApp = () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     const img = new Image();
-    const imagePath = isBack ? '/hands/hands_back.png' : '/hands/hands_front.png';
+    // Use pre-split images that exactly match canvas dimensions
+    let imagePath;
+    if (isBack) {
+      imagePath = isLeft ? '/hands/hand_back_left.png' : '/hands/hand_back_right.png';
+    } else {
+      imagePath = isLeft ? '/hands/hand_front_left.png' : '/hands/hand_front_right.png';
+    }
 
     img.onload = () => {
-      // Draw the appropriate hand from the image
-      const sourceX = isLeft ? 0 : img.width / 2;
-      ctx.drawImage(
-        img,
-        sourceX, 0, img.width / 2, img.height,
-        0, 0, canvas.width, canvas.height
-      );
+      // Draw the image 1:1 - no scaling needed!
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
       // Only draw SVG region highlights on front view
       if (!isBack && (Object.keys(svgRegions.leftFront).length > 0 || Object.keys(svgRegions.rightFront).length > 0)) {
