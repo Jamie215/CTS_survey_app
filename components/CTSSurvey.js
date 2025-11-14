@@ -25,10 +25,16 @@ const CTSSurveyApp = () => {
   const canvasRefs = {
     tinglingFrontLeft: useRef(null),
     tinglingFrontRight: useRef(null),
+    tinglingBackLeft: useRef(null),
+    tinglingBackRight: useRef(null),
     numbnessFrontLeft: useRef(null),
     numbnessFrontRight: useRef(null),
+    numbnessBackLeft: useRef(null),
+    numbnessBackRight: useRef(null),
     painFrontLeft: useRef(null),
     painFrontRight: useRef(null),
+    painBackLeft: useRef(null),
+    painBackRight: useRef(null),
   };
 
   const diagnosticQuestions = [
@@ -159,24 +165,113 @@ const CTSSurveyApp = () => {
 
   // Scale SVG path to canvas size
   const scaleSVGPath = (pathData, scaleX, scaleY, offsetX = 0) => {
-    // Simple path scaling - extract numbers and scale them
-    let isX = true; // Alternate between x and y
+    // Track position in path string and current command
+    let result = '';
+    let currentX = 0, currentY = 0;
+    let currentCommand = '';
     
-    return pathData.replace(/([-]?[0-9.]+)/g, (match) => {
-      const value = parseFloat(match);
-      let scaled;
+    // Split path into commands and coordinates
+    const tokens = pathData.match(/[a-zA-Z]|[-]?[0-9]*\.?[0-9]+/g);
+    
+    if (!tokens) return pathData;
+    
+    let i = 0;
+    while (i < tokens.length) {
+      const token = tokens[i];
       
-      if (isX) {
-        // X coordinate - translate and scale
-        scaled = (value - offsetX) * scaleX;
+      // Check if it's a command letter
+      if (/[a-zA-Z]/.test(token)) {
+        currentCommand = token;
+        result += token;
+        i++;
+        
+        // Process coordinates based on command type
+        let coordCount = 0;
+        switch (currentCommand.toUpperCase()) {
+          case 'M': case 'L': case 'T':
+            coordCount = 2; // x, y
+            break;
+          case 'H':
+            coordCount = 1; // x only
+            break;
+          case 'V':
+            coordCount = 1; // y only  
+            break;
+          case 'C':
+            coordCount = 6; // x1, y1, x2, y2, x, y
+            break;
+          case 'S': case 'Q':
+            coordCount = 4; // x1, y1, x, y
+            break;
+          case 'A':
+            coordCount = 7; // rx, ry, rotation, large-arc, sweep, x, y
+            break;
+          case 'Z':
+            coordCount = 0;
+            break;
+        }
+        
+        // Process coordinate pairs
+        while (coordCount > 0 && i < tokens.length && !/[a-zA-Z]/.test(tokens[i])) {
+          const isAbsolute = currentCommand === currentCommand.toUpperCase();
+          
+          if (currentCommand.toUpperCase() === 'H') {
+            // Horizontal line - x only
+            let x = parseFloat(tokens[i]);
+            if (isAbsolute) {
+              x = (x - offsetX) * scaleX;
+            } else {
+              x = x * scaleX;
+            }
+            result += ' ' + x.toFixed(2);
+            i++;
+            coordCount--;
+          } else if (currentCommand.toUpperCase() === 'V') {
+            // Vertical line - y only
+            let y = parseFloat(tokens[i]);
+            if (isAbsolute) {
+              y = y * scaleY;
+            } else {
+              y = y * scaleY;
+            }
+            result += ' ' + y.toFixed(2);
+            i++;
+            coordCount--;
+          } else if (currentCommand.toUpperCase() === 'A') {
+            // Arc command: rx, ry, rotation, large-arc, sweep, x, y
+            for (let j = 0; j < 7 && i < tokens.length; j++, i++) {
+              let val = parseFloat(tokens[i]);
+              if (j === 0) val = val * scaleX; // rx
+              else if (j === 1) val = val * scaleY; // ry
+              else if (j === 5) val = isAbsolute ? (val - offsetX) * scaleX : val * scaleX; // x
+              else if (j === 6) val = isAbsolute ? val * scaleY : val * scaleY; // y
+              result += ' ' + val.toFixed(2);
+            }
+            coordCount = 0;
+          } else {
+            // Regular coordinate pair (x, y)
+            let x = parseFloat(tokens[i]);
+            let y = parseFloat(tokens[i + 1]);
+            
+            if (isAbsolute) {
+              x = (x - offsetX) * scaleX;
+              y = y * scaleY;
+            } else {
+              x = x * scaleX;
+              y = y * scaleY;
+            }
+            
+            result += ' ' + x.toFixed(2) + ' ' + y.toFixed(2);
+            i += 2;
+            coordCount -= 2;
+          }
+        }
       } else {
-        // Y coordinate - just scale
-        scaled = value * scaleY;
+        i++;
       }
-      
-      isX = !isX; // Toggle for next number
-      return scaled.toFixed(2);
-    });
+    }
+    
+    return result;
   };
 
   // Calculate coverage of a region
@@ -300,8 +395,12 @@ const CTSSurveyApp = () => {
       const frontKey = `${symptomType}Front${hand}`;
       const frontData = handDiagramData[frontKey] || [];
       
-      // Only check the distal regions we need
-      const requiredRegions = ['thumb_distal', 'index_distal', 'middle_distal'];
+      // Check both distal AND middle phalanges for scoring
+      const requiredRegions = [
+        'thumb_distal',    // Thumb: any coverage of distal
+        'index_distal', 'index_middle',    // Index: distal and middle
+        'middle_distal', 'middle_middle'   // Middle: distal and middle
+      ];
       
       requiredRegions.forEach(regionName => {
         const regionData = regions[regionName];
@@ -322,8 +421,11 @@ const CTSSurveyApp = () => {
       });
     });
 
-    // Count how many median nerve digits have >50% coverage
-    const threshold = 50; // 50% coverage threshold
+    // NEW SCORING LOGIC:
+    // Thumb: Affected if >0% of distal (some involvement)
+    // Index: Affected if (>50% of middle phalanx) OR (some distal involvement)
+    // Middle: Affected if (>50% of middle phalanx) OR (some distal involvement)
+    
     let affectedDigits = 0;
     
     if (coverage['thumb_distal'] > threshold) affectedDigits++;
@@ -370,11 +472,10 @@ const CTSSurveyApp = () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     const img = new Image();
-    const imagePath = '/hands/hands_front.png'; // or .svg
+    const imagePath = isBack ? '/hands/hands_back.png' : '/hands/hands_front.png';
 
     img.onload = () => {
       // Draw the appropriate hand from the image
-      // Assuming the image has both hands side by side
       const sourceX = isLeft ? 0 : img.width / 2;
       ctx.drawImage(
         img,
@@ -382,21 +483,20 @@ const CTSSurveyApp = () => {
         0, 0, canvas.width, canvas.height
       );
 
-      // Draw SVG region highlights
-      if (Object.keys(svgRegions.leftFront).length > 0 || Object.keys(svgRegions.rightFront).length > 0) {
+      // Only draw SVG region highlights on front view
+      if (!isBack && (Object.keys(svgRegions.leftFront).length > 0 || Object.keys(svgRegions.rightFront).length > 0)) {
         drawSVGRegionsOverlay(canvas, isLeft);
       }
     };
     
     img.onerror = () => {
-      console.error('Failed to load hand image');
-      // Draw a placeholder
+      console.error('Failed to load hand image:', imagePath);
       ctx.fillStyle = '#f0f0f0';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.fillStyle = '#999';
       ctx.font = '16px Arial';
       ctx.textAlign = 'center';
-      ctx.fillText('Hand Image', canvas.width / 2, canvas.height / 2);
+      ctx.fillText(isBack ? 'Back View' : 'Palm View', canvas.width / 2, canvas.height / 2);
     };
     
     img.src = imagePath;
@@ -437,7 +537,8 @@ const CTSSurveyApp = () => {
     Object.entries(canvasRefs).forEach(([key, ref]) => {
       if (ref.current) {
         const isLeft = key.includes('Left');
-        drawHandOutline(ref.current, isLeft);
+        const isBack = key.includes('Back');
+        drawHandOutline(ref.current, isLeft, isBack);
       }
     });
   }, [currentSection, svgRegions]);
@@ -497,7 +598,8 @@ const CTSSurveyApp = () => {
     const canvas = canvasRefs[canvasKey].current;
     if (canvas) {
       const isLeft = canvasKey.includes('Left');
-      drawHandOutline(canvas, isLeft);
+      const isBack = canvasKey.includes('Back');
+      drawHandOutline(canvas, isLeft, isBack);
       
       setHandDiagramData(prev => ({
         ...prev,
@@ -775,6 +877,51 @@ const CTSSurveyApp = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* Back view */}
+                <div className="bg-white rounded-lg p-6 shadow-sm">
+                  <h4 className="text-xl font-semibold mb-6 text-center">Back of hands (Dorsal view):</h4>
+                  <div className="flex gap-12 justify-center">
+                    <div className="text-center">
+                      <p className="mb-4 font-bold text-lg">Left Hand</p>
+                      <canvas
+                        ref={canvasRefs[`${symptom.type}BackLeft`]}
+                        width={300}
+                        height={400}
+                        className="border-2 border-gray-300 rounded-lg cursor-crosshair shadow-md hover:shadow-lg"
+                        onMouseDown={(e) => handleCanvasMouseDown(e, `${symptom.type}BackLeft`)}
+                        onMouseMove={(e) => handleCanvasMouseMove(e, `${symptom.type}BackLeft`)}
+                        onMouseUp={(e) => handleCanvasMouseUp(e, `${symptom.type}BackLeft`)}
+                        onMouseLeave={(e) => handleCanvasMouseUp(e, `${symptom.type}BackLeft`)}
+                      />
+                      <button
+                        onClick={() => clearCanvas(`${symptom.type}BackLeft`)}
+                        className="mt-4 px-6 py-2 bg-gray-600 text-white hover:bg-gray-700 rounded-lg"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                    <div className="text-center">
+                      <p className="mb-4 font-bold text-lg">Right Hand</p>
+                      <canvas
+                        ref={canvasRefs[`${symptom.type}BackRight`]}
+                        width={300}
+                        height={400}
+                        className="border-2 border-gray-300 rounded-lg cursor-crosshair shadow-md hover:shadow-lg"
+                        onMouseDown={(e) => handleCanvasMouseDown(e, `${symptom.type}BackRight`)}
+                        onMouseMove={(e) => handleCanvasMouseMove(e, `${symptom.type}BackRight`)}
+                        onMouseUp={(e) => handleCanvasMouseUp(e, `${symptom.type}BackRight`)}
+                        onMouseLeave={(e) => handleCanvasMouseUp(e, `${symptom.type}BackRight`)}
+                      />
+                      <button
+                        onClick={() => clearCanvas(`${symptom.type}BackRight`)}
+                        className="mt-4 px-6 py-2 bg-gray-600 text-white hover:bg-gray-700 rounded-lg"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             ))}
 
@@ -853,29 +1000,105 @@ const CTSSurveyApp = () => {
                     {/* Coverage Details */}
                     <div className="bg-gray-50 p-4 rounded-lg">
                       <h4 className="font-semibold mb-3">Median Nerve Digit Coverage:</h4>
-                      <div className="space-y-3">
-                        {['thumb_distal', 'index_distal', 'middle_distal'].map((region) => {
-                          const coverage = ctsScores[hand].detailedCoverage[region] || 0;
-                          const label = region.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
-                          const isSignificant = coverage > 50;
-                          
-                          return (
-                            <div key={region}>
-                              <div className="flex justify-between text-sm mb-1">
-                                <span className="font-medium">{label}:</span>
-                                <span className={isSignificant ? 'font-bold text-red-600' : 'text-gray-600'}>
-                                  {coverage.toFixed(1)}% {isSignificant && '✓'}
+                      <p className="text-xs text-gray-600 mb-3">
+                        * Thumb: affected if &gt;10% distal coverage<br/>
+                        * Index/Middle: affected if &gt;50% middle phalanx OR &gt;10% distal
+                      </p>
+                      <div className="space-y-4">
+                        {/* Thumb */}
+                        <div className="border-l-4 border-red-300 pl-3">
+                          <div className="font-medium text-sm mb-2">Thumb:</div>
+                          <div>
+                            <div className="flex justify-between text-xs mb-1">
+                              <span>Distal (tip):</span>
+                              <span className={(ctsScores[hand].detailedCoverage['thumb_distal'] || 0) > 10 ? 'font-bold text-red-600' : 'text-gray-600'}>
+                                {(ctsScores[hand].detailedCoverage['thumb_distal'] || 0).toFixed(1)}%
+                                {(ctsScores[hand].detailedCoverage['thumb_distal'] || 0) > 10 && ' ✓'}
+                              </span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded h-2">
+                              <div 
+                                className={`h-2 rounded ${(ctsScores[hand].detailedCoverage['thumb_distal'] || 0) > 10 ? 'bg-red-500' : 'bg-blue-400'}`}
+                                style={{ width: `${Math.min(ctsScores[hand].detailedCoverage['thumb_distal'] || 0, 100)}%` }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Index */}
+                        <div className="border-l-4 border-green-300 pl-3">
+                          <div className="font-medium text-sm mb-2">Index:</div>
+                          <div className="space-y-2">
+                            <div>
+                              <div className="flex justify-between text-xs mb-1">
+                                <span>Distal (tip):</span>
+                                <span className={(ctsScores[hand].detailedCoverage['index_distal'] || 0) > 10 ? 'font-bold text-red-600' : 'text-gray-600'}>
+                                  {(ctsScores[hand].detailedCoverage['index_distal'] || 0).toFixed(1)}%
                                 </span>
                               </div>
-                              <div className="w-full bg-gray-200 rounded h-3">
+                              <div className="w-full bg-gray-200 rounded h-2">
                                 <div 
-                                  className={`h-3 rounded ${isSignificant ? 'bg-red-500' : 'bg-blue-400'}`}
-                                  style={{ width: `${Math.min(coverage, 100)}%` }}
+                                  className={`h-2 rounded ${(ctsScores[hand].detailedCoverage['index_distal'] || 0) > 10 ? 'bg-red-500' : 'bg-blue-400'}`}
+                                  style={{ width: `${Math.min(ctsScores[hand].detailedCoverage['index_distal'] || 0, 100)}%` }}
                                 />
                               </div>
                             </div>
-                          );
-                        })}
+                            <div>
+                              <div className="flex justify-between text-xs mb-1">
+                                <span>Middle phalanx:</span>
+                                <span className={(ctsScores[hand].detailedCoverage['index_middle'] || 0) > 50 ? 'font-bold text-red-600' : 'text-gray-600'}>
+                                  {(ctsScores[hand].detailedCoverage['index_middle'] || 0).toFixed(1)}%
+                                  {(ctsScores[hand].detailedCoverage['index_middle'] || 0) > 50 && ' ✓'}
+                                </span>
+                              </div>
+                              <div className="w-full bg-gray-200 rounded h-2">
+                                <div 
+                                  className={`h-2 rounded ${(ctsScores[hand].detailedCoverage['index_middle'] || 0) > 50 ? 'bg-red-500' : 'bg-blue-400'}`}
+                                  style={{ width: `${Math.min(ctsScores[hand].detailedCoverage['index_middle'] || 0, 100)}%` }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Middle (Most Important) */}
+                        <div className="border-l-4 border-blue-500 pl-3 bg-blue-50 -ml-4 pl-4 py-2">
+                          <div className="font-medium text-sm mb-2 flex items-center gap-2">
+                            Middle (Most Important):
+                            <span className="text-xs bg-blue-200 px-2 py-0.5 rounded">Key Indicator</span>
+                          </div>
+                          <div className="space-y-2">
+                            <div>
+                              <div className="flex justify-between text-xs mb-1">
+                                <span>Distal (tip):</span>
+                                <span className={(ctsScores[hand].detailedCoverage['middle_distal'] || 0) > 10 ? 'font-bold text-red-600' : 'text-gray-600'}>
+                                  {(ctsScores[hand].detailedCoverage['middle_distal'] || 0).toFixed(1)}%
+                                </span>
+                              </div>
+                              <div className="w-full bg-gray-200 rounded h-2">
+                                <div 
+                                  className={`h-2 rounded ${(ctsScores[hand].detailedCoverage['middle_distal'] || 0) > 10 ? 'bg-red-500' : 'bg-blue-400'}`}
+                                  style={{ width: `${Math.min(ctsScores[hand].detailedCoverage['middle_distal'] || 0, 100)}%` }}
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <div className="flex justify-between text-xs mb-1">
+                                <span>Middle phalanx:</span>
+                                <span className={(ctsScores[hand].detailedCoverage['middle_middle'] || 0) > 50 ? 'font-bold text-red-600' : 'text-gray-600'}>
+                                  {(ctsScores[hand].detailedCoverage['middle_middle'] || 0).toFixed(1)}%
+                                  {(ctsScores[hand].detailedCoverage['middle_middle'] || 0) > 50 && ' ✓'}
+                                </span>
+                              </div>
+                              <div className="w-full bg-gray-200 rounded h-2">
+                                <div 
+                                  className={`h-2 rounded ${(ctsScores[hand].detailedCoverage['middle_middle'] || 0) > 50 ? 'bg-red-500' : 'bg-blue-400'}`}
+                                  style={{ width: `${Math.min(ctsScores[hand].detailedCoverage['middle_middle'] || 0, 100)}%` }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
