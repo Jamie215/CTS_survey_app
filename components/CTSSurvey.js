@@ -594,6 +594,9 @@ const CTSSurveyApp = () => {
     const ctx = canvas.getContext('2d');
     const isLeft = hand === 'left';
     
+    // Capitalize first letter for key construction
+    const handCapitalized = hand.charAt(0).toUpperCase() + hand.slice(1);
+    
     // Draw hand outline first
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
@@ -618,8 +621,10 @@ const CTSSurveyApp = () => {
       
       // Draw each symptom type with different color
       ['tingling', 'numbness', 'pain'].forEach(symptomType => {
-        const frontKey = `${symptomType}Front${isLeft ? 'Left' : 'Right'}`;
+        const frontKey = `${symptomType}Front${handCapitalized}`;
         const drawings = handDiagramData[frontKey];
+        
+        console.log(`Rendering ${frontKey}:`, drawings ? `${drawings.length} points` : 'no data');
         
         if (drawings && drawings.length > 0) {
           ctx.strokeStyle = symptomColors[symptomType];
@@ -937,58 +942,58 @@ const CTSSurveyApp = () => {
                   <div key={hand} className="bg-white rounded-xl shadow-lg p-6 border-2 border-gray-200">
                     <h3 className="text-2xl font-bold mb-6 capitalize">{hand} Hand Assessment</h3>
                     
-                    {/* 1. MARKED AREAS FIRST */}
-                    <div className="bg-purple-50 p-6 rounded-lg mb-6 border-2 border-purple-300">
-                      <h4 className="font-semibold text-lg mb-4 text-purple-900">Your Marked Areas (Volar View)</h4>
-                      <div className="flex justify-center">
-                        <div className="space-y-3">
-                          <canvas
-                            ref={hand === 'left' ? resultsCanvasRefs.combinedLeft : resultsCanvasRefs.combinedRight}
-                            width={CANVAS_WIDTH}
-                            height={CANVAS_HEIGHT}
-                            className="border-2 border-purple-400 rounded-lg shadow-md"
-                          />
-                          <div className="flex gap-4 justify-center text-sm">
-                            <div className="flex items-center gap-2">
-                              <div className="w-4 h-4 rounded" style={{backgroundColor: 'rgba(255, 0, 255, 0.7)'}}></div>
-                              <span>Tingling</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <div className="w-4 h-4 rounded" style={{backgroundColor: 'rgba(0, 0, 255, 0.7)'}}></div>
-                              <span>Numbness</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <div className="w-4 h-4 rounded" style={{backgroundColor: 'rgba(255, 165, 0, 0.7)'}}></div>
-                              <span>Pain</span>
-                            </div>
-                          </div>
-                          <p className="text-xs text-gray-600 text-center italic">
-                            Color-coded symptoms overlaid on median nerve distribution (yellow/blue highlights)
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* 2. SCORE SECOND */}
+                    {/* SCORE WITH EMBEDDED CANVAS */}
                     <div className={`p-6 rounded-lg mb-6 ${
                       ctsScores[hand].alternativeScore.score === 2 ? 'bg-red-50 border-2 border-red-300' :
                       ctsScores[hand].alternativeScore.score === 1 ? 'bg-yellow-50 border-2 border-yellow-300' :
                       'bg-green-50 border-2 border-green-300'
                     }`}>
-                      <div className="flex items-center justify-between mb-4">
-                        <h4 className="font-semibold text-xl">CTS Score:</h4>
-                        <div className={`text-4xl font-bold ${
-                          ctsScores[hand].alternativeScore.score === 2 ? 'text-red-700' :
-                          ctsScores[hand].alternativeScore.score === 1 ? 'text-yellow-700' :
-                          'text-green-700'
-                        }`}>
-                          {ctsScores[hand].alternativeScore.score}
+                      <div className="flex gap-6">
+                        {/* Left: Canvas */}
+                        <div className="flex-shrink-0">
+                          <div className="space-y-2">
+                            <canvas
+                              ref={hand === 'left' ? resultsCanvasRefs.combinedLeft : resultsCanvasRefs.combinedRight}
+                              width={CANVAS_WIDTH}
+                              height={CANVAS_HEIGHT}
+                              className="border-2 border-gray-400 rounded-lg shadow-md"
+                              style={{width: '180px', height: '240px'}}
+                            />
+                            <div className="flex gap-2 justify-center text-xs">
+                              <div className="flex items-center gap-1">
+                                <div className="w-3 h-3 rounded" style={{backgroundColor: 'rgba(255, 0, 255, 0.7)'}}></div>
+                                <span>Tingling</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <div className="w-3 h-3 rounded" style={{backgroundColor: 'rgba(0, 0, 255, 0.7)'}}></div>
+                                <span>Numbness</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <div className="w-3 h-3 rounded" style={{backgroundColor: 'rgba(255, 165, 0, 0.7)'}}></div>
+                                <span>Pain</span>
+                              </div>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                      <div className="space-y-2">
-                        <p className="font-semibold text-lg">{ctsScores[hand].alternativeScore.level}</p>
-                        <p className="text-sm">{ctsScores[hand].alternativeScore.description}</p>
-                        <p className="text-sm mt-3 italic">{ctsScores[hand].alternativeScore.interpretation}</p>
+                        
+                        {/* Right: Score Info */}
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-4">
+                            <h4 className="font-semibold text-xl">CTS Score:</h4>
+                            <div className={`text-5xl font-bold ${
+                              ctsScores[hand].alternativeScore.score === 2 ? 'text-red-700' :
+                              ctsScores[hand].alternativeScore.score === 1 ? 'text-yellow-700' :
+                              'text-green-700'
+                            }`}>
+                              {ctsScores[hand].alternativeScore.score}
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <p className="font-semibold text-lg">{ctsScores[hand].alternativeScore.level}</p>
+                            <p className="text-sm">{ctsScores[hand].alternativeScore.description}</p>
+                            <p className="text-sm mt-3 italic">{ctsScores[hand].alternativeScore.interpretation}</p>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
@@ -1099,12 +1104,9 @@ const CTSSurveyApp = () => {
                           </div>
                         </div>
 
-                        {/* Middle (Most Important) */}
-                        <div className="border-l-4 border-blue-500 pl-4 bg-blue-50 -ml-6 pl-6 py-3">
-                          <h5 className="font-medium text-base mb-2 flex items-center gap-2">
-                            Middle Finger (Most Important):
-                            <span className="text-xs bg-blue-200 px-2 py-0.5 rounded">Key Indicator</span>
-                          </h5>
+                        {/* Middle Finger */}
+                        <div className="border-l-4 border-blue-400 pl-4">
+                          <h5 className="font-medium text-base mb-3">Middle Finger:</h5>
                           
                           {/* Middle Distal */}
                           <div className="mb-3">
