@@ -408,6 +408,7 @@ const CTSSurveyApp = () => {
     img.onload = () => {
       // Draw the image 1:1 - no scaling needed!
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    };
     
     img.onerror = () => {
       console.error('Failed to load hand image:', imagePath);
