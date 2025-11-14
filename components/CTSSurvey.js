@@ -45,6 +45,12 @@ const CTSSurveyApp = () => {
     painBackRight: useRef(null),
   };
 
+  // Refs for results display - combined symptom canvases
+  const resultsCanvasRefs = {
+    combinedLeft: useRef(null),
+    combinedRight: useRef(null),
+  };
+
   const diagnosticQuestions = [
     { id: 0, text: "Do you ever have numbness and tingling in your finger?", isScreening: true },
     { id: 1, text: "Do you wake up because of pain in your wrist?" },
@@ -279,71 +285,73 @@ const CTSSurveyApp = () => {
       console.warn('No SVG regions loaded for', handKey);
       return {
         medianDigitsAffected: 0,
-        detailedCoverage: {}
+        detailedCoverage: {},
+        coverageBySymptom: {}
       };
     }
 
-    // Track coverage for each region
+    // Track coverage for each region (max across tingling/numbness for scoring)
     const coverage = {};
     
-    // Only check tingling and numbness (not pain) for CTS assessment
-    ['tingling', 'numbness'].forEach(symptomType => {
+    // Track coverage by symptom type for detailed display
+    const coverageBySymptom = {
+      tingling: {},
+      numbness: {},
+      pain: {}
+    };
+    
+    // Check all symptom types for detailed display
+    ['tingling', 'numbness', 'pain'].forEach(symptomType => {
       const frontKey = `${symptomType}Front${hand}`;
       const frontData = handDiagramData[frontKey] || [];
       
-      // Check both distal AND middle phalanges for scoring
+      // Check both distal AND middle phalanges
       const requiredRegions = [
-        'thumb_distal',    // Thumb: any coverage of distal
-        'index_distal', 'index_middle',    // Index: distal and middle
-        'middle_distal', 'middle_middle'   // Middle: distal and middle
+        'thumb_distal',
+        'index_distal', 'index_middle',
+        'middle_distal', 'middle_middle'
       ];
       
       requiredRegions.forEach(regionName => {
         const regionData = regions[regionName];
-        if (!regionData) {
-          console.warn('Region not found:', regionName, 'in', handKey);
-          return;
-        }
+        if (!regionData) return;
         
         const regionCoverage = calculateRegionCoverage(frontData, regionData.path2D);
         
-        // Initialize or update coverage
-        if (!coverage[regionName]) {
-          coverage[regionName] = regionCoverage.percentage;
-        } else {
-          // Take the maximum coverage from either symptom type
-          coverage[regionName] = Math.max(coverage[regionName], regionCoverage.percentage);
+        // Store coverage by symptom type
+        coverageBySymptom[symptomType][regionName] = regionCoverage.percentage;
+        
+        // For scoring: only use tingling/numbness, take maximum
+        if (symptomType === 'tingling' || symptomType === 'numbness') {
+          if (!coverage[regionName]) {
+            coverage[regionName] = regionCoverage.percentage;
+          } else {
+            coverage[regionName] = Math.max(coverage[regionName], regionCoverage.percentage);
+          }
         }
       });
     });
 
-    // NEW SCORING LOGIC:
-    // Thumb: Affected if >0% of distal (some involvement)
-    // Index: Affected if (>50% of middle phalanx) OR (some distal involvement)
-    // Middle: Affected if (>50% of middle phalanx) OR (some distal involvement)
-    
+    // SCORING LOGIC (using tingling/numbness only):
     let affectedDigits = 0;
     
-    // Thumb: "some of the distal phalanx"
-    const thumbAffected = (coverage['thumb_distal'] || 0) > 10; // >10% threshold for "some"
+    const thumbAffected = (coverage['thumb_distal'] || 0) > 5;
     if (thumbAffected) affectedDigits++;
     
-    // Index: ">50% of middle phalanx and/or some of distal"
     const indexMiddle50 = (coverage['index_middle'] || 0) > 50;
-    const indexDistalSome = (coverage['index_distal'] || 0) > 10;
+    const indexDistalSome = (coverage['index_distal'] || 0) > 5;
     const indexAffected = indexMiddle50 || indexDistalSome;
     if (indexAffected) affectedDigits++;
     
-    // Middle: ">50% of middle phalanx and/or some of distal" (most important)
     const middleMiddle50 = (coverage['middle_middle'] || 0) > 50;
-    const middleDistalSome = (coverage['middle_distal'] || 0) > 10;
+    const middleDistalSome = (coverage['middle_distal'] || 0) > 5;
     const middleAffected = middleMiddle50 || middleDistalSome;
     if (middleAffected) affectedDigits++;
 
     return {
       medianDigitsAffected: affectedDigits,
       detailedCoverage: coverage,
-      // Add detail for display
+      coverageBySymptom: coverageBySymptom, // NEW: Detailed breakdown by symptom
       digitDetails: {
         thumb: { affected: thumbAffected, distal: coverage['thumb_distal'] || 0 },
         index: { affected: indexAffected, distal: coverage['index_distal'] || 0, middle: coverage['index_middle'] || 0 },
@@ -397,12 +405,6 @@ const CTSSurveyApp = () => {
     img.onload = () => {
       // Draw the image 1:1 - no scaling needed!
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-      // Only draw SVG region highlights on front view
-      if (!isBack && (Object.keys(svgRegions.leftFront).length > 0 || Object.keys(svgRegions.rightFront).length > 0)) {
-        drawSVGRegionsOverlay(canvas, isLeft);
-      }
-    };
     
     img.onerror = () => {
       console.error('Failed to load hand image:', imagePath);
@@ -417,36 +419,6 @@ const CTSSurveyApp = () => {
     img.src = imagePath;
   };
 
-  const drawSVGRegionsOverlay = (canvas, isLeft) => {
-    const handKey = isLeft ? 'leftFront' : 'rightFront';
-    const regions = svgRegions[handKey];
-    
-    if (!regions) return;
-
-    const ctx = canvas.getContext('2d');
-    
-    // Highlight only median nerve digits (thumb, index, middle) distal regions
-    const highlightRegions = ['thumb_distal', 'index_distal', 'middle_distal'];
-    
-    highlightRegions.forEach(regionName => {
-      const regionData = regions[regionName];
-      if (!regionData) return;
-      
-      // Color code: middle finger gets stronger highlight
-      const fillStyle = regionName === 'middle_distal' 
-        ? 'rgba(0, 0, 255, 0.15)'  // Stronger blue for middle
-        : 'rgba(255, 255, 0, 0.1)'; // Yellow for thumb/index
-      
-      ctx.fillStyle = fillStyle;
-      ctx.fill(regionData.path2D);
-      
-      // Optional: draw outline
-      ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
-      ctx.lineWidth = 1;
-      ctx.stroke(regionData.path2D);
-    });
-  };
-
   useEffect(() => {
     // Initialize all hand diagrams
     Object.entries(canvasRefs).forEach(([key, ref]) => {
@@ -457,6 +429,16 @@ const CTSSurveyApp = () => {
       }
     });
   }, [currentSection, svgRegions]);
+
+  // Render combined drawings on results page
+  useEffect(() => {
+    if (currentSection === 2 && ctsScores) {
+      setTimeout(() => {
+        renderCombinedDrawings(resultsCanvasRefs.combinedLeft, 'left');
+        renderCombinedDrawings(resultsCanvasRefs.combinedRight, 'right');
+      }, 100);
+    }
+  }, [currentSection, ctsScores]);
 
   const handleCanvasMouseDown = (e, canvasKey) => {
     const canvas = e.target;
@@ -572,6 +554,9 @@ const CTSSurveyApp = () => {
       setHighlightIncomplete(false);
       window.scrollTo(0, 0);
     }
+    if (currentSection === 2) {
+      return;
+    }
   };
 
   const exportData = () => {
@@ -593,6 +578,67 @@ const CTSSurveyApp = () => {
     a.href = url;
     a.download = `CTS_Survey_${participantId}.json`;
     a.click();
+  };
+
+  // Render combined symptoms on single canvas with color coding
+  const renderCombinedDrawings = (canvasRef, hand) => {
+    if (!canvasRef || !canvasRef.current) return;
+    
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const isLeft = hand === 'left';
+    
+    // Draw hand outline first
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    const img = new Image();
+    const imagePath = isLeft ? '/hands/hand_front_left.png' : '/hands/hand_front_right.png';
+    
+    img.onload = () => {
+      // Draw the image
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      
+      // Draw SVG region highlights
+      if (Object.keys(svgRegions.leftFront).length > 0 || Object.keys(svgRegions.rightFront).length > 0) {
+        drawSVGRegionsOverlay(canvas, isLeft);
+      }
+      
+      // Define colors for each symptom type
+      const symptomColors = {
+        tingling: 'rgba(255, 0, 255, 0.7)',    // Magenta
+        numbness: 'rgba(0, 0, 255, 0.7)',      // Blue
+        pain: 'rgba(255, 165, 0, 0.7)'         // Orange
+      };
+      
+      // Draw each symptom type with different color
+      ['tingling', 'numbness', 'pain'].forEach(symptomType => {
+        const frontKey = `${symptomType}Front${isLeft ? 'Left' : 'Right'}`;
+        const drawings = handDiagramData[frontKey];
+        
+        if (drawings && drawings.length > 0) {
+          ctx.strokeStyle = symptomColors[symptomType];
+          ctx.lineWidth = 12;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          
+          let isDrawing = false;
+          drawings.forEach(point => {
+            if (point.type === 'start') {
+              ctx.beginPath();
+              ctx.moveTo(point.x, point.y);
+              isDrawing = true;
+            } else if (point.type === 'draw' && isDrawing) {
+              ctx.lineTo(point.x, point.y);
+              ctx.stroke();
+            } else if (point.type === 'end') {
+              isDrawing = false;
+            }
+          });
+        }
+      });
+    };
+    
+    img.src = imagePath;
   };
 
   const getQuestionIndicator = (isAnswered) => {
@@ -868,18 +914,14 @@ const CTSSurveyApp = () => {
         return (
           <div className="space-y-8">
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-200">
-              <h2 className="text-2xl font-bold text-blue-800 mb-4 flex items-center gap-3">
-                Assessment Result
-              </h2>
-              <h4 className="font-bold text-lg mb-2 flex items-center gap-2">
-                <AlertCircle className="w-6 h-6" />
-                Important Note
-              </h4>
-              <p className="text-sm">
+              <h2 className="text-2xl font-bold text-blue-800 mb-4">Assessment Result</h2>
+              <div className="flex items-center gap-2 mb-2">
+                <AlertCircle className="w-5 h-5 text-blue-700" />
+                <h4 className="font-bold text-lg">Important Note</h4>
+              </div>
+              <p className="text-sm text-blue-700">
                 This assessment tool is for screening purposes only and should not replace professional medical diagnosis.
-                This scoring method counts how many median nerve digits (thumb, index, middle) show significant 
-                symptoms (&gt;50% coverage). If you have concerns about your symptoms, please consult with a healthcare 
-                provider for proper evaluation including nerve conduction studies if indicated.
+                If you have concerns about your symptoms, please consult with a healthcare provider for proper evaluation.
               </p>
             </div>
 
@@ -889,14 +931,46 @@ const CTSSurveyApp = () => {
                   <div key={hand} className="bg-white rounded-xl shadow-lg p-6 border-2 border-gray-200">
                     <h3 className="text-2xl font-bold mb-6 capitalize">{hand} Hand Assessment</h3>
                     
-                    {/* Score Display */}
+                    {/* 1. MARKED AREAS FIRST */}
+                    <div className="bg-purple-50 p-6 rounded-lg mb-6 border-2 border-purple-300">
+                      <h4 className="font-semibold text-lg mb-4 text-purple-900">Your Marked Areas (Volar View)</h4>
+                      <div className="flex justify-center">
+                        <div className="space-y-3">
+                          <canvas
+                            ref={hand === 'left' ? resultsCanvasRefs.combinedLeft : resultsCanvasRefs.combinedRight}
+                            width={CANVAS_WIDTH}
+                            height={CANVAS_HEIGHT}
+                            className="border-2 border-purple-400 rounded-lg shadow-md"
+                          />
+                          <div className="flex gap-4 justify-center text-sm">
+                            <div className="flex items-center gap-2">
+                              <div className="w-4 h-4 rounded" style={{backgroundColor: 'rgba(255, 0, 255, 0.7)'}}></div>
+                              <span>Tingling</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="w-4 h-4 rounded" style={{backgroundColor: 'rgba(0, 0, 255, 0.7)'}}></div>
+                              <span>Numbness</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="w-4 h-4 rounded" style={{backgroundColor: 'rgba(255, 165, 0, 0.7)'}}></div>
+                              <span>Pain</span>
+                            </div>
+                          </div>
+                          <p className="text-xs text-gray-600 text-center italic">
+                            Color-coded symptoms overlaid on median nerve distribution (yellow/blue highlights)
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 2. SCORE SECOND */}
                     <div className={`p-6 rounded-lg mb-6 ${
                       ctsScores[hand].alternativeScore.score === 2 ? 'bg-red-50 border-2 border-red-300' :
                       ctsScores[hand].alternativeScore.score === 1 ? 'bg-yellow-50 border-2 border-yellow-300' :
                       'bg-green-50 border-2 border-green-300'
                     }`}>
                       <div className="flex items-center justify-between mb-4">
-                        <h4 className="font-semibold text-xl">Score:</h4>
+                        <h4 className="font-semibold text-xl">CTS Score:</h4>
                         <div className={`text-4xl font-bold ${
                           ctsScores[hand].alternativeScore.score === 2 ? 'text-red-700' :
                           ctsScores[hand].alternativeScore.score === 1 ? 'text-yellow-700' :
@@ -912,105 +986,179 @@ const CTSSurveyApp = () => {
                       </div>
                     </div>
 
-                    {/* Coverage Details */}
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <h4 className="font-semibold mb-3">Median Nerve Digit Coverage:</h4>
-                      <p className="text-xs text-gray-600 mb-3">
-                        * Thumb: affected if &gt;10% distal coverage<br/>
-                        * Index/Middle: affected if &gt;50% middle phalanx OR &gt;10% distal
+                    {/* 3. DETAILED COVERAGE THIRD - BY SYMPTOM TYPE */}
+                    <div className="bg-gray-50 p-6 rounded-lg">
+                      <h4 className="font-semibold text-lg mb-4">Detailed Coverage by Symptom Type</h4>
+                      <p className="text-xs text-gray-600 mb-4">
+                        * Scoring uses <strong>tingling/numbness only</strong>: Thumb affected if &gt;5% distal; Index/Middle affected if &gt;50% middle phalanx OR &gt;5% distal
                       </p>
-                      <div className="space-y-4">
+                      
+                      {/* Iterate through regions */}
+                      <div className="space-y-6">
                         {/* Thumb */}
-                        <div className="border-l-4 border-red-300 pl-3">
-                          <div className="font-medium text-sm mb-2">Thumb:</div>
-                          <div>
-                            <div className="flex justify-between text-xs mb-1">
-                              <span>Distal (tip):</span>
-                              <span className={(ctsScores[hand].detailedCoverage['thumb_distal'] || 0) > 10 ? 'font-bold text-red-600' : 'text-gray-600'}>
-                                {(ctsScores[hand].detailedCoverage['thumb_distal'] || 0).toFixed(1)}%
-                                {(ctsScores[hand].detailedCoverage['thumb_distal'] || 0) > 10 && ' ✓'}
-                              </span>
-                            </div>
-                            <div className="w-full bg-gray-200 rounded h-2">
-                              <div 
-                                className={`h-2 rounded ${(ctsScores[hand].detailedCoverage['thumb_distal'] || 0) > 10 ? 'bg-red-500' : 'bg-blue-400'}`}
-                                style={{ width: `${Math.min(ctsScores[hand].detailedCoverage['thumb_distal'] || 0, 100)}%` }}
-                              />
-                            </div>
+                        <div className="border-l-4 border-red-400 pl-4">
+                          <h5 className="font-medium text-base mb-3">Thumb (Distal):</h5>
+                          <div className="space-y-2">
+                            {['tingling', 'numbness', 'pain'].map(symptom => {
+                              const coverage = ctsScores[hand].alternativeScore.coverageBySymptom?.[symptom]?.['thumb_distal'] || 0;
+                              const isSignificant = coverage > 5;
+                              return (
+                                <div key={symptom}>
+                                  <div className="flex justify-between text-sm mb-1">
+                                    <span className="capitalize">{symptom}:</span>
+                                    <span className={isSignificant ? 'font-bold text-red-600' : 'text-gray-600'}>
+                                      {coverage.toFixed(1)}%
+                                      {isSignificant && ' ✓'}
+                                    </span>
+                                  </div>
+                                  <div className="w-full bg-gray-200 rounded h-2">
+                                    <div 
+                                      className={`h-2 rounded ${
+                                        symptom === 'tingling' ? 'bg-purple-500' :
+                                        symptom === 'numbness' ? 'bg-blue-500' : 'bg-orange-500'
+                                      }`}
+                                      style={{ width: `${Math.min(coverage, 100)}%`, opacity: isSignificant ? 1 : 0.5 }}
+                                    />
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
 
                         {/* Index */}
-                        <div className="border-l-4 border-green-300 pl-3">
-                          <div className="font-medium text-sm mb-2">Index:</div>
-                          <div className="space-y-2">
-                            <div>
-                              <div className="flex justify-between text-xs mb-1">
-                                <span>Distal (tip):</span>
-                                <span className={(ctsScores[hand].detailedCoverage['index_distal'] || 0) > 10 ? 'font-bold text-red-600' : 'text-gray-600'}>
-                                  {(ctsScores[hand].detailedCoverage['index_distal'] || 0).toFixed(1)}%
-                                </span>
-                              </div>
-                              <div className="w-full bg-gray-200 rounded h-2">
-                                <div 
-                                  className={`h-2 rounded ${(ctsScores[hand].detailedCoverage['index_distal'] || 0) > 10 ? 'bg-red-500' : 'bg-blue-400'}`}
-                                  style={{ width: `${Math.min(ctsScores[hand].detailedCoverage['index_distal'] || 0, 100)}%` }}
-                                />
-                              </div>
+                        <div className="border-l-4 border-green-400 pl-4">
+                          <h5 className="font-medium text-base mb-3">Index Finger:</h5>
+                          
+                          {/* Index Distal */}
+                          <div className="mb-3">
+                            <p className="text-sm font-medium text-gray-700 mb-2">Distal (tip):</p>
+                            <div className="space-y-2">
+                              {['tingling', 'numbness', 'pain'].map(symptom => {
+                                const coverage = ctsScores[hand].alternativeScore.coverageBySymptom?.[symptom]?.['index_distal'] || 0;
+                                const isSignificant = coverage > 5;
+                                return (
+                                  <div key={symptom}>
+                                    <div className="flex justify-between text-sm mb-1">
+                                      <span className="capitalize">{symptom}:</span>
+                                      <span className={isSignificant ? 'font-bold text-red-600' : 'text-gray-600'}>
+                                        {coverage.toFixed(1)}%
+                                        {isSignificant && ' ✓'}
+                                      </span>
+                                    </div>
+                                    <div className="w-full bg-gray-200 rounded h-2">
+                                      <div 
+                                        className={`h-2 rounded ${
+                                          symptom === 'tingling' ? 'bg-purple-500' :
+                                          symptom === 'numbness' ? 'bg-blue-500' : 'bg-orange-500'
+                                        }`}
+                                        style={{ width: `${Math.min(coverage, 100)}%`, opacity: isSignificant ? 1 : 0.5 }}
+                                      />
+                                    </div>
+                                  </div>
+                                );
+                              })}
                             </div>
-                            <div>
-                              <div className="flex justify-between text-xs mb-1">
-                                <span>Middle phalanx:</span>
-                                <span className={(ctsScores[hand].detailedCoverage['index_middle'] || 0) > 50 ? 'font-bold text-red-600' : 'text-gray-600'}>
-                                  {(ctsScores[hand].detailedCoverage['index_middle'] || 0).toFixed(1)}%
-                                  {(ctsScores[hand].detailedCoverage['index_middle'] || 0) > 50 && ' ✓'}
-                                </span>
-                              </div>
-                              <div className="w-full bg-gray-200 rounded h-2">
-                                <div 
-                                  className={`h-2 rounded ${(ctsScores[hand].detailedCoverage['index_middle'] || 0) > 50 ? 'bg-red-500' : 'bg-blue-400'}`}
-                                  style={{ width: `${Math.min(ctsScores[hand].detailedCoverage['index_middle'] || 0, 100)}%` }}
-                                />
-                              </div>
+                          </div>
+
+                          {/* Index Middle */}
+                          <div>
+                            <p className="text-sm font-medium text-gray-700 mb-2">Middle phalanx:</p>
+                            <div className="space-y-2">
+                              {['tingling', 'numbness', 'pain'].map(symptom => {
+                                const coverage = ctsScores[hand].alternativeScore.coverageBySymptom?.[symptom]?.['index_middle'] || 0;
+                                const isSignificant = coverage > 50;
+                                return (
+                                  <div key={symptom}>
+                                    <div className="flex justify-between text-sm mb-1">
+                                      <span className="capitalize">{symptom}:</span>
+                                      <span className={isSignificant ? 'font-bold text-red-600' : 'text-gray-600'}>
+                                        {coverage.toFixed(1)}%
+                                        {isSignificant && ' ✓'}
+                                      </span>
+                                    </div>
+                                    <div className="w-full bg-gray-200 rounded h-2">
+                                      <div 
+                                        className={`h-2 rounded ${
+                                          symptom === 'tingling' ? 'bg-purple-500' :
+                                          symptom === 'numbness' ? 'bg-blue-500' : 'bg-orange-500'
+                                        }`}
+                                        style={{ width: `${Math.min(coverage, 100)}%`, opacity: isSignificant ? 1 : 0.5 }}
+                                      />
+                                    </div>
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
                         </div>
 
                         {/* Middle (Most Important) */}
-                        <div className="border-l-4 border-blue-500 pl-3 bg-blue-50 -ml-4 pl-4 py-2">
-                          <div className="font-medium text-sm mb-2 flex items-center gap-2">
-                            Middle (Most Important):
+                        <div className="border-l-4 border-blue-500 pl-4 bg-blue-50 -ml-6 pl-6 py-3">
+                          <h5 className="font-medium text-base mb-2 flex items-center gap-2">
+                            Middle Finger (Most Important):
                             <span className="text-xs bg-blue-200 px-2 py-0.5 rounded">Key Indicator</span>
-                          </div>
-                          <div className="space-y-2">
-                            <div>
-                              <div className="flex justify-between text-xs mb-1">
-                                <span>Distal (tip):</span>
-                                <span className={(ctsScores[hand].detailedCoverage['middle_distal'] || 0) > 10 ? 'font-bold text-red-600' : 'text-gray-600'}>
-                                  {(ctsScores[hand].detailedCoverage['middle_distal'] || 0).toFixed(1)}%
-                                </span>
-                              </div>
-                              <div className="w-full bg-gray-200 rounded h-2">
-                                <div 
-                                  className={`h-2 rounded ${(ctsScores[hand].detailedCoverage['middle_distal'] || 0) > 10 ? 'bg-red-500' : 'bg-blue-400'}`}
-                                  style={{ width: `${Math.min(ctsScores[hand].detailedCoverage['middle_distal'] || 0, 100)}%` }}
-                                />
-                              </div>
+                          </h5>
+                          
+                          {/* Middle Distal */}
+                          <div className="mb-3">
+                            <p className="text-sm font-medium text-gray-700 mb-2">Distal (tip):</p>
+                            <div className="space-y-2">
+                              {['tingling', 'numbness', 'pain'].map(symptom => {
+                                const coverage = ctsScores[hand].alternativeScore.coverageBySymptom?.[symptom]?.['middle_distal'] || 0;
+                                const isSignificant = coverage > 5;
+                                return (
+                                  <div key={symptom}>
+                                    <div className="flex justify-between text-sm mb-1">
+                                      <span className="capitalize">{symptom}:</span>
+                                      <span className={isSignificant ? 'font-bold text-red-600' : 'text-gray-600'}>
+                                        {coverage.toFixed(1)}%
+                                        {isSignificant && ' ✓'}
+                                      </span>
+                                    </div>
+                                    <div className="w-full bg-gray-200 rounded h-2">
+                                      <div 
+                                        className={`h-2 rounded ${
+                                          symptom === 'tingling' ? 'bg-purple-500' :
+                                          symptom === 'numbness' ? 'bg-blue-500' : 'bg-orange-500'
+                                        }`}
+                                        style={{ width: `${Math.min(coverage, 100)}%`, opacity: isSignificant ? 1 : 0.5 }}
+                                      />
+                                    </div>
+                                  </div>
+                                );
+                              })}
                             </div>
-                            <div>
-                              <div className="flex justify-between text-xs mb-1">
-                                <span>Middle phalanx:</span>
-                                <span className={(ctsScores[hand].detailedCoverage['middle_middle'] || 0) > 50 ? 'font-bold text-red-600' : 'text-gray-600'}>
-                                  {(ctsScores[hand].detailedCoverage['middle_middle'] || 0).toFixed(1)}%
-                                  {(ctsScores[hand].detailedCoverage['middle_middle'] || 0) > 50 && ' ✓'}
-                                </span>
-                              </div>
-                              <div className="w-full bg-gray-200 rounded h-2">
-                                <div 
-                                  className={`h-2 rounded ${(ctsScores[hand].detailedCoverage['middle_middle'] || 0) > 50 ? 'bg-red-500' : 'bg-blue-400'}`}
-                                  style={{ width: `${Math.min(ctsScores[hand].detailedCoverage['middle_middle'] || 0, 100)}%` }}
-                                />
-                              </div>
+                          </div>
+
+                          {/* Middle Middle */}
+                          <div>
+                            <p className="text-sm font-medium text-gray-700 mb-2">Middle phalanx:</p>
+                            <div className="space-y-2">
+                              {['tingling', 'numbness', 'pain'].map(symptom => {
+                                const coverage = ctsScores[hand].alternativeScore.coverageBySymptom?.[symptom]?.['middle_middle'] || 0;
+                                const isSignificant = coverage > 50;
+                                return (
+                                  <div key={symptom}>
+                                    <div className="flex justify-between text-sm mb-1">
+                                      <span className="capitalize">{symptom}:</span>
+                                      <span className={isSignificant ? 'font-bold text-red-600' : 'text-gray-600'}>
+                                        {coverage.toFixed(1)}%
+                                        {isSignificant && ' ✓'}
+                                      </span>
+                                    </div>
+                                    <div className="w-full bg-gray-200 rounded h-2">
+                                      <div 
+                                        className={`h-2 rounded ${
+                                          symptom === 'tingling' ? 'bg-purple-500' :
+                                          symptom === 'numbness' ? 'bg-blue-500' : 'bg-orange-500'
+                                        }`}
+                                        style={{ width: `${Math.min(coverage, 100)}%`, opacity: isSignificant ? 1 : 0.5 }}
+                                      />
+                                    </div>
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
                         </div>
@@ -1022,7 +1170,7 @@ const CTSSurveyApp = () => {
             )}
           </div>
         );
-      
+
       default:
         return null;
     }
@@ -1069,7 +1217,7 @@ const CTSSurveyApp = () => {
 
             {/* Navigation */}
             <div className={`flex ${currentSection === 0 ? 'justify-end' : 'justify-between'} mt-12 pt-8 border-t border-gray-200`}>
-              {currentSection > 0 && (
+              {currentSection > 0 && currentSection !== 2 && (
                 <button
                   onClick={handlePreviousSection}
                   className="flex items-center gap-3 px-8 py-4 rounded-xl font-semibold bg-gray-600 text-white hover:bg-gray-700"
@@ -1088,8 +1236,14 @@ const CTSSurveyApp = () => {
                       : 'bg-blue-600 text-white hover:bg-blue-700'
                   }`}
                 >
-                  {currentSection === 1 ? 'Calculate CTS Scores' : currentSection === 2 ? 'Complete' : 'Next'}
+                  {currentSection === 1 ? 'Complete' : 'Next'}
                   <ChevronRight className="w-5 h-5" />
+                </button>
+              )}
+
+              {currentSection === 2 && (
+                <button onClick={exportData}>
+                  <Download /> Download Results
                 </button>
               )}
             </div>
