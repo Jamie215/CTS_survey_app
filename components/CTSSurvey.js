@@ -81,7 +81,12 @@ const CTSSurveyApp = () => {
         throw new Error('SVG parsing failed: ' + parserError.textContent);
       }
       
-      const paths = svgDoc.querySelectorAll('path[inkscape\\:label]');
+      const paths = svgDoc.querySelectorAll('path');
+      paths.forEach(path => {
+        let label = path.getAttribute('inkscape:label') || 
+                    path.getAttributeNS('http://www.inkscape.org/namespaces/inkscape', 'label') ||
+                    path.getAttribute('id');
+      });
       
       if (paths.length === 0) {
         throw new Error('No labeled paths found in SVG. Make sure paths have inkscape:label attributes.');
