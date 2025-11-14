@@ -4,6 +4,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Download, Hand, Check, AlertCircle } from 'lucide-react';
 
 const CTSSurveyApp = () => {
+  // Canvas dimensions - maintain SVG aspect ratio to prevent distortion
+  const CANVAS_WIDTH = 300;
+  const SVG_HAND_WIDTH = 1048.5; // Half of 2097
+  const SVG_HEIGHT = 847;
+  const SVG_ASPECT_RATIO = SVG_HAND_WIDTH / SVG_HEIGHT; // ~1.238
+  const CANVAS_HEIGHT = Math.round(CANVAS_WIDTH / SVG_ASPECT_RATIO); // ~242
+  
   const [currentSection, setCurrentSection] = useState(0);
   const [participantId] = useState(`CTS-${Date.now()}`);
   const [diagnosticAnswers, setDiagnosticAnswers] = useState({});
@@ -103,15 +110,17 @@ const CTSSurveyApp = () => {
       const leftRegions = {};
       const rightRegions = {};
       
-      // SVG is 2097x847, canvas is 300x400
-      // Each hand in SVG is ~1048.5px wide (2097/2)
-      const svgHandWidth = 1048.5;
-      const svgHeight = 847;
-      const canvasWidth = 300;
-      const canvasHeight = 400;
+      // Use uniform scale to prevent distortion
+      const scale = CANVAS_WIDTH / SVG_HAND_WIDTH;
+      const scaleX = scale;
+      const scaleY = scale;
       
-      const scaleX = canvasWidth / svgHandWidth;
-      const scaleY = canvasHeight / svgHeight;
+      console.log('SVG Scaling:', { 
+        svgSize: `${SVG_HAND_WIDTH}×${SVG_HEIGHT}`,
+        canvasSize: `${CANVAS_WIDTH}×${CANVAS_HEIGHT}`,
+        scale: scale.toFixed(4),
+        aspectRatio: SVG_ASPECT_RATIO.toFixed(3)
+      });
       
       paths.forEach(path => {
         const label = path.getAttribute('inkscape:label');
@@ -124,7 +133,8 @@ const CTSSurveyApp = () => {
           
           if (isLeft || isRight) {
             // Scale and translate the path
-            const scaledPath = scaleSVGPath(d, scaleX, scaleY, isRight ? svgHandWidth : 0);
+            const offsetX = isRight ? SVG_HAND_WIDTH : 0;
+            const scaledPath = scaleSVGPath(d, scaleX, scaleY, offsetX);
             const path2D = new Path2D(scaledPath);
             
             // Remove _L or _R suffix
@@ -163,7 +173,7 @@ const CTSSurveyApp = () => {
     }
   };
 
-  // Scale SVG path to canvas size
+  // Scale SVG path to canvas size - FIXED for proper right hand scaling
   const scaleSVGPath = (pathData, scaleX, scaleY, offsetX = 0) => {
     // Track position in path string and current command
     let result = '';
@@ -275,15 +285,15 @@ const CTSSurveyApp = () => {
   };
 
   // Calculate coverage of a region
-  const calculateRegionCoverage = (drawings, regionPath, canvasWidth = 300, canvasHeight = 400) => {
+  const calculateRegionCoverage = (drawings, regionPath) => {
     if (!drawings || drawings.length === 0) {
       return { percentage: 0, coveredPixels: 0, totalPixels: 0 };
     }
 
     // Create canvas for the region
     const regionCanvas = document.createElement('canvas');
-    regionCanvas.width = canvasWidth;
-    regionCanvas.height = canvasHeight;
+    regionCanvas.width = CANVAS_WIDTH;
+    regionCanvas.height = CANVAS_HEIGHT;
     const regionCtx = regionCanvas.getContext('2d');
     
     // Fill the region
@@ -291,7 +301,7 @@ const CTSSurveyApp = () => {
     regionCtx.fill(regionPath);
     
     // Count region pixels
-    const regionImageData = regionCtx.getImageData(0, 0, canvasWidth, canvasHeight);
+    const regionImageData = regionCtx.getImageData(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     const regionPixels = regionImageData.data;
     
     let totalRegionPixels = 0;
@@ -307,8 +317,8 @@ const CTSSurveyApp = () => {
     
     // Create canvas for drawings
     const drawingCanvas = document.createElement('canvas');
-    drawingCanvas.width = canvasWidth;
-    drawingCanvas.height = canvasHeight;
+    drawingCanvas.width = CANVAS_WIDTH;
+    drawingCanvas.height = CANVAS_HEIGHT;
     const drawingCtx = drawingCanvas.getContext('2d');
     
     // Replay drawings
@@ -332,7 +342,7 @@ const CTSSurveyApp = () => {
     });
     
     // Count overlap
-    const drawingImageData = drawingCtx.getImageData(0, 0, canvasWidth, canvasHeight);
+    const drawingImageData = drawingCtx.getImageData(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     const drawingPixels = drawingImageData.data;
     
     let overlapPixels = 0;
@@ -859,8 +869,8 @@ const CTSSurveyApp = () => {
                       <p className="mb-4 font-bold text-lg">Left Hand</p>
                       <canvas
                         ref={canvasRefs[`${symptom.type}FrontLeft`]}
-                        width={300}
-                        height={400}
+                        width={CANVAS_WIDTH}
+                        height={CANVAS_HEIGHT}
                         className="border-2 border-gray-300 rounded-lg cursor-crosshair shadow-md hover:shadow-lg"
                         onMouseDown={(e) => handleCanvasMouseDown(e, `${symptom.type}FrontLeft`)}
                         onMouseMove={(e) => handleCanvasMouseMove(e, `${symptom.type}FrontLeft`)}
@@ -878,8 +888,8 @@ const CTSSurveyApp = () => {
                       <p className="mb-4 font-bold text-lg">Right Hand</p>
                       <canvas
                         ref={canvasRefs[`${symptom.type}FrontRight`]}
-                        width={300}
-                        height={400}
+                        width={CANVAS_WIDTH}
+                        height={CANVAS_HEIGHT}
                         className="border-2 border-gray-300 rounded-lg cursor-crosshair shadow-md hover:shadow-lg"
                         onMouseDown={(e) => handleCanvasMouseDown(e, `${symptom.type}FrontRight`)}
                         onMouseMove={(e) => handleCanvasMouseMove(e, `${symptom.type}FrontRight`)}
@@ -904,8 +914,8 @@ const CTSSurveyApp = () => {
                       <p className="mb-4 font-bold text-lg">Left Hand</p>
                       <canvas
                         ref={canvasRefs[`${symptom.type}BackLeft`]}
-                        width={300}
-                        height={400}
+                        width={CANVAS_WIDTH}
+                        height={CANVAS_HEIGHT}
                         className="border-2 border-gray-300 rounded-lg cursor-crosshair shadow-md hover:shadow-lg"
                         onMouseDown={(e) => handleCanvasMouseDown(e, `${symptom.type}BackLeft`)}
                         onMouseMove={(e) => handleCanvasMouseMove(e, `${symptom.type}BackLeft`)}
@@ -923,8 +933,8 @@ const CTSSurveyApp = () => {
                       <p className="mb-4 font-bold text-lg">Right Hand</p>
                       <canvas
                         ref={canvasRefs[`${symptom.type}BackRight`]}
-                        width={300}
-                        height={400}
+                        width={CANVAS_WIDTH}
+                        height={CANVAS_HEIGHT}
                         className="border-2 border-gray-300 rounded-lg cursor-crosshair shadow-md hover:shadow-lg"
                         onMouseDown={(e) => handleCanvasMouseDown(e, `${symptom.type}BackRight`)}
                         onMouseMove={(e) => handleCanvasMouseMove(e, `${symptom.type}BackRight`)}
