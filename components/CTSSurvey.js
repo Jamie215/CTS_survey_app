@@ -9,7 +9,20 @@ const CTSSurveyApp = () => {
   const CANVAS_HEIGHT = 400;
   
   const [currentSection, setCurrentSection] = useState(0);
-  const [participantId, setParticipantId] = useState('');
+  const [participantId] = useState(() => {
+    if (typeof window === 'undefined') {
+      return 'CTS-PENDING';
+    }
+    return `CTS-${Date.now()}`;
+  });
+
+  useEffect(() => {
+    // Generate actual ID only on client
+    if (participantID === 'CTS-PENDING') {
+      setParticipantId(`CTS-${Date.now()}`);
+    }
+  }, []);
+  
   const [diagnosticAnswers, setDiagnosticAnswers] = useState({});
   const [diagnosticEase, setDiagnosticEase] = useState('');
   const [diagnosticComments, setDiagnosticComments] = useState('');
@@ -69,9 +82,8 @@ const CTSSurveyApp = () => {
     { id: 2, title: "Results" },
   ];
 
-  // Generate ID & load SVG regions on mount
+  // Load SVG regions on mount
   useEffect(() => {
-    setParticipantId(`CTS-${Date.now()}`);
     loadSVGRegions();
   }, []);
 
