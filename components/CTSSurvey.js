@@ -930,21 +930,22 @@ const CTSSurveyApp = () => {
                   </label>
                 ))}
               </div>
-            </div>
 
-            <div>
-                <label className="block text-lg font-semibold text-gray-800 mb-3">
-                  If you have any comments on how to improve the hand diagrams, please write them below:
-                </label>
-                <textarea
-                  value={diagramComments}
-                  onChange={(e) => setDiagramComments(e.target.value)}
-                  rows={4}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
-                  placeholder="Your feedback helps us improve the hand diagrams!"
-                />
+              <div>
+                  <label className="block text-lg font-semibold text-gray-800 mb-3">
+                    If you have any comments on how to improve the hand diagrams, please write them below:
+                  </label>
+                  <textarea
+                    value={diagramComments}
+                    onChange={(e) => setDiagramComments(e.target.value)}
+                    rows={4}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+                    placeholder="Your feedback helps us improve the hand diagrams!"
+                  />
+              </div>
             </div>
           </div>
+
         );
       
       case 2:
