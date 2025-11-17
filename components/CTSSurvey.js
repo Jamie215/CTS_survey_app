@@ -9,7 +9,7 @@ const CTSSurveyApp = () => {
   const CANVAS_HEIGHT = 400;
   
   const [currentSection, setCurrentSection] = useState(0);
-  const [participantId] = useState(`CTS-${Date.now()}`);
+  const [participantId, setParticipantId] = useState('');
   const [diagnosticAnswers, setDiagnosticAnswers] = useState({});
   const [diagnosticEase, setDiagnosticEase] = useState('');
   const [diagnosticComments, setDiagnosticComments] = useState('');
@@ -69,8 +69,9 @@ const CTSSurveyApp = () => {
     { id: 2, title: "Results" },
   ];
 
-  // Load SVG regions on mount
+  // Generate ID & load SVG regions on mount
   useEffect(() => {
+    setParticipantId(`CTS-${Date.now()}`);
     loadSVGRegions();
   }, []);
 
