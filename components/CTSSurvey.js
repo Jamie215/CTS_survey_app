@@ -1126,7 +1126,7 @@ const analyzeSymptomDistribution = (hand) => {
                       <div className="space-y-6">
                         {/* Thumb */}
                         <div className="border-l-4 border-red-400 pl-4">
-                          <h5 className="font-medium text-base mb-3">Thumb (Distal): {ctsScores[hand].combinedCoverage['thumb_distal']}</h5>
+                          <h5 className="font-medium text-base mb-3">Thumb (Distal): </h5>
                           <div className="space-y-2">
                             {['tingling', 'numbness', 'pain'].map(symptom => {
                               const coverage = ctsScores[hand].MNDSScore.coverageBySymptom?.[symptom]?.['thumb_distal'] || 0;
@@ -1161,7 +1161,7 @@ const analyzeSymptomDistribution = (hand) => {
                           
                           {/* Index Distal */}
                           <div className="mb-3">
-                            <p className="text-sm font-medium text-gray-900 mb-2">Distal Phalanx: {ctsScores[hand].combinedCoverage['index_distal']}</p>
+                            <p className="text-sm font-medium text-gray-900 mb-2">Distal Phalanx:</p>
                             <div className="space-y-2">
                               {['tingling', 'numbness', 'pain'].map(symptom => {
                                 const coverage = ctsScores[hand].MNDSScore.coverageBySymptom?.[symptom]?.['index_distal'] || 0;
@@ -1192,7 +1192,7 @@ const analyzeSymptomDistribution = (hand) => {
 
                           {/* Index Middle */}
                           <div>
-                            <p className="text-sm font-medium text-gray-900 mb-2">Middle Phalanx: {ctsScores[hand].combinedCoverage['index_middle']}</p>
+                            <p className="text-sm font-medium text-gray-900 mb-2">Middle Phalanx:</p>
                             <div className="space-y-2">
                               {['tingling', 'numbness', 'pain'].map(symptom => {
                                 const coverage = ctsScores[hand].MNDSScore.coverageBySymptom?.[symptom]?.['index_middle'] || 0;
@@ -1228,7 +1228,7 @@ const analyzeSymptomDistribution = (hand) => {
                           
                           {/* Middle Distal */}
                           <div className="mb-3">
-                            <p className="text-sm font-medium text-gray-900 mb-2">Distal Phalanx: {ctsScores[hand].combinedCoverage['middle_distal']}</p>
+                            <p className="text-sm font-medium text-gray-900 mb-2">Distal Phalanx:</p>
                             <div className="space-y-2">
                               {['tingling', 'numbness', 'pain'].map(symptom => {
                                 const coverage = ctsScores[hand].MNDSScore.coverageBySymptom?.[symptom]?.['middle_distal'] || 0;
@@ -1259,7 +1259,7 @@ const analyzeSymptomDistribution = (hand) => {
 
                           {/* Middle Middle */}
                           <div>
-                            <p className="text-sm font-medium text-gray-700 mb-2">Middle phalanx: {ctsScores[hand].combinedCoverage['middle_middle']}</p>
+                            <p className="text-sm font-medium text-gray-700 mb-2">Middle phalanx:</p>
                             <div className="space-y-2">
                               {['tingling', 'numbness', 'pain'].map(symptom => {
                                 const coverage = ctsScores[hand].MNDSScore.coverageBySymptom?.[symptom]?.['middle_middle'] || 0;
