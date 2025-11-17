@@ -756,7 +756,6 @@ const CTSSurveyApp = () => {
             <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 space-y-6">
               <div className={`${highlightIncomplete && diagnosticEase === '' ? 'bg-red-50 border-red-500 border-2 rounded-lg p-4' : ''}`}>
                 <p className="font-semibold mb-4 text-lg flex items-center gap-3">
-                  {getQuestionIndicator(diagnosticEase !== '')}
                   <span>Was it easy to answer these questions about your hand symptoms?</span>
                 </p>
                 <div className="flex flex-wrap gap-6">
@@ -916,7 +915,6 @@ const CTSSurveyApp = () => {
 
             <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
               <p className="font-semibold mb-4 text-lg flex items-center gap-3">
-                {getQuestionIndicator(diagramEase !== '')}
                 <span>Was it easy to answer to mark the diagrams?</span>
               </p>
               <div className="flex flex-wrap gap-6">
