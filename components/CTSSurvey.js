@@ -179,7 +179,90 @@ const CTSSurveyApp = () => {
     }
   };
 
-  // Calculate coverage of a region
+  // Calculate combined coverage of a region
+  const calculateCombinedRegionCoverage = (allDrawings, regionPath) => {
+    const flattenedDrawings = allDrawings.flat().filter(d => d);
+    if (flattenedDrawings.length === 0) {
+    return { percentage: 0, coveredPixels: 0, totalPixels: 0 };
+  }
+
+    // Create canvas for the region
+    const regionCanvas = document.createElement('canvas');
+    regionCanvas.width = CANVAS_WIDTH;
+    regionCanvas.height = CANVAS_HEIGHT;
+    const regionCtx = regionCanvas.getContext('2d');
+    
+    // Fill the region
+    regionCtx.fillStyle = 'white';
+    regionCtx.fill(regionPath);
+    
+    // Count region pixels
+    const regionImageData = regionCtx.getImageData(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    const regionPixels = regionImageData.data;
+    
+    let totalRegionPixels = 0;
+    for (let i = 0; i < regionPixels.length; i += 4) {
+      if (regionPixels[i] > 200) {
+        totalRegionPixels++;
+      }
+    }
+    
+    if (totalRegionPixels === 0) {
+      return { percentage: 0, coveredPixels: 0, totalPixels: 0 };
+    }
+    
+    // Create canvas for drawings
+    const drawingCanvas = document.createElement('canvas');
+    drawingCanvas.width = CANVAS_WIDTH;
+    drawingCanvas.height = CANVAS_HEIGHT;
+    const drawingCtx = drawingCanvas.getContext('2d');
+    
+    // Replay drawings
+    drawingCtx.strokeStyle = 'red';
+    drawingCtx.lineWidth = 12;
+    drawingCtx.lineCap = 'round';
+    drawingCtx.lineJoin = 'round';
+    
+    let isDrawing = false;
+    flattenedDrawings.forEach(point => {
+      if (point.type === 'start') {
+        drawingCtx.beginPath();
+        drawingCtx.moveTo(point.x, point.y);
+        isDrawing = true;
+      } else if (point.type === 'draw' && isDrawing) {
+        drawingCtx.lineTo(point.x, point.y);
+        drawingCtx.stroke();
+      } else if (point.type === 'end') {
+        isDrawing = false;
+      }
+    });
+    
+    // Count overlap
+    const drawingImageData = drawingCtx.getImageData(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    const drawingPixels = drawingImageData.data;
+    
+    let overlapPixels = 0;
+    for (let i = 0; i < regionPixels.length; i += 4) {
+      const isInRegion = regionPixels[i] > 200;
+      const isDrawn = drawingPixels[i] > 50;
+      
+      if (isInRegion && isDrawn) {
+        overlapPixels++;
+      }
+    }
+    
+    const coveragePercentage = totalRegionPixels > 0 
+      ? (overlapPixels / totalRegionPixels) * 100 
+      : 0;
+    
+    return {
+      percentage: coveragePercentage,
+      coveredPixels: overlapPixels,
+      totalPixels: totalRegionPixels
+    };
+  };
+
+  // Calculate coverage of a region (single symptom)
   const calculateRegionCoverage = (drawings, regionPath) => {
     if (!drawings || drawings.length === 0) {
       return { percentage: 0, coveredPixels: 0, totalPixels: 0 };
@@ -283,88 +366,105 @@ const CTSSurveyApp = () => {
     };
   };
 
-  const analyzeSymptomDistribution = (hand) => {
-    const handKey = hand === 'Left' ? 'leftFront' : 'rightFront';
-    const regions = svgRegions[handKey];
-    
-    if (!regions || Object.keys(regions).length === 0) {
-      console.warn('No SVG regions loaded for', handKey);
-      return {
-        medianDigitsAffected: 0,
-        detailedCoverage: {},
-        coverageBySymptom: {}
-      };
-    }
-
-    // Track coverage for each region (max across tingling/numbness for scoring)
-    const coverage = {};
-    
-    // Track coverage by symptom type for detailed display
-    const coverageBySymptom = {
-      tingling: {},
-      numbness: {},
-      pain: {}
-    };
-    
-    // Check all symptom types for detailed display
-    ['tingling', 'numbness', 'pain'].forEach(symptomType => {
-      const frontKey = `${symptomType}Front${hand}`;
-      const frontData = handDiagramData[frontKey] || [];
-      
-      // Check both distal AND middle phalanges
-      const requiredRegions = [
-        'thumb_distal',
-        'index_distal', 'index_middle',
-        'middle_distal', 'middle_middle'
-      ];
-      
-      requiredRegions.forEach(regionName => {
-        const regionData = regions[regionName];
-        if (!regionData) return;
-        
-        const regionCoverage = calculateRegionCoverage(frontData, regionData.path2D);
-        
-        // Store coverage by symptom type
-        coverageBySymptom[symptomType][regionName] = regionCoverage.percentage;
-        
-        // For scoring: only use tingling/numbness, take maximum (TODO: revisit this)
-        if (symptomType === 'tingling' || symptomType === 'numbness') {
-          if (!coverage[regionName]) {
-            coverage[regionName] = regionCoverage.percentage;
-          } else {
-            coverage[regionName] = Math.max(coverage[regionName], regionCoverage.percentage);
-          }
-        }
-      });
-    });
-
-    // SCORING LOGIC (using tingling/numbness only):
-    let affectedDigits = 0;
-    
-    const thumbAffected = (coverage['thumb_distal'] || 0) > 5;
-    if (thumbAffected) affectedDigits++;
-    
-    const indexMiddle50 = (coverage['index_middle'] || 0) > 50;
-    const indexDistalSome = (coverage['index_distal'] || 0) > 5;
-    const indexAffected = indexMiddle50 || indexDistalSome;
-    if (indexAffected) affectedDigits++;
-    
-    const middleMiddle50 = (coverage['middle_middle'] || 0) > 50;
-    const middleDistalSome = (coverage['middle_distal'] || 0) > 5;
-    const middleAffected = middleMiddle50 || middleDistalSome;
-    if (middleAffected) affectedDigits++;
-
+const analyzeSymptomDistribution = (hand) => {
+  const handKey = hand === 'Left' ? 'leftFront' : 'rightFront';
+  const regions = svgRegions[handKey];
+  
+  if (!regions || Object.keys(regions).length === 0) {
+    console.warn('No SVG regions loaded for', handKey);
     return {
-      medianDigitsAffected: affectedDigits,
-      detailedCoverage: coverage,
-      coverageBySymptom: coverageBySymptom, // NEW: Detailed breakdown by symptom
-      digitDetails: {
-        thumb: { affected: thumbAffected, distal: coverage['thumb_distal'] || 0 },
-        index: { affected: indexAffected, distal: coverage['index_distal'] || 0, middle: coverage['index_middle'] || 0 },
-        middle: { affected: middleAffected, distal: coverage['middle_distal'] || 0, middle: coverage['middle_middle'] || 0 }
-      }
+      medianDigitsAffected: 0,
+      detailedCoverage: {},
+      coverageBySymptom: {}
     };
+  }
+
+  // Track combined coverage for each region (using all three symptom types)
+  const coverage = {};
+  
+  // Track coverage by symptom type for detailed display
+  const coverageBySymptom = {
+    tingling: {},
+    numbness: {},
+    pain: {}
   };
+  
+  // Calculate individual symptom coverage for display
+  ['tingling', 'numbness', 'pain'].forEach(symptomType => {
+    const frontKey = `${symptomType}Front${hand}`;
+    const frontData = handDiagramData[frontKey] || [];
+    
+    const requiredRegions = [
+      'thumb_distal',
+      'index_distal', 'index_middle',
+      'middle_distal', 'middle_middle'
+    ];
+    
+    requiredRegions.forEach(regionName => {
+      const regionData = regions[regionName];
+      if (!regionData) return;
+      
+      // Calculate individual symptom coverage
+      const regionCoverage = calculateRegionCoverage(frontData, regionData.path2D);
+      
+      // Store coverage by symptom type (for display)
+      coverageBySymptom[symptomType][regionName] = regionCoverage.percentage;
+    });
+  });
+  
+  // SECOND PASS: Calculate COMBINED coverage for scoring
+  const requiredRegions = [
+    'thumb_distal',
+    'index_distal', 'index_middle',
+    'middle_distal', 'middle_middle'
+  ];
+  
+  requiredRegions.forEach(regionName => {
+    const regionData = regions[regionName];
+    if (!regionData) return;
+    
+    // Get drawings from ALL three symptom types
+    const tinglingData = handDiagramData[`tinglingFront${hand}`] || [];
+    const numbnessData = handDiagramData[`numbnessFront${hand}`] || [];
+    const painData = handDiagramData[`painFront${hand}`] || [];
+    
+    // Calculate combined coverage (unique pixels from all three)
+    const combinedCoverage = calculateCombinedRegionCoverage(
+      [tinglingData, numbnessData, painData],
+      regionData.path2D
+    );
+    
+    // Store combined coverage for scoring
+    coverage[regionName] = combinedCoverage.percentage;
+  });
+
+  // SCORING LOGIC (now using combined coverage from all three symptoms):
+  let affectedDigits = 0;
+  
+  const thumbAffected = (coverage['thumb_distal'] || 0) > 5;
+  if (thumbAffected) affectedDigits++;
+  
+  const indexMiddle50 = (coverage['index_middle'] || 0) > 50;
+  const indexDistalSome = (coverage['index_distal'] || 0) > 5;
+  const indexAffected = indexMiddle50 || indexDistalSome;
+  if (indexAffected) affectedDigits++;
+  
+  const middleMiddle50 = (coverage['middle_middle'] || 0) > 50;
+  const middleDistalSome = (coverage['middle_distal'] || 0) > 5;
+  const middleAffected = middleMiddle50 || middleDistalSome;
+  if (middleAffected) affectedDigits++;
+
+  return {
+    medianDigitsAffected: affectedDigits,
+    detailedCoverage: coverage,  // Now contains combined coverage
+    coverageBySymptom: coverageBySymptom,  // Still has individual breakdown
+    digitDetails: {
+      thumb: { affected: thumbAffected, distal: coverage['thumb_distal'] || 0 },
+      index: { affected: indexAffected, distal: coverage['index_distal'] || 0, middle: coverage['index_middle'] || 0 },
+      middle: { affected: middleAffected, distal: coverage['middle_distal'] || 0, middle: coverage['middle_middle'] || 0 }
+    }
+  };
+};
 
   // MNDS CTS scoring method
   const calculateMNDSScore = (symptoms) => {
@@ -771,7 +871,7 @@ const CTSSurveyApp = () => {
               </div>
 
               <div>
-                <label className="block text-lg font-semibold text-gray-800 mb-3">
+                <label className="block text-lg font-semibold text-gray-800 mt-3 mb-3">
                   If you have any comments on how to improve the questions, please write them below:
                 </label>
                 <textarea
