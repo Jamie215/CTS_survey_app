@@ -9,20 +9,17 @@ const CTSSurveyApp = () => {
   const CANVAS_HEIGHT = 400;
   
   const [currentSection, setCurrentSection] = useState(0);
-  const [participantId] = useState(() => {
-    if (typeof window === 'undefined') {
-      return 'CTS-PENDING';
-    }
-    return `CTS-${Date.now()}`;
-  });
+  const [isClient, setIsClient] = useState(false);
+  const [participantId, setParticipantId] = useState('');
 
   useEffect(() => {
-    // Generate actual ID only on client
-    if (participantId === 'CTS-PENDING') {
-      setParticipantId(`CTS-${Date.now()}`);
-    }
+    setIsClient(true);
+    setParticipantId(`CTS-${Date.now()}`);
   }, []);
-  
+
+  if (!isClient) {
+    return <div> Loading... </div>;
+  }
   const [diagnosticAnswers, setDiagnosticAnswers] = useState({});
   const [diagnosticEase, setDiagnosticEase] = useState('');
   const [diagnosticComments, setDiagnosticComments] = useState('');
