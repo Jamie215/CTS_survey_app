@@ -677,7 +677,7 @@ const CTSSurveyApp = () => {
             <div className="space-y-4">
               {diagnosticQuestions.map((question) => {
                 // Skip numbness/tingling questions if user didn't answer "Yes" to screening question
-                if (question.requiresNumbnessOrTingling && diagnosticAnswers[0] !== 'Yos') {
+                if (question.requiresNumbnessOrTingling && diagnosticAnswers[0] !== 'Yes') {
                   return null;
                 }
 
