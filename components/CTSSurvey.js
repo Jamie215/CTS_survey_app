@@ -412,7 +412,7 @@ const analyzeSymptomDistribution = (hand) => {
     });
   });
   
-  // SECOND PASS: Calculate COMBINED coverage for scoring
+  // Calculate combined coverage for scoring
   const requiredRegions = [
     'thumb_distal',
     'index_distal', 'index_middle',
@@ -438,7 +438,7 @@ const analyzeSymptomDistribution = (hand) => {
     coverage[regionName] = combinedCoverage.percentage;
   });
 
-  // SCORING LOGIC (now using combined coverage from all three symptoms):
+  // Scoring logic:
   let affectedDigits = 0;
   
   const thumbAffected = (coverage['thumb_distal'] || 0) > 5;
@@ -1029,7 +1029,7 @@ const analyzeSymptomDistribution = (hand) => {
               </div>
 
               <div>
-                  <label className="block text-lg font-semibold text-gray-800 mb-3">
+                  <label className="block text-lg font-semibold text-gray-800 mt-3 mb-3">
                     If you have any comments on how to improve the hand diagrams, please write them below:
                   </label>
                   <textarea
@@ -1122,10 +1122,6 @@ const analyzeSymptomDistribution = (hand) => {
                     {/* 3. DETAILED COVERAGE THIRD - BY SYMPTOM TYPE */}
                     <div className="bg-gray-50 p-6 rounded-lg">
                       <h4 className="font-semibold text-lg mb-4">Detailed Coverage by Symptom Type</h4>
-                      <p className="text-xs text-gray-600 mb-4">
-                        * Scoring uses <strong>tingling/numbness only</strong>: Thumb affected if &gt;5% distal; Index/Middle affected if &gt;50% middle phalanx OR &gt;5% distal
-                      </p>
-                      
                       {/* Iterate through regions */}
                       <div className="space-y-6">
                         {/* Thumb */}
@@ -1141,7 +1137,7 @@ const analyzeSymptomDistribution = (hand) => {
                                     <span className="capitalize">{symptom}:</span>
                                     <span className={isSignificant ? 'font-bold text-red-600' : 'text-gray-600'}>
                                       {coverage.toFixed(1)}%
-                                      {isSignificant && ' ✓'}
+                                      {isSignificant}
                                     </span>
                                   </div>
                                   <div className="w-full bg-gray-200 rounded h-2">
@@ -1176,7 +1172,7 @@ const analyzeSymptomDistribution = (hand) => {
                                       <span className="capitalize">{symptom}:</span>
                                       <span className={isSignificant ? 'font-bold text-red-600' : 'text-gray-600'}>
                                         {coverage.toFixed(1)}%
-                                        {isSignificant && ' ✓'}
+                                        {isSignificant}
                                       </span>
                                     </div>
                                     <div className="w-full bg-gray-200 rounded h-2">
@@ -1207,7 +1203,7 @@ const analyzeSymptomDistribution = (hand) => {
                                       <span className="capitalize">{symptom}:</span>
                                       <span className={isSignificant ? 'font-bold text-red-600' : 'text-gray-600'}>
                                         {coverage.toFixed(1)}%
-                                        {isSignificant && ' ✓'}
+                                        {isSignificant}
                                       </span>
                                     </div>
                                     <div className="w-full bg-gray-200 rounded h-2">
@@ -1243,7 +1239,7 @@ const analyzeSymptomDistribution = (hand) => {
                                       <span className="capitalize">{symptom}:</span>
                                       <span className={isSignificant ? 'font-bold text-red-600' : 'text-gray-600'}>
                                         {coverage.toFixed(1)}%
-                                        {isSignificant && ' ✓'}
+                                        {isSignificant}
                                       </span>
                                     </div>
                                     <div className="w-full bg-gray-200 rounded h-2">
@@ -1274,7 +1270,7 @@ const analyzeSymptomDistribution = (hand) => {
                                       <span className="capitalize">{symptom}:</span>
                                       <span className={isSignificant ? 'font-bold text-red-600' : 'text-gray-600'}>
                                         {coverage.toFixed(1)}%
-                                        {isSignificant && ' ✓'}
+                                        {isSignificant}
                                       </span>
                                     </div>
                                     <div className="w-full bg-gray-200 rounded h-2">
