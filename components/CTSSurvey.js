@@ -18,7 +18,7 @@ const CTSSurveyApp = () => {
 
   useEffect(() => {
     // Generate actual ID only on client
-    if (participantID === 'CTS-PENDING') {
+    if (participantId === 'CTS-PENDING') {
       setParticipantId(`CTS-${Date.now()}`);
     }
   }, []);
