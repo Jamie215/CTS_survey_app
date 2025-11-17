@@ -12,6 +12,7 @@ const CTSSurveyApp = () => {
   const [participantId] = useState(`CTS-${Date.now()}`);
   const [diagnosticAnswers, setDiagnosticAnswers] = useState({});
   const [diagnosticEase, setDiagnosticEase] = useState('');
+  const [diagnosticComments, setDiagnosticComments] = useState('');
   const [handDiagramData, setHandDiagramData] = useState({});
   const [diagramEase, setDiagramEase] = useState('');
   const [diagramComments, setDiagramComments] = useState('');
