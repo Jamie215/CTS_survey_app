@@ -654,13 +654,6 @@ const CTSSurveyApp = () => {
     img.src = imagePath;
   };
 
-  const getQuestionIndicator = (isAnswered) => {
-    if (isAnswered) {
-      return <Check className="w-6 h-6 text-green-600 flex-shrink-0" />;
-    }
-    return <div className="w-6 h-6 rounded-full border-2 border-gray-300 flex-shrink-0" />;
-  };
-
    if (!isClient) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 flex items-center justify-center">
@@ -702,7 +695,6 @@ const CTSSurveyApp = () => {
                     } ${question.hasNumbnessOrTingling ? 'border-blue-300 bg-blue-50' : ''}`}
                   >
                     <p className="font-semibold mb-4 text-lg flex items-center gap-3">
-                      {getQuestionIndicator(diagnosticAnswers[question.id] !== undefined && diagnosticAnswers[question.id] !== '')}
                       <span className="flex-1">
                         {question.text}
                       </span>
