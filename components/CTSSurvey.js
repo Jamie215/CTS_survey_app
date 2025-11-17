@@ -520,12 +520,10 @@ const CTSSurveyApp = () => {
         const allQuestionsAnswered = questionsToValidate.every(question => 
           diagnosticAnswers[question.id] !== undefined && diagnosticAnswers[question.id] !== ''
         );
-        const easeAnswered = diagnosticEase !== '';
-        return allQuestionsAnswered && easeAnswered;
+        return allQuestionsAnswered;
       
       case 1:
-        const diagramEaseAnswered = diagramEase !== '';
-        return diagramEaseAnswered;
+        return true;
       
       default:
         return true;
@@ -754,7 +752,7 @@ const CTSSurveyApp = () => {
             </div>
 
             <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 space-y-6">
-              <div className={`${highlightIncomplete && diagnosticEase === '' ? 'bg-red-50 border-red-500 border-2 rounded-lg p-4' : ''}`}>
+              <div>
                 <p className="font-semibold mb-4 text-lg flex items-center gap-3">
                   <span>Was it easy to answer these questions about your hand symptoms?</span>
                 </p>
