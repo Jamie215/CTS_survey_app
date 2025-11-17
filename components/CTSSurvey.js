@@ -11,15 +11,6 @@ const CTSSurveyApp = () => {
   const [currentSection, setCurrentSection] = useState(0);
   const [isClient, setIsClient] = useState(false);
   const [participantId, setParticipantId] = useState('');
-
-  useEffect(() => {
-    setIsClient(true);
-    setParticipantId(`CTS-${Date.now()}`);
-  }, []);
-
-  if (!isClient) {
-    return <div> Loading... </div>;
-  }
   const [diagnosticAnswers, setDiagnosticAnswers] = useState({});
   const [diagnosticEase, setDiagnosticEase] = useState('');
   const [diagnosticComments, setDiagnosticComments] = useState('');
@@ -79,10 +70,16 @@ const CTSSurveyApp = () => {
     { id: 2, title: "Results" },
   ];
 
-  // Load SVG regions on mount
   useEffect(() => {
-    loadSVGRegions();
+    setIsClient(true);
+    setParticipantId(`CTS-${Date.now()}`);
   }, []);
+  
+  useEffect(() => {
+    if (isClient) {
+      loadSVGRegions();
+    }
+  }, [isClient]);
 
   const loadSVGRegions = async () => {
     try {
@@ -280,7 +277,7 @@ const CTSSurveyApp = () => {
     return {
       alternativeScore: {
         ...calculateAlternativeScore(symptoms),
-        coverageBySymptom: symptoms.coverageBySymptom  // Add this here
+        coverageBySymptom: symptoms.coverageBySymptom
       },
       detailedCoverage: symptoms.detailedCoverage
     };
@@ -330,7 +327,7 @@ const CTSSurveyApp = () => {
         // Store coverage by symptom type
         coverageBySymptom[symptomType][regionName] = regionCoverage.percentage;
         
-        // For scoring: only use tingling/numbness, take maximum
+        // For scoring: only use tingling/numbness, take maximum (TODO: revisit this)
         if (symptomType === 'tingling' || symptomType === 'numbness') {
           if (!coverage[regionName]) {
             coverage[regionName] = regionCoverage.percentage;
@@ -409,7 +406,6 @@ const CTSSurveyApp = () => {
     }
 
     img.onload = () => {
-      // Draw the image 1:1 - no scaling needed!
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     };
     
@@ -664,6 +660,14 @@ const CTSSurveyApp = () => {
     }
     return <div className="w-6 h-6 rounded-full border-2 border-gray-300 flex-shrink-0" />;
   };
+
+   if (!isClient) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 flex items-center justify-center">
+        <div className="text-gray-600">Loading...</div>
+      </div>
+    );
+  }
 
   const renderSection = () => {
     switch (currentSection) {
