@@ -275,8 +275,8 @@ const CTSSurveyApp = () => {
     const symptoms = analyzeSymptomDistribution(hand);
     
     return {
-      alternativeScore: {
-        ...calculateAlternativeScore(symptoms),
+      MNDSScore: {
+        ...calculateMNDSScore(symptoms),
         coverageBySymptom: symptoms.coverageBySymptom
       },
       detailedCoverage: symptoms.detailedCoverage
@@ -366,27 +366,24 @@ const CTSSurveyApp = () => {
     };
   };
 
-  // Alternative CTS scoring method
-  const calculateAlternativeScore = (symptoms) => {
+  // MNDS CTS scoring method
+  const calculateMNDSScore = (symptoms) => {
     const affected = symptoms.medianDigitsAffected;
     
     if (affected === 0) {
       return {
         score: 0,
-        level: 'No Involvement',
         description: 'CTS is unlikely based on hand diagram'
       };
     } else if (affected === 1) {
       return {
         score: 1,
-        level: 'Minimal Involvement',
         description: 'Low probability of CTS. Consider other diagnoses or early-stage CTS.'
       };
     } else {
       // affected >= 2
       return {
         score: 2,
-        level: 'Significant Involvement',
         description: 'Moderate to high probability of CTS. Further evaluation strongly recommended.'
       };
     }
@@ -955,7 +952,7 @@ const CTSSurveyApp = () => {
               <h2 className="text-2xl font-bold text-blue-800 mb-4">Assessment Result</h2>
               <div className="flex items-center gap-2 mb-2">
                 <AlertCircle className="w-5 h-5 text-blue-700" />
-                <h4 className="font-bold text-blue-lg">Important Note</h4>
+                <h4 className="font-bold text-blue-700">Important Note</h4>
               </div>
               <p className="text-sm text-blue-700">
                 This assessment tool is for screening purposes only and should not replace professional medical diagnosis.
@@ -971,8 +968,8 @@ const CTSSurveyApp = () => {
                     
                     {/* SCORE WITH EMBEDDED CANVAS */}
                     <div className={`p-6 rounded-lg mb-6 ${
-                      ctsScores[hand].alternativeScore.score === 2 ? 'bg-red-50 border-2 border-red-300' :
-                      ctsScores[hand].alternativeScore.score === 1 ? 'bg-yellow-50 border-2 border-yellow-300' :
+                      ctsScores[hand].MNDSScore.score === 2 ? 'bg-red-50 border-2 border-red-300' :
+                      ctsScores[hand].MNDSScore.score === 1 ? 'bg-yellow-50 border-2 border-yellow-300' :
                       'bg-green-50 border-2 border-green-300'
                     }`}>
                       <div className="flex gap-6">
@@ -1006,18 +1003,17 @@ const CTSSurveyApp = () => {
                         {/* Right: Score Info */}
                         <div className="flex-1">
                           <div className="flex items-center justify-between mb-4">
-                            <h4 className="font-semibold text-xl">CTS Score:</h4>
+                            <h4 className="font-semibold text-xl">Score:</h4>
                             <div className={`text-5xl font-bold ${
-                              ctsScores[hand].alternativeScore.score === 2 ? 'text-red-700' :
-                              ctsScores[hand].alternativeScore.score === 1 ? 'text-yellow-700' :
+                              ctsScores[hand].MNDSScore.score === 2 ? 'text-red-700' :
+                              ctsScores[hand].MNDSScore.score === 1 ? 'text-yellow-700' :
                               'text-green-700'
                             }`}>
-                              {ctsScores[hand].alternativeScore.score}
+                              {ctsScores[hand].MNDSScore.score}
                             </div>
                           </div>
                           <div className="space-y-2">
-                            <p className="font-semibold text-lg">{ctsScores[hand].alternativeScore.level}</p>
-                            <p className="text-sm">{ctsScores[hand].alternativeScore.description}</p>
+                            <p className="text-lg">{ctsScores[hand].MNDSScore.description}</p>
                           </div>
                         </div>
                       </div>
@@ -1037,7 +1033,7 @@ const CTSSurveyApp = () => {
                           <h5 className="font-medium text-base mb-3">Thumb (Distal):</h5>
                           <div className="space-y-2">
                             {['tingling', 'numbness', 'pain'].map(symptom => {
-                              const coverage = ctsScores[hand].alternativeScore.coverageBySymptom?.[symptom]?.['thumb_distal'] || 0;
+                              const coverage = ctsScores[hand].MNDSScore.coverageBySymptom?.[symptom]?.['thumb_distal'] || 0;
                               const isSignificant = coverage > 5;
                               return (
                                 <div key={symptom}>
@@ -1072,7 +1068,7 @@ const CTSSurveyApp = () => {
                             <p className="text-sm font-medium text-gray-900 mb-2">Distal Phalanx:</p>
                             <div className="space-y-2">
                               {['tingling', 'numbness', 'pain'].map(symptom => {
-                                const coverage = ctsScores[hand].alternativeScore.coverageBySymptom?.[symptom]?.['index_distal'] || 0;
+                                const coverage = ctsScores[hand].MNDSScore.coverageBySymptom?.[symptom]?.['index_distal'] || 0;
                                 const isSignificant = coverage > 5;
                                 return (
                                   <div key={symptom}>
@@ -1103,7 +1099,7 @@ const CTSSurveyApp = () => {
                             <p className="text-sm font-medium text-gray-900 mb-2">Middle Phalanx:</p>
                             <div className="space-y-2">
                               {['tingling', 'numbness', 'pain'].map(symptom => {
-                                const coverage = ctsScores[hand].alternativeScore.coverageBySymptom?.[symptom]?.['index_middle'] || 0;
+                                const coverage = ctsScores[hand].MNDSScore.coverageBySymptom?.[symptom]?.['index_middle'] || 0;
                                 const isSignificant = coverage > 50;
                                 return (
                                   <div key={symptom}>
@@ -1139,7 +1135,7 @@ const CTSSurveyApp = () => {
                             <p className="text-sm font-medium text-gray-900 mb-2">Distal Phalanx:</p>
                             <div className="space-y-2">
                               {['tingling', 'numbness', 'pain'].map(symptom => {
-                                const coverage = ctsScores[hand].alternativeScore.coverageBySymptom?.[symptom]?.['middle_distal'] || 0;
+                                const coverage = ctsScores[hand].MNDSScore.coverageBySymptom?.[symptom]?.['middle_distal'] || 0;
                                 const isSignificant = coverage > 5;
                                 return (
                                   <div key={symptom}>
@@ -1170,7 +1166,7 @@ const CTSSurveyApp = () => {
                             <p className="text-sm font-medium text-gray-700 mb-2">Middle phalanx:</p>
                             <div className="space-y-2">
                               {['tingling', 'numbness', 'pain'].map(symptom => {
-                                const coverage = ctsScores[hand].alternativeScore.coverageBySymptom?.[symptom]?.['middle_middle'] || 0;
+                                const coverage = ctsScores[hand].MNDSScore.coverageBySymptom?.[symptom]?.['middle_middle'] || 0;
                                 const isSignificant = coverage > 50;
                                 return (
                                   <div key={symptom}>
