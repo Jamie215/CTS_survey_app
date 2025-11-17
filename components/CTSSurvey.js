@@ -49,7 +49,7 @@ const CTSSurveyApp = () => {
   };
 
   const diagnosticQuestions = [
-    { id: 0, text: "Do you ever have numbness and tingling in your finger?", hasNumbnessOrTingling: true },
+    { id: 0, text: "Do you ever have numbness and tingling in your finger?", hasNumbnessOrTingling: false },
     { id: 1, text: "Do you wake up because of pain in your wrist?" },
     { id: 2, text: "Do you wake up because of tingling or numbness in your fingers?", requiresNumbnessOrTingling: true },
     { id: 3, text: "Do you have tingling or numbness in your fingers when you first wake up?", requiresNumbnessOrTingling: true },
@@ -689,13 +689,15 @@ const CTSSurveyApp = () => {
                 if (question.requiresNumbnessOrTingling && diagnosticAnswers[0] === 'No') {
                   return null;
                 }
+
+                const isIncomplete = highlightIncomplete && !diagnosticAnswers[question.id];
                 
                 return (
                   <div
                     key={question.id}
                     className={`bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border ${
-                      highlightIncomplete && !diagnosticAnswers[question.id]
-                        ? 'border-red-500 bg-red-50 animate-pulse'
+                      isIncomplete
+                        ? 'border-red-500 bg-red-50 animate-pulse incomplete-question'
                         : 'border-gray-200'
                     } ${question.hasNumbnessOrTingling ? 'border-blue-300 bg-blue-50' : ''}`}
                   >
