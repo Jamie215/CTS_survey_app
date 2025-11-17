@@ -49,7 +49,7 @@ const CTSSurveyApp = () => {
   };
 
   const diagnosticQuestions = [
-    { id: 0, text: "Do you ever have numbness and tingling in your finger?", hasNumbnessOrTingling: false },
+    { id: 0, text: "Do you ever have numbness and tingling in your fingers?", hasNumbnessOrTingling: false },
     { id: 1, text: "Do you wake up because of pain in your wrist?" },
     { id: 2, text: "Do you wake up because of tingling or numbness in your fingers?", requiresNumbnessOrTingling: true },
     { id: 3, text: "Do you have tingling or numbness in your fingers when you first wake up?", requiresNumbnessOrTingling: true },
@@ -685,8 +685,8 @@ const CTSSurveyApp = () => {
 
             <div className="space-y-4">
               {diagnosticQuestions.map((question) => {
-                // Skip numbness/tingling questions if user answered "No" to screening question
-                if (question.requiresNumbnessOrTingling && diagnosticAnswers[0] === 'No') {
+                // Skip numbness/tingling questions if user didn't answer "Yes" to screening question
+                if (question.requiresNumbnessOrTingling && diagnosticAnswers[0] !== 'Yos') {
                   return null;
                 }
 
