@@ -127,103 +127,6 @@ const CTSSurveyApp = () => {
   };
 
   // Drawing setup for SVG
-  const setupDrawing = (svgElement, canvasKey, symptomColor) => {
-    if (!svgElement) return;
-
-    let isDrawing = false;
-    let currentPath = null;
-    let pathData = '';
-    let drawingGroup = svgElement.querySelector('#drawingGroup');
-    
-    if (!drawingGroup) {
-      drawingGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-      drawingGroup.id = 'drawingGroup';
-      svgElement.appendChild(drawingGroup);
-    }
-
-    const getMousePos = (e) => {
-      const rect = svgElement.getBoundingClientRect();
-      const viewBox = svgElement.viewBox.baseVal;
-      const scaleX = viewBox.width / rect.width;
-      const scaleY = viewBox.height / rect.height;
-      
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-      
-      return {
-        x: (clientX - rect.left) * scaleX,
-        y: (clientY - rect.top) * scaleY
-      };
-    };
-
-    const startDrawing = (e) => {
-      e.preventDefault();
-      isDrawing = true;
-      const pos = getMousePos(e);
-      
-      currentPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      currentPath.setAttribute('stroke', symptomColor);
-      currentPath.setAttribute('stroke-width', '4');
-      currentPath.setAttribute('fill', 'none');
-      currentPath.setAttribute('stroke-linecap', 'round');
-      currentPath.setAttribute('stroke-linejoin', 'round');
-      currentPath.setAttribute('opacity', '0.7');
-      
-      pathData = `M ${pos.x} ${pos.y}`;
-      currentPath.setAttribute('d', pathData);
-      drawingGroup.appendChild(currentPath);
-      
-      // Store drawing data
-      if (!handDiagramData[canvasKey]) {
-        handDiagramData[canvasKey] = [];
-      }
-      handDiagramData[canvasKey].push({ type: 'start', x: pos.x, y: pos.y });
-    };
-
-    const draw = (e) => {
-      if (!isDrawing) return;
-      e.preventDefault();
-      const pos = getMousePos(e);
-      pathData += ` L ${pos.x} ${pos.y}`;
-      currentPath.setAttribute('d', pathData);
-      
-      handDiagramData[canvasKey].push({ type: 'draw', x: pos.x, y: pos.y });
-    };
-
-    const stopDrawing = (e) => {
-      if (!isDrawing) return;
-      isDrawing = false;
-      currentPath = null;
-      pathData = '';
-      
-      if (handDiagramData[canvasKey]) {
-        handDiagramData[canvasKey].push({ type: 'end' });
-      }
-      setHandDiagramData({...handDiagramData});
-    };
-
-    // Mouse events
-    svgElement.addEventListener('mousedown', startDrawing);
-    svgElement.addEventListener('mousemove', draw);
-    svgElement.addEventListener('mouseup', stopDrawing);
-    svgElement.addEventListener('mouseleave', stopDrawing);
-    
-    // Touch events
-    svgElement.addEventListener('touchstart', startDrawing);
-    svgElement.addEventListener('touchmove', draw);
-    svgElement.addEventListener('touchend', stopDrawing);
-
-    return () => {
-      svgElement.removeEventListener('mousedown', startDrawing);
-      svgElement.removeEventListener('mousemove', draw);
-      svgElement.removeEventListener('mouseup', stopDrawing);
-      svgElement.removeEventListener('mouseleave', stopDrawing);
-      svgElement.removeEventListener('touchstart', startDrawing);
-      svgElement.removeEventListener('touchmove', draw);
-      svgElement.removeEventListener('touchend', stopDrawing);
-    };
-  };
-
   useEffect(() => {
     if (!isClient) return;
 
@@ -231,6 +134,116 @@ const CTSSurveyApp = () => {
       tingling: '#FF0000',
       numbness: '#0000FF',
       pain: '#00FF00'
+    };
+
+    const setupDrawing = (svgElement, canvasKey, symptomColor) => {
+      if (!svgElement) return;
+
+      let isDrawing = false;
+      let currentPath = null;
+      let pathData = '';
+      let drawingGroup = svgElement.querySelector('#drawingGroup');
+      
+      if (!drawingGroup) {
+        drawingGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        drawingGroup.id = 'drawingGroup';
+        svgElement.appendChild(drawingGroup);
+      }
+
+      const getMousePos = (e) => {
+        const rect = svgElement.getBoundingClientRect();
+        const viewBox = svgElement.viewBox.baseVal;
+        const scaleX = viewBox.width / rect.width;
+        const scaleY = viewBox.height / rect.height;
+        
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        
+        return {
+          x: (clientX - rect.left) * scaleX,
+          y: (clientY - rect.top) * scaleY
+        };
+      };
+
+      const startDrawing = (e) => {
+        e.preventDefault();
+        isDrawing = true;
+        const pos = getMousePos(e);
+        
+        currentPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        currentPath.setAttribute('stroke', symptomColor);
+        currentPath.setAttribute('stroke-width', '4');
+        currentPath.setAttribute('fill', 'none');
+        currentPath.setAttribute('stroke-linecap', 'round');
+        currentPath.setAttribute('stroke-linejoin', 'round');
+        currentPath.setAttribute('opacity', '0.7');
+        
+        pathData = `M ${pos.x} ${pos.y}`;
+        currentPath.setAttribute('d', pathData);
+        drawingGroup.appendChild(currentPath);
+        
+        // Store drawing data
+        setHandDiagramData(prev => {
+          const updated = {...prev};
+          if (!updated[canvasKey]) {
+            updated[canvasKey] = [];
+          }
+          updated[canvasKey] = [...updated[canvasKey], { type: 'start', x: pos.x, y: pos.y }];
+          return updated;
+        });
+      };
+
+      const draw = (e) => {
+        if (!isDrawing) return;
+        e.preventDefault();
+        const pos = getMousePos(e);
+        pathData += ` L ${pos.x} ${pos.y}`;
+        currentPath.setAttribute('d', pathData);
+        
+        setHandDiagramData(prev => {
+          const updated = {...prev};
+          if (updated[canvasKey]) {
+            updated[canvasKey] = [...updated[canvasKey], { type: 'draw', x: pos.x, y: pos.y }];
+          }
+          return updated;
+        });
+      };
+
+      const stopDrawing = (e) => {
+        if (!isDrawing) return;
+        isDrawing = false;
+        currentPath = null;
+        pathData = '';
+        
+        setHandDiagramData(prev => {
+          const updated = {...prev};
+          if (updated[canvasKey]) {
+            updated[canvasKey] = [...updated[canvasKey], { type: 'end' }];
+          }
+          return updated;
+        });
+      };
+
+      // Mouse events
+      svgElement.addEventListener('mousedown', startDrawing);
+      svgElement.addEventListener('mousemove', draw);
+      svgElement.addEventListener('mouseup', stopDrawing);
+      svgElement.addEventListener('mouseleave', stopDrawing);
+      
+      // Touch events
+      svgElement.addEventListener('touchstart', startDrawing);
+      svgElement.addEventListener('touchmove', draw);
+      svgElement.addEventListener('touchend', stopDrawing);
+
+      return () => {
+        svgElement.removeEventListener('mousedown', startDrawing);
+        svgElement.removeEventListener('mousemove', draw);
+        svgElement.removeEventListener('mouseup', stopDrawing);
+        svgElement.removeEventListener('mouseleave', stopDrawing);
+        svgElement.removeEventListener('touchstart', startDrawing);
+        svgElement.removeEventListener('touchmove', draw);
+        svgElement.removeEventListener('touchend', stopDrawing);
+      };
     };
 
     const cleanups = [];
