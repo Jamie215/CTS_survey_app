@@ -21,7 +21,7 @@ const CTSSurveyApp = () => {
   const [ctsScores, setCtsScores] = useState(null);
   const [hasNumbnessOrTingling, setHasNumbnessOrTingling] = useState(null);
   
-  // SVG regions state - now includes back views
+  // SVG regions state
   const [svgRegions, setSvgRegions] = useState({
     leftFront: {},
     rightFront: {},
@@ -89,388 +89,553 @@ const CTSSurveyApp = () => {
       const rightFrontRegions = {};
       const leftBackRegions = {};
       const rightBackRegions = {};
-      
-      // Load all four SVG files
+
+      // Load SVGs
+      console.log('Load SVG regions for hand diagrams...');
       const svgFiles = [
         { path: '/hands/hand_front_left.svg', regions: leftFrontRegions, name: 'left front' },
         { path: '/hands/hand_front_right.svg', regions: rightFrontRegions, name: 'right front' },
         { path: '/hands/hand_back_left.svg', regions: leftBackRegions, name: 'left back' },
         { path: '/hands/hand_back_right.svg', regions: rightBackRegions, name: 'right back' }
       ];
-      
+
       for (const { path, regions, name } of svgFiles) {
-        console.log(`Loading ${name} SVG...`);
         const response = await fetch(path);
         if (!response.ok) {
-          throw new Error(`Failed to load ${path}: ${response.status}`);
+          throw new Error(`Failed to load SVG: ${path} - ${response.status}`);
         }
         const svgText = await response.text();
         const parser = new DOMParser();
         const svgDoc = parser.parseFromString(svgText, 'image/svg+xml');
-        
+
         if (svgDoc.querySelector('parsererror')) {
-          throw new Error(`${name} SVG parsing failed`);
+          throw new Error(`SVG parsing failed for file: ${path}`);
         }
-        
-        // Process paths - NO SCALING NEEDED!
+
         const paths = svgDoc.querySelectorAll('path');
-        console.log(`${name} paths found:`, paths.length);
-        
+        console.log(`Paths found in ${name}:`, paths.length);
+
         paths.forEach(path => {
-          const label = path.getAttribute('inkscape:label') || 
-                       path.getAttributeNS('http://www.inkscape.org/namespaces/inkscape', 'label') ||
-                       path.getAttribute('id');
-          const d = path.getAttribute('d');
-          
+          const label = path.getAttribute('inkscape:label') ||
+                        path.getAttributeNS('http://www.inkscape.org/namespaces/inkscape', 'label') ||
+                        path.getAttribute('id');
+          const d = path.getAttribute('d'); 
           if (label && d) {
             const path2D = new Path2D(d);
             regions[label] = { path2D, pathString: d, label };
-            console.log(`✓ ${name} region:`, label);
           }
         });
+
+        setSvgRegions({
+          leftFront: leftFrontRegions,
+          rightFront: rightFrontRegions,
+          leftBack: leftBackRegions,
+          rightBack: rightBackRegions
+        });
+
+        setTimeout(() => {
+          Object.entries(canvasRefs).forEach(([key, ref]) => {
+            if (ref.current) {
+              const isLeft = key.includes('Left');
+              const isBack = key.includes('Back');
+              drawHandOutline(ref.current, isLeft, isBack);
+            }
+          });
+        }, 100);
       }
-      
-      console.log('✅ Loaded regions:', {
-        leftFront: Object.keys(leftFrontRegions),
-        rightFront: Object.keys(rightFrontRegions),
-        leftBack: Object.keys(leftBackRegions),
-        rightBack: Object.keys(rightBackRegions)
-      });
-      
-      setSvgRegions({
-        leftFront: leftFrontRegions,
-        rightFront: rightFrontRegions,
-        leftBack: leftBackRegions,
-        rightBack: rightBackRegions
-      });
-      
-      // Redraw canvases
-      setTimeout(() => {
-        Object.entries(canvasRefs).forEach(([key, ref]) => {
-          if (ref.current) {
-            const isLeft = key.includes('Left');
-            const isBack = key.includes('Back');
-            drawHandOutline(ref.current, isLeft, isBack);
-          }
-        });
-      }, 100);
-      
     } catch (error) {
-      console.error('❌ Failed to load SVG regions:', error);
-      alert(`Error: ${error.message}\n\nCheck all hand SVG files are present`);
+      console.error('Error loading SVG regions:', error);
     }
   };
 
-  const drawHandOutline = (canvas, isLeft = true, isBack = false) => {
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // Calculate combined coverage of a region
+  const calculateCombinedRegionCoverage = (allDrawings, regionPath) => {
+    const flattenedDrawings = allDrawings.flat().filter(d => d);
+    if (flattenedDrawings.length === 0) {
+    return { percentage: 0, coveredPixels: 0, totalPixels: 0 };
+  }
 
-    // Draw background
-    ctx.fillStyle = '#f8f9fa';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Draw hand outline based on which hand/side we're showing
-    ctx.strokeStyle = '#ccc';
-    ctx.lineWidth = 2;
+    // Create canvas for the region
+    const regionCanvas = document.createElement('canvas');
+    regionCanvas.width = CANVAS_WIDTH;
+    regionCanvas.height = CANVAS_HEIGHT;
+    const regionCtx = regionCanvas.getContext('2d');
     
-    const imgSrc = isBack 
-      ? (isLeft ? '/hands/hand_back_left.svg' : '/hands/hand_back_right.svg')
-      : (isLeft ? '/hands/hand_front_left.svg' : '/hands/hand_front_right.svg');
+    // Fill the region
+    regionCtx.fillStyle = 'white';
+    regionCtx.fill(regionPath);
     
-    const img = new Image();
-    img.onload = () => {
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-    };
-    img.src = imgSrc;
-  };
-
-  const initializeCanvases = () => {
-    Object.entries(canvasRefs).forEach(([key, ref]) => {
-      if (ref.current) {
-        const canvas = ref.current;
-        canvas.width = CANVAS_WIDTH;
-        canvas.height = CANVAS_HEIGHT;
-        const isLeft = key.includes('Left');
-        const isBack = key.includes('Back');
-        drawHandOutline(canvas, isLeft, isBack);
+    // Count region pixels
+    const regionImageData = regionCtx.getImageData(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    const regionPixels = regionImageData.data;
+    
+    let totalRegionPixels = 0;
+    for (let i = 0; i < regionPixels.length; i += 4) {
+      if (regionPixels[i] > 200) {
+        totalRegionPixels++;
+      }
+    }
+    
+    if (totalRegionPixels === 0) {
+      return { percentage: 0, coveredPixels: 0, totalPixels: 0 };
+    }
+    
+    // Create canvas for drawings
+    const drawingCanvas = document.createElement('canvas');
+    drawingCanvas.width = CANVAS_WIDTH;
+    drawingCanvas.height = CANVAS_HEIGHT;
+    const drawingCtx = drawingCanvas.getContext('2d');
+    
+    // Replay drawings
+    drawingCtx.strokeStyle = 'red';
+    drawingCtx.lineWidth = 12;
+    drawingCtx.lineCap = 'round';
+    drawingCtx.lineJoin = 'round';
+    
+    let isDrawing = false;
+    flattenedDrawings.forEach(point => {
+      if (point.type === 'start') {
+        drawingCtx.beginPath();
+        drawingCtx.moveTo(point.x, point.y);
+        isDrawing = true;
+      } else if (point.type === 'draw' && isDrawing) {
+        drawingCtx.lineTo(point.x, point.y);
+        drawingCtx.stroke();
+      } else if (point.type === 'end') {
+        isDrawing = false;
       }
     });
-  };
-
-  const handleDiagnosticAnswer = (questionId, answer) => {
-    const newAnswers = { ...diagnosticAnswers, [questionId]: answer };
-    setDiagnosticAnswers(newAnswers);
     
-    if (questionId === 0) {
-      setHasNumbnessOrTingling(answer === 'yes');
-    }
-  };
-
-  const clearCanvas = (canvasRef) => {
-    const canvas = canvasRef.current;
-    if (canvas) {
-      const ctx = canvas.getContext('2d');
-      const isLeft = Object.keys(canvasRefs).find(key => canvasRefs[key] === canvasRef).includes('Left');
-      const isBack = Object.keys(canvasRefs).find(key => canvasRefs[key] === canvasRef).includes('Back');
-      drawHandOutline(canvas, isLeft, isBack);
+    // Count overlap
+    const drawingImageData = drawingCtx.getImageData(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    const drawingPixels = drawingImageData.data;
+    
+    let overlapPixels = 0;
+    for (let i = 0; i < regionPixels.length; i += 4) {
+      const isInRegion = regionPixels[i] > 200;
+      const isDrawn = drawingPixels[i] > 50;
       
-      const dataKey = Object.keys(canvasRefs).find(key => canvasRefs[key] === canvasRef);
-      setHandDiagramData(prev => ({ ...prev, [dataKey]: null }));
+      if (isInRegion && isDrawn) {
+        overlapPixels++;
+      }
     }
-  };
-
-  const handleDrawing = (canvasRef, e, color, symptomType) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
     
-    const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX - rect.left) * (canvas.width / rect.width);
-    const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+    const coveragePercentage = totalRegionPixels > 0 
+      ? (overlapPixels / totalRegionPixels) * 100 
+      : 0;
     
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.arc(x, y, 8, 0, Math.PI * 2);
-    ctx.fill();
-  };
-
-  const saveCanvasState = (canvasRef) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const dataKey = Object.keys(canvasRefs).find(key => canvasRefs[key] === canvasRef);
-    const imageData = canvas.toDataURL('image/png');
-    setHandDiagramData(prev => ({ ...prev, [dataKey]: imageData }));
-  };
-
-  const handleCanvasMouseDown = (canvasRef, e, color, symptomType) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const handleMouseMove = (e) => handleDrawing(canvasRef, e, color, symptomType);
-    const handleMouseUp = () => {
-      canvas.removeEventListener('mousemove', handleMouseMove);
-      canvas.removeEventListener('mouseup', handleMouseUp);
-      canvas.removeEventListener('mouseleave', handleMouseUp);
-      saveCanvasState(canvasRef);
+    return {
+      percentage: coveragePercentage,
+      coveredPixels: overlapPixels,
+      totalPixels: totalRegionPixels
     };
-
-    canvas.addEventListener('mousemove', handleMouseMove);
-    canvas.addEventListener('mouseup', handleMouseUp);
-    canvas.addEventListener('mouseleave', handleMouseUp);
-    
-    handleDrawing(canvasRef, e, color, symptomType);
   };
 
-  // Katz-based scoring algorithm
+  // Calculate coverage of a region (single symptom)
+  const calculateRegionCoverage = (drawings, regionPath) => {
+    if (!drawings || drawings.length === 0) {
+      return { percentage: 0, coveredPixels: 0, totalPixels: 0 };
+    }
+
+    // Create canvas for the region
+    const regionCanvas = document.createElement('canvas');
+    regionCanvas.width = CANVAS_WIDTH;
+    regionCanvas.height = CANVAS_HEIGHT;
+    const regionCtx = regionCanvas.getContext('2d');
+    
+    // Fill the region
+    regionCtx.fillStyle = 'white';
+    regionCtx.fill(regionPath);
+    
+    // Count region pixels
+    const regionImageData = regionCtx.getImageData(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    const regionPixels = regionImageData.data;
+    
+    let totalRegionPixels = 0;
+    for (let i = 0; i < regionPixels.length; i += 4) {
+      if (regionPixels[i] > 200) {
+        totalRegionPixels++;
+      }
+    }
+    
+    if (totalRegionPixels === 0) {
+      return { percentage: 0, coveredPixels: 0, totalPixels: 0 };
+    }
+    
+    // Create canvas for drawings
+    const drawingCanvas = document.createElement('canvas');
+    drawingCanvas.width = CANVAS_WIDTH;
+    drawingCanvas.height = CANVAS_HEIGHT;
+    const drawingCtx = drawingCanvas.getContext('2d');
+    
+    // Replay drawings
+    drawingCtx.strokeStyle = 'red';
+    drawingCtx.lineWidth = 12;
+    drawingCtx.lineCap = 'round';
+    drawingCtx.lineJoin = 'round';
+    
+    let isDrawing = false;
+    drawings.forEach(point => {
+      if (point.type === 'start') {
+        drawingCtx.beginPath();
+        drawingCtx.moveTo(point.x, point.y);
+        isDrawing = true;
+      } else if (point.type === 'draw' && isDrawing) {
+        drawingCtx.lineTo(point.x, point.y);
+        drawingCtx.stroke();
+      } else if (point.type === 'end') {
+        isDrawing = false;
+      }
+    });
+    
+    // Count overlap
+    const drawingImageData = drawingCtx.getImageData(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    const drawingPixels = drawingImageData.data;
+    
+    let overlapPixels = 0;
+    for (let i = 0; i < regionPixels.length; i += 4) {
+      const isInRegion = regionPixels[i] > 200;
+      const isDrawn = drawingPixels[i] > 50;
+      
+      if (isInRegion && isDrawn) {
+        overlapPixels++;
+      }
+    }
+    
+    const coveragePercentage = totalRegionPixels > 0 
+      ? (overlapPixels / totalRegionPixels) * 100 
+      : 0;
+    
+    return {
+      percentage: coveragePercentage,
+      coveredPixels: overlapPixels,
+      totalPixels: totalRegionPixels
+    };
+  };
+
+  // Calculate CTS scores based on hand diagram data
   const calculateCTSScores = () => {
-    const scores = { left: null, right: null };
-    
-    ['left', 'right'].forEach(hand => {
-      // Get unique union of all symptom areas
-      const unionAreas = new Set();
-      const symptomRegions = {
-        tingling: new Set(),
-        numbness: new Set(),
-        pain: new Set()
-      };
-      
-      // Collect drawn regions for each symptom
-      ['tingling', 'numbness', 'pain'].forEach(symptom => {
-        ['Front', 'Back'].forEach(side => {
-          const canvasKey = `${symptom}${side}${hand.charAt(0).toUpperCase() + hand.slice(1)}`;
-          const canvas = canvasRefs[canvasKey]?.current;
-          
-          if (canvas) {
-            const ctx = canvas.getContext('2d');
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const pixels = imageData.data;
-            
-            // Get regions based on side
-            const regions = side === 'Front' 
-              ? (hand === 'left' ? svgRegions.leftFront : svgRegions.rightFront)
-              : (hand === 'left' ? svgRegions.leftBack : svgRegions.rightBack);
-            
-            // Check each region for drawings
-            Object.entries(regions).forEach(([regionName, regionData]) => {
-              if (!regionData.path2D) return;
-              
-              let hasDrawing = false;
-              
-              // Sample points in the region to check for drawings
-              for (let y = 0; y < canvas.height; y += 5) {
-                for (let x = 0; x < canvas.width; x += 5) {
-                  if (ctx.isPointInPath(regionData.path2D, x, y)) {
-                    const index = (y * canvas.width + x) * 4;
-                    const r = pixels[index];
-                    const g = pixels[index + 1];
-                    const b = pixels[index + 2];
-                    const a = pixels[index + 3];
-                    
-                    // Check if pixel is colored (not background)
-                    if (a > 0 && !(r > 240 && g > 240 && b > 240)) {
-                      hasDrawing = true;
-                      break;
-                    }
-                  }
-                }
-                if (hasDrawing) break;
-              }
-              
-              if (hasDrawing) {
-                const fullRegionName = `${side}_${regionName}`;
-                symptomRegions[symptom].add(fullRegionName);
-                unionAreas.add(fullRegionName);
-              }
-            });
-          }
-        });
-      });
-      
-      // Determine Katz classification
-      let katzScore = 0;
-      let katzClassification = 'Unlikely';
-      
-      // Check volar (front) digits
-      const volarRegions = Array.from(unionAreas).filter(r => r.startsWith('Front_'));
-      const dorsalRegions = Array.from(unionAreas).filter(r => r.startsWith('Back_'));
-      
-      // Check specific volar digits (distal or middle phalanx)
-      const thumbVolar = volarRegions.some(r => 
-        r.includes('thumb_distal') || r.includes('thumb_middle'));
-      const indexVolar = volarRegions.some(r => 
-        r.includes('index_distal') || r.includes('index_middle'));
-      const middleVolar = volarRegions.some(r => 
-        r.includes('middle_distal') || r.includes('middle_middle'));
-      
-      const volarDigitCount = [thumbVolar, indexVolar, middleVolar].filter(Boolean).length;
-      
-      // Check for palm and dorsum
-      const hasPalm = volarRegions.some(r => 
-        r.includes('palm_radial') || r.includes('palm_ulnar'));
-      const hasUlnarPalm = volarRegions.some(r => r.includes('palm_ulnar'));
-      const hasDorsum = dorsalRegions.length > 0;
-      
-      // Apply Katz classification logic
-      if (volarDigitCount >= 2 && !hasPalm && !hasDorsum) {
-        // Classic pattern
-        katzScore = 3;
-        katzClassification = 'Classic';
-      } else if (volarDigitCount >= 2 && hasPalm && !hasUlnarPalm) {
-        // Probable pattern
-        katzScore = 2;
-        katzClassification = 'Probable';
-      } else if (volarDigitCount >= 1) {
-        // Possible pattern
-        katzScore = 1;
-        katzClassification = 'Possible';
-      } else {
-        // Unlikely pattern
-        katzScore = 0;
-        katzClassification = 'Unlikely';
-      }
-      
-      // Store results
-      scores[hand] = {
-        katzScore,
-        katzClassification,
-        totalUniqueAreas: unionAreas.size,
-        volarDigits: {
-          thumb: thumbVolar,
-          index: indexVolar,
-          middle: middleVolar,
-          count: volarDigitCount
-        },
-        regions: {
-          palm: hasPalm,
-          ulnarPalm: hasUlnarPalm,
-          dorsum: hasDorsum,
-          volar: volarRegions.length,
-          dorsal: dorsalRegions.length
-        },
-        symptomBreakdown: {
-          tingling: Array.from(symptomRegions.tingling),
-          numbness: Array.from(symptomRegions.numbness),
-          pain: Array.from(symptomRegions.pain)
-        },
-        // Keep compatibility with original display format
-        MNDSScore: {
-          score: katzScore,
-          significantRegions: Array.from(unionAreas),
-          coverageBySymptom: {} // This can be empty as it's not used in Katz
-        }
-      };
-    });
-    
+    const scores = {
+      left: analyzeSingleHand('Left'),
+      right: analyzeSingleHand('Right')
+    };
+    setCtsScores(scores);
     return scores;
   };
 
+  const analyzeSingleHand = (hand) => {
+    const symptoms = analyzeSymptomDistribution(hand);
+    
+    return {
+      MNDSScore: {
+        ...calculateMNDSScore(symptoms),
+        coverageBySymptom: symptoms.coverageBySymptom
+      },
+      detailedCoverage: symptoms.detailedCoverage
+    };
+  };
+
+const analyzeSymptomDistribution = (hand) => {
+  const handKey = hand === 'Left' ? 'leftFront' : 'rightFront';
+  const regions = svgRegions[handKey];
+  
+  if (!regions || Object.keys(regions).length === 0) {
+    console.warn('No SVG regions loaded for', handKey);
+    return {
+      medianDigitsAffected: 0,
+      detailedCoverage: {},
+      coverageBySymptom: {}
+    };
+  }
+
+  // Track combined coverage for each region (using all three symptom types)
+  const coverage = {};
+  
+  // Track coverage by symptom type for detailed display
+  const coverageBySymptom = {
+    tingling: {},
+    numbness: {},
+    pain: {}
+  };
+  
+  // Calculate individual symptom coverage for display
+  ['tingling', 'numbness', 'pain'].forEach(symptomType => {
+    const frontKey = `${symptomType}Front${hand}`;
+    const frontData = handDiagramData[frontKey] || [];
+    
+    const requiredRegions = [
+      'thumb_distal',
+      'index_distal', 'index_middle',
+      'middle_distal', 'middle_middle'
+    ];
+    
+    requiredRegions.forEach(regionName => {
+      const regionData = regions[regionName];
+      if (!regionData) return;
+      
+      // Calculate individual symptom coverage
+      const regionCoverage = calculateRegionCoverage(frontData, regionData.path2D);
+      
+      // Store coverage by symptom type (for display)
+      coverageBySymptom[symptomType][regionName] = regionCoverage.percentage;
+    });
+  });
+  
+  // Calculate combined coverage for scoring
+  const requiredRegions = [
+    'thumb_distal',
+    'index_distal', 'index_middle',
+    'middle_distal', 'middle_middle'
+  ];
+  
+  requiredRegions.forEach(regionName => {
+    const regionData = regions[regionName];
+    if (!regionData) return;
+    
+    // Get drawings from ALL three symptom types
+    const tinglingData = handDiagramData[`tinglingFront${hand}`] || [];
+    const numbnessData = handDiagramData[`numbnessFront${hand}`] || [];
+    const painData = handDiagramData[`painFront${hand}`] || [];
+    
+    // Calculate combined coverage (unique pixels from all three)
+    const combinedCoverage = calculateCombinedRegionCoverage(
+      [tinglingData, numbnessData, painData],
+      regionData.path2D
+    );
+    
+    // Store combined coverage for scoring
+    coverage[regionName] = combinedCoverage.percentage;
+  });
+
+  // Scoring logic:
+  let affectedDigits = 0;
+  
+  const thumbAffected = (coverage['thumb_distal'] || 0) > 5;
+  if (thumbAffected) affectedDigits++;
+  
+  const indexMiddle50 = (coverage['index_middle'] || 0) > 50;
+  const indexDistalSome = (coverage['index_distal'] || 0) > 5;
+  const indexAffected = indexMiddle50 || indexDistalSome;
+  if (indexAffected) affectedDigits++;
+  
+  const middleMiddle50 = (coverage['middle_middle'] || 0) > 50;
+  const middleDistalSome = (coverage['middle_distal'] || 0) > 5;
+  const middleAffected = middleMiddle50 || middleDistalSome;
+  if (middleAffected) affectedDigits++;
+
+  return {
+    medianDigitsAffected: affectedDigits,
+    detailedCoverage: coverage,  // Now contains combined coverage
+    coverageBySymptom: coverageBySymptom,  // Still has individual breakdown
+    digitDetails: {
+      thumb: { affected: thumbAffected, distal: coverage['thumb_distal'] || 0 },
+      index: { affected: indexAffected, distal: coverage['index_distal'] || 0, middle: coverage['index_middle'] || 0 },
+      middle: { affected: middleAffected, distal: coverage['middle_distal'] || 0, middle: coverage['middle_middle'] || 0 }
+    }
+  };
+};
+
+  // MNDS CTS scoring method
+  const calculateMNDSScore = (symptoms) => {
+    const affected = symptoms.medianDigitsAffected;
+    
+    if (affected === 0) {
+      return {
+        score: 0,
+        description: 'CTS is unlikely based on hand diagram'
+      };
+    } else if (affected === 1) {
+      return {
+        score: 1,
+        description: 'Low probability of CTS. Consider other diagnoses or early-stage CTS.'
+      };
+    } else {
+      // affected >= 2
+      return {
+        score: 2,
+        description: 'Moderate to high probability of CTS. Further evaluation strongly recommended.'
+      };
+    }
+  };
+
+  const drawHandOutline = (canvas, isLeft = false, isBack = false) => {
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const img = new Image();
+    // Use pre-split images that exactly match canvas dimensions
+    let imagePath;
+    if (isBack) {
+      imagePath = isLeft ? '/hands/hand_back_left.png' : '/hands/hand_back_right.png';
+    } else {
+      imagePath = isLeft ? '/hands/hand_front_left.png' : '/hands/hand_front_right.png';
+    }
+
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    };
+    
+    img.onerror = () => {
+      console.error('Failed to load hand image:', imagePath);
+      ctx.fillStyle = '#f0f0f0';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#999';
+      ctx.font = '16px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(isBack ? 'Back View' : 'Palm View', canvas.width / 2, canvas.height / 2);
+    };
+    
+    img.src = imagePath;
+  };
+
+  useEffect(() => {
+    // Initialize all hand diagrams
+    Object.entries(canvasRefs).forEach(([key, ref]) => {
+      if (ref.current) {
+        const isLeft = key.includes('Left');
+        const isBack = key.includes('Back');
+        drawHandOutline(ref.current, isLeft, isBack);
+      }
+    });
+  }, [currentSection, svgRegions]);
+
+  // Render combined drawings on results page
+  useEffect(() => {
+    if (currentSection === 2 && ctsScores) {
+      setTimeout(() => {
+        renderCombinedDrawings(resultsCanvasRefs.combinedLeft, 'left');
+        renderCombinedDrawings(resultsCanvasRefs.combinedRight, 'right');
+      }, 100);
+    }
+  }, [currentSection, ctsScores]);
+
+  const handleCanvasMouseDown = (e, canvasKey) => {
+    const canvas = e.target;
+    canvas.isDrawing = true;
+    
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    const ctx = canvas.getContext('2d');
+    ctx.strokeStyle = 'rgba(122, 81, 245, 0.6)';
+    ctx.lineWidth = 12;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    
+    setHandDiagramData(prev => ({
+      ...prev,
+      [canvasKey]: [...(prev[canvasKey] || []), { type: 'start', x, y }]
+    }));
+  };
+
+  const handleCanvasMouseMove = (e, canvasKey) => {
+    const canvas = e.target;
+    if (!canvas.isDrawing) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    const ctx = canvas.getContext('2d');
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    
+    setHandDiagramData(prev => ({
+      ...prev,
+      [canvasKey]: [...(prev[canvasKey] || []), { type: 'draw', x, y }]
+    }));
+  };
+
+  const handleCanvasMouseUp = (e, canvasKey) => {
+    const canvas = e.target;
+    canvas.isDrawing = false;
+    
+    setHandDiagramData(prev => ({
+      ...prev,
+      [canvasKey]: [...(prev[canvasKey] || []), { type: 'end' }]
+    }));
+  };
+
+  const clearCanvas = (canvasKey) => {
+    const canvas = canvasRefs[canvasKey].current;
+    if (canvas) {
+      const isLeft = canvasKey.includes('Left');
+      const isBack = canvasKey.includes('Back');
+      drawHandOutline(canvas, isLeft, isBack);
+      
+      setHandDiagramData(prev => ({
+        ...prev,
+        [canvasKey]: []
+      }));
+    }
+  };
+
+  const isCurrentSectionComplete = () => {
+    switch (currentSection) {
+      case 0:
+        // Filter questions based on screening answer
+        const questionsToValidate = diagnosticQuestions.filter(question => {
+          if (!question.requiresNumbnessOrTingling) return true;
+          return diagnosticAnswers[0] === 'Yes';
+        });
+        
+        const allQuestionsAnswered = questionsToValidate.every(question => 
+          diagnosticAnswers[question.id] !== undefined && diagnosticAnswers[question.id] !== ''
+        );
+        return allQuestionsAnswered;
+      
+      case 1:
+        return true;
+      
+      default:
+        return true;
+    }
+  };
+
   const handleNextSection = () => {
-    if (currentSection === 0) {
-      const unanswered = diagnosticQuestions
-        .filter(q => !q.hasNotRelevant && (!hasNumbnessOrTingling || !q.requiresNumbnessOrTingling))
-        .filter(q => diagnosticAnswers[q.id] === undefined);
-      
-      if (unanswered.length > 0) {
-        setHighlightIncomplete(true);
-        setTimeout(() => setHighlightIncomplete(false), 3000);
-        return;
-      }
-      
-      if (!diagnosticEase) {
-        setHighlightIncomplete(true);
-        setTimeout(() => setHighlightIncomplete(false), 3000);
-        return;
-      }
+    if (!isCurrentSectionComplete()) {
+      setHighlightIncomplete(true);
+      alert('Please complete all required fields before proceeding to the next section.');
+      setTimeout(() => {
+        const firstIncomplete = document.querySelector('.incomplete-question');
+        if (firstIncomplete) {
+          firstIncomplete.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center',
+            inline: 'nearest'
+          });
+        }
+      }, 100);
+      return;
     }
-    
+
+    // Calculate CTS scores when moving from hand diagrams to assessment
     if (currentSection === 1) {
-      if (!diagramEase) {
-        setHighlightIncomplete(true);
-        setTimeout(() => setHighlightIncomplete(false), 3000);
-        return;
-      }
-      
-      // Calculate CTS scores
-      const scores = calculateCTSScores();
-      setCtsScores(scores);
-      
-      // Draw combined canvases for results
-      drawCombinedSymptoms();
+      calculateCTSScores();
     }
-    
-    setCurrentSection(currentSection + 1);
+
+    if (currentSection < sections.length - 1) {
+      setCurrentSection(currentSection + 1);
+      setHighlightIncomplete(false);
+      window.scrollTo(0, 0);
+    }
   };
 
   const handlePreviousSection = () => {
-    setCurrentSection(currentSection - 1);
-  };
-
-  const drawCombinedSymptoms = () => {
-    ['left', 'right'].forEach(hand => {
-      const canvasRef = hand === 'left' ? resultsCanvasRefs.combinedLeft : resultsCanvasRefs.combinedRight;
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      
-      canvas.width = CANVAS_WIDTH;
-      canvas.height = CANVAS_HEIGHT;
-      const ctx = canvas.getContext('2d');
-      
-      // Draw hand outline
-      drawHandOutline(canvas, hand === 'left', false);
-      
-      // Overlay all symptoms with transparency
-      setTimeout(() => {
-        ['tingling', 'numbness', 'pain'].forEach(symptom => {
-          const sourceCanvas = canvasRefs[`${symptom}Front${hand.charAt(0).toUpperCase() + hand.slice(1)}`]?.current;
-          if (sourceCanvas) {
-            ctx.globalAlpha = 0.4;
-            ctx.drawImage(sourceCanvas, 0, 0);
-          }
-        });
-        ctx.globalAlpha = 1.0;
-      }, 100);
-    });
+    // Cannot go back from results page (section 2)
+    if (currentSection === 2) {
+      return; // Results are locked
+    }
+    
+    if (currentSection > 0) {
+      setCurrentSection(currentSection - 1);
+      setHighlightIncomplete(false);
+      window.scrollTo(0, 0);
+    }
   };
 
   const exportData = () => {
@@ -479,424 +644,623 @@ const CTSSurveyApp = () => {
       timestamp: new Date().toISOString(),
       diagnosticAnswers,
       diagnosticEase,
-      diagnosticComments,
       handDiagramData,
       diagramEase,
-      diagramComments,
       ctsScores
     };
-    
+
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${participantId}_results.json`;
+    a.download = `CTS_Survey_${participantId}.json`;
     a.click();
   };
+
+  // Render combined symptoms on single canvas with color coding
+  const renderCombinedDrawings = (canvasRef, hand) => {
+    if (!canvasRef || !canvasRef.current) return;
+    
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const isLeft = hand === 'left';
+    
+    // Capitalize first letter for key construction
+    const handCapitalized = hand.charAt(0).toUpperCase() + hand.slice(1);
+    
+    // Draw hand outline first
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    const img = new Image();
+    const imagePath = isLeft ? '/hands/hand_front_left.png' : '/hands/hand_front_right.png';
+    
+    img.onload = () => {
+      // Draw the image
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      
+      // Define colors for each symptom type
+      const symptomColors = {
+        tingling: 'rgba(255, 0, 255, 0.7)',    // Magenta
+        numbness: 'rgba(0, 0, 255, 0.7)',      // Blue
+        pain: 'rgba(255, 165, 0, 0.7)'         // Orange
+      };
+      
+      // Draw each symptom type with different color
+      ['tingling', 'numbness', 'pain'].forEach(symptomType => {
+        const frontKey = `${symptomType}Front${handCapitalized}`;
+        const drawings = handDiagramData[frontKey];
+        
+        console.log(`Rendering ${frontKey}:`, drawings ? `${drawings.length} points` : 'no data');
+        
+        if (drawings && drawings.length > 0) {
+          ctx.strokeStyle = symptomColors[symptomType];
+          ctx.lineWidth = 12;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          
+          let isDrawing = false;
+          drawings.forEach(point => {
+            if (point.type === 'start') {
+              ctx.beginPath();
+              ctx.moveTo(point.x, point.y);
+              isDrawing = true;
+            } else if (point.type === 'draw' && isDrawing) {
+              ctx.lineTo(point.x, point.y);
+              ctx.stroke();
+            } else if (point.type === 'end') {
+              isDrawing = false;
+            }
+          });
+        }
+      });
+    };
+    
+    img.src = imagePath;
+  };
+
+   if (!isClient) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 flex items-center justify-center">
+        <div className="text-gray-600">Loading...</div>
+      </div>
+    );
+  }
 
   const renderSection = () => {
     switch (currentSection) {
       case 0:
         return (
-          <div>
-            <h2 className="text-2xl font-bold mb-6">Part 1: Diagnostic Questions</h2>
-            <div className="space-y-6">
+          <div className="space-y-6">
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-xl border border-green-200">
+              <h2 className="text-2xl font-bold text-green-800 mb-4 flex items-center gap-3">
+                Diagnostic Questions
+              </h2>
+              <p className="text-green-700 text-lg">
+                Please answer the following questions about your symptoms.
+              </p>
+            </div>
+
+            <div className="space-y-4">
               {diagnosticQuestions.map((question) => {
-                const isDisabled = question.requiresNumbnessOrTingling && !hasNumbnessOrTingling;
-                const shouldShow = !question.requiresNumbnessOrTingling || hasNumbnessOrTingling;
-                
-                if (!shouldShow) return null;
+                // Skip numbness/tingling questions if user didn't answer "Yes" to screening question
+                if (question.requiresNumbnessOrTingling && diagnosticAnswers[0] !== 'Yes') {
+                  return null;
+                }
+
+                const isIncomplete = highlightIncomplete && !diagnosticAnswers[question.id];
                 
                 return (
-                  <div 
-                    key={question.id} 
-                    className={`p-4 rounded-lg ${
-                      highlightIncomplete && diagnosticAnswers[question.id] === undefined && !isDisabled
-                        ? 'bg-red-50 border-2 border-red-500'
-                        : 'bg-gray-50'
-                    } ${isDisabled ? 'opacity-50' : ''}`}
+                  <div
+                    key={question.id}
+                    className={`bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border ${
+                      isIncomplete
+                        ? 'border-red-500 bg-red-50 animate-pulse incomplete-question'
+                        : 'border-gray-200'
+                    } ${question.hasNumbnessOrTingling ? 'border-blue-300 bg-blue-50' : ''}`}
                   >
-                    <p className="mb-3 font-medium">{question.id + 1}. {question.text}</p>
-                    <div className="flex gap-3">
-                      {['yes', 'no'].map(answer => (
-                        <button
-                          key={answer}
-                          onClick={() => !isDisabled && handleDiagnosticAnswer(question.id, answer)}
-                          disabled={isDisabled}
-                          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                            diagnosticAnswers[question.id] === answer
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-white text-gray-700 hover:bg-gray-100'
-                          } ${isDisabled ? 'cursor-not-allowed' : ''}`}
-                        >
-                          {answer.charAt(0).toUpperCase() + answer.slice(1)}
-                        </button>
-                      ))}
+                    <p className="font-semibold mb-4 text-lg flex items-center gap-3">
+                      <span className="flex-1">
+                        {question.text}
+                      </span>
+                    </p>
+                    <div className="flex flex-wrap gap-6">
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="radio"
+                          name={`question-${question.id}`}
+                          value="Yes"
+                          checked={diagnosticAnswers[question.id] === 'Yes'}
+                          onChange={(e) => {
+                            const newAnswers = { ...diagnosticAnswers, [question.id]: e.target.value };
+                            if (question.hasNumbnessOrTingling) {
+                              setHasNumbnessOrTingling(true);
+                            }
+                            setDiagnosticAnswers(newAnswers);
+                          }}
+                          className="w-4 h-4 text-green-600"
+                        />
+                        <span className="ml-3 font-medium">Yes</span>
+                      </label>
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="radio"
+                          name={`question-${question.id}`}
+                          value="No"
+                          checked={diagnosticAnswers[question.id] === 'No'}
+                          onChange={(e) => {
+                            const newAnswers = { ...diagnosticAnswers, [question.id]: e.target.value };
+                            if (question.hasNumbnessOrTingling) {
+                              setHasNumbnessOrTingling(false);
+                            }
+                            setDiagnosticAnswers(newAnswers);
+                          }}
+                          className="w-4 h-4 text-green-600"
+                        />
+                        <span className="ml-3 font-medium">No</span>
+                      </label>
                       {question.hasNotRelevant && (
-                        <button
-                          onClick={() => handleDiagnosticAnswer(question.id, 'not_relevant')}
-                          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                            diagnosticAnswers[question.id] === 'not_relevant'
-                              ? 'bg-gray-600 text-white'
-                              : 'bg-white text-gray-700 hover:bg-gray-100'
-                          }`}
-                        >
-                          Not Relevant
-                        </button>
+                        <label className="flex items-center cursor-pointer">
+                          <input
+                            type="radio"
+                            name={`question-${question.id}`}
+                            value="Not relevant"
+                            checked={diagnosticAnswers[question.id] === 'Not relevant'}
+                            onChange={(e) => setDiagnosticAnswers({ ...diagnosticAnswers, [question.id]: e.target.value })}
+                            className="w-4 h-4 text-green-600"
+                          />
+                          <span className="ml-3 font-medium">Not relevant</span>
+                        </label>
                       )}
                     </div>
                   </div>
                 );
               })}
-              
-              <div className={`p-4 rounded-lg ${
-                highlightIncomplete && !diagnosticEase ? 'bg-red-50 border-2 border-red-500' : 'bg-gray-50'
-              }`}>
-                <p className="mb-3 font-medium">How easy was it to complete this section?</p>
-                <div className="flex gap-3">
-                  {['very_easy', 'easy', 'neutral', 'difficult', 'very_difficult'].map(level => (
-                    <button
-                      key={level}
-                      onClick={() => setDiagnosticEase(level)}
-                      className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                        diagnosticEase === level
-                          ? 'bg-green-600 text-white'
-                          : 'bg-white text-gray-700 hover:bg-gray-100'
-                      }`}
-                    >
-                      {level.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
-                    </button>
+            </div>
+
+            <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 space-y-6">
+              <div>
+                <p className="font-semibold mb-4 text-lg flex items-center gap-3">
+                  <span>Was it easy to answer these questions about your hand symptoms?</span>
+                </p>
+                <div className="flex flex-wrap gap-6">
+                  {['Very easy', 'Somewhat easy', 'Somewhat difficult', 'Very difficult'].map((option) => (
+                    <label key={option} className="flex items-center cursor-pointer">
+                      <input
+                        type="radio"
+                        name="diagnostic-ease"
+                        value={option}
+                        checked={diagnosticEase === option}
+                        onChange={(e) => setDiagnosticEase(e.target.value)}
+                        className="w-4 h-4 text-green-600"
+                      />
+                      <span className="ml-3 font-medium">{option}</span>
+                    </label>
                   ))}
                 </div>
               </div>
-              
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <p className="mb-3 font-medium">Comments (optional):</p>
+
+              <div>
+                <label className="block text-lg font-semibold text-gray-800 mb-3">
+                  If you have any comments on how to improve the questions, please write them below:
+                </label>
                 <textarea
                   value={diagnosticComments}
                   onChange={(e) => setDiagnosticComments(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-lg"
-                  rows="3"
-                  placeholder="Any additional comments about this section..."
+                  rows={4}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
+                  placeholder="Your feedback helps us improve this survey..."
                 />
               </div>
             </div>
           </div>
         );
-
+      
       case 1:
-        if (!isClient) return null;
+        // Filter symptoms based on screening question answer
+        const allSymptoms = [
+          { type: 'tingling', label: 'Tingling', instruction: 'Mark areas where you feel pins and needles or tingling sensations' },
+          { type: 'numbness', label: 'Numbness', instruction: 'Mark areas where you have reduced or no sensation' },
+          { type: 'pain', label: 'Pain', instruction: 'Mark areas where you experience pain or discomfort' }
+        ];
         
+        const symptoms = diagnosticAnswers[0] === 'No' 
+          ? allSymptoms.filter(s => s.type === 'pain')
+          : allSymptoms;
+
         return (
-          <div>
-            <h2 className="text-2xl font-bold mb-6">Part 2: Hand Diagram</h2>
-            <p className="mb-6 text-gray-600">
-              Please draw on the hand diagrams below to indicate where you experience symptoms.
-              Draw on both front and back views if needed.
-            </p>
-            
-            {['tingling', 'numbness', 'pain'].map((symptom, symptomIndex) => (
-              <div key={symptom} className="mb-10">
-                <h3 className="text-xl font-semibold mb-4 capitalize flex items-center gap-3">
-                  <span className={`w-6 h-6 rounded-full ${
-                    symptom === 'tingling' ? 'bg-purple-500' :
-                    symptom === 'numbness' ? 'bg-blue-500' : 'bg-orange-500'
-                  }`} />
-                  {symptom.charAt(0).toUpperCase() + symptom.slice(1)}
-                </h3>
-                
-                <div className="grid grid-cols-2 gap-8 mb-6">
-                  <div>
-                    <h4 className="font-medium mb-3 text-center">Left Hand</h4>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm text-center mb-2">Front (Palm)</p>
-                        <div className="relative">
-                          <canvas
-                            ref={canvasRefs[`${symptom}FrontLeft`]}
-                            width={CANVAS_WIDTH}
-                            height={CANVAS_HEIGHT}
-                            className="border-2 border-gray-300 rounded-lg cursor-crosshair"
-                            style={{ width: '150px', height: '200px' }}
-                            onMouseDown={(e) => handleCanvasMouseDown(
-                              canvasRefs[`${symptom}FrontLeft`],
-                              e,
-                              symptom === 'tingling' ? '#9333ea' :
-                              symptom === 'numbness' ? '#3b82f6' : '#f97316',
-                              symptom
-                            )}
-                          />
-                          <button
-                            onClick={() => clearCanvas(canvasRefs[`${symptom}FrontLeft`])}
-                            className="absolute top-2 right-2 bg-white px-2 py-1 text-xs rounded shadow hover:bg-gray-100"
-                          >
-                            Clear
-                          </button>
-                        </div>
-                      </div>
-                      <div>
-                        <p className="text-sm text-center mb-2">Back</p>
-                        <div className="relative">
-                          <canvas
-                            ref={canvasRefs[`${symptom}BackLeft`]}
-                            width={CANVAS_WIDTH}
-                            height={CANVAS_HEIGHT}
-                            className="border-2 border-gray-300 rounded-lg cursor-crosshair"
-                            style={{ width: '150px', height: '200px' }}
-                            onMouseDown={(e) => handleCanvasMouseDown(
-                              canvasRefs[`${symptom}BackLeft`],
-                              e,
-                              symptom === 'tingling' ? '#9333ea' :
-                              symptom === 'numbness' ? '#3b82f6' : '#f97316',
-                              symptom
-                            )}
-                          />
-                          <button
-                            onClick={() => clearCanvas(canvasRefs[`${symptom}BackLeft`])}
-                            className="absolute top-2 right-2 bg-white px-2 py-1 text-xs rounded shadow hover:bg-gray-100"
-                          >
-                            Clear
-                          </button>
-                        </div>
-                      </div>
+          <div className="space-y-8">
+            <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-xl border border-purple-200">
+              <h2 className="text-2xl font-bold text-purple-800 mb-4">Hand Diagrams</h2>
+              <p className="text-purple-700 text-lg mb-2">
+                Please mark the areas where you experience symptoms on the hand diagrams below.
+              </p>
+            </div>
+
+            {symptoms.map((symptom) => (
+              <div key={symptom.type} className="space-y-6">
+                <div className="bg-gradient-to-r from-gray-100 to-gray-50 p-4 rounded-lg">
+                  <h3 className="text-2xl font-bold text-gray-800">
+                    {symptom.label}
+                  </h3>
+                  <p className="text-gray-600 mt-2">{symptom.instruction}</p>
+                </div>
+
+                {/* Front view */}
+                <div className="bg-white rounded-lg p-6 shadow-sm">
+                  <h4 className="text-xl font-semibold mb-6 text-center">Palm side (Volar view):</h4>
+                  <div className="flex gap-12 justify-center">
+                    <div className="text-center">
+                      <p className="mb-4 font-bold text-lg">Left Hand</p>
+                      <canvas
+                        ref={canvasRefs[`${symptom.type}FrontLeft`]}
+                        width={CANVAS_WIDTH}
+                        height={CANVAS_HEIGHT}
+                        className="border-2 border-gray-300 rounded-lg cursor-crosshair shadow-md hover:shadow-lg"
+                        onMouseDown={(e) => handleCanvasMouseDown(e, `${symptom.type}FrontLeft`)}
+                        onMouseMove={(e) => handleCanvasMouseMove(e, `${symptom.type}FrontLeft`)}
+                        onMouseUp={(e) => handleCanvasMouseUp(e, `${symptom.type}FrontLeft`)}
+                        onMouseLeave={(e) => handleCanvasMouseUp(e, `${symptom.type}FrontLeft`)}
+                      />
+                      <button
+                        onClick={() => clearCanvas(`${symptom.type}FrontLeft`)}
+                        className="mt-4 px-6 py-2 bg-gray-600 text-white hover:bg-gray-700 rounded-lg"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                    <div className="text-center">
+                      <p className="mb-4 font-bold text-lg">Right Hand</p>
+                      <canvas
+                        ref={canvasRefs[`${symptom.type}FrontRight`]}
+                        width={CANVAS_WIDTH}
+                        height={CANVAS_HEIGHT}
+                        className="border-2 border-gray-300 rounded-lg cursor-crosshair shadow-md hover:shadow-lg"
+                        onMouseDown={(e) => handleCanvasMouseDown(e, `${symptom.type}FrontRight`)}
+                        onMouseMove={(e) => handleCanvasMouseMove(e, `${symptom.type}FrontRight`)}
+                        onMouseUp={(e) => handleCanvasMouseUp(e, `${symptom.type}FrontRight`)}
+                        onMouseLeave={(e) => handleCanvasMouseUp(e, `${symptom.type}FrontRight`)}
+                      />
+                      <button
+                        onClick={() => clearCanvas(`${symptom.type}FrontRight`)}
+                        className="mt-4 px-6 py-2 bg-gray-600 text-white hover:bg-gray-700 rounded-lg"
+                      >
+                        Clear
+                      </button>
                     </div>
                   </div>
-                  
-                  <div>
-                    <h4 className="font-medium mb-3 text-center">Right Hand</h4>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm text-center mb-2">Front (Palm)</p>
-                        <div className="relative">
-                          <canvas
-                            ref={canvasRefs[`${symptom}FrontRight`]}
-                            width={CANVAS_WIDTH}
-                            height={CANVAS_HEIGHT}
-                            className="border-2 border-gray-300 rounded-lg cursor-crosshair"
-                            style={{ width: '150px', height: '200px' }}
-                            onMouseDown={(e) => handleCanvasMouseDown(
-                              canvasRefs[`${symptom}FrontRight`],
-                              e,
-                              symptom === 'tingling' ? '#9333ea' :
-                              symptom === 'numbness' ? '#3b82f6' : '#f97316',
-                              symptom
-                            )}
-                          />
-                          <button
-                            onClick={() => clearCanvas(canvasRefs[`${symptom}FrontRight`])}
-                            className="absolute top-2 right-2 bg-white px-2 py-1 text-xs rounded shadow hover:bg-gray-100"
-                          >
-                            Clear
-                          </button>
-                        </div>
-                      </div>
-                      <div>
-                        <p className="text-sm text-center mb-2">Back</p>
-                        <div className="relative">
-                          <canvas
-                            ref={canvasRefs[`${symptom}BackRight`]}
-                            width={CANVAS_WIDTH}
-                            height={CANVAS_HEIGHT}
-                            className="border-2 border-gray-300 rounded-lg cursor-crosshair"
-                            style={{ width: '150px', height: '200px' }}
-                            onMouseDown={(e) => handleCanvasMouseDown(
-                              canvasRefs[`${symptom}BackRight`],
-                              e,
-                              symptom === 'tingling' ? '#9333ea' :
-                              symptom === 'numbness' ? '#3b82f6' : '#f97316',
-                              symptom
-                            )}
-                          />
-                          <button
-                            onClick={() => clearCanvas(canvasRefs[`${symptom}BackRight`])}
-                            className="absolute top-2 right-2 bg-white px-2 py-1 text-xs rounded shadow hover:bg-gray-100"
-                          >
-                            Clear
-                          </button>
-                        </div>
-                      </div>
+                </div>
+
+                {/* Back view */}
+                <div className="bg-white rounded-lg p-6 shadow-sm">
+                  <h4 className="text-xl font-semibold mb-6 text-center">Back of hands (Dorsal view):</h4>
+                  <div className="flex gap-12 justify-center">
+                    <div className="text-center">
+                      <p className="mb-4 font-bold text-lg">Left Hand</p>
+                      <canvas
+                        ref={canvasRefs[`${symptom.type}BackLeft`]}
+                        width={CANVAS_WIDTH}
+                        height={CANVAS_HEIGHT}
+                        className="border-2 border-gray-300 rounded-lg cursor-crosshair shadow-md hover:shadow-lg"
+                        onMouseDown={(e) => handleCanvasMouseDown(e, `${symptom.type}BackLeft`)}
+                        onMouseMove={(e) => handleCanvasMouseMove(e, `${symptom.type}BackLeft`)}
+                        onMouseUp={(e) => handleCanvasMouseUp(e, `${symptom.type}BackLeft`)}
+                        onMouseLeave={(e) => handleCanvasMouseUp(e, `${symptom.type}BackLeft`)}
+                      />
+                      <button
+                        onClick={() => clearCanvas(`${symptom.type}BackLeft`)}
+                        className="mt-4 px-6 py-2 bg-gray-600 text-white hover:bg-gray-700 rounded-lg"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                    <div className="text-center">
+                      <p className="mb-4 font-bold text-lg">Right Hand</p>
+                      <canvas
+                        ref={canvasRefs[`${symptom.type}BackRight`]}
+                        width={CANVAS_WIDTH}
+                        height={CANVAS_HEIGHT}
+                        className="border-2 border-gray-300 rounded-lg cursor-crosshair shadow-md hover:shadow-lg"
+                        onMouseDown={(e) => handleCanvasMouseDown(e, `${symptom.type}BackRight`)}
+                        onMouseMove={(e) => handleCanvasMouseMove(e, `${symptom.type}BackRight`)}
+                        onMouseUp={(e) => handleCanvasMouseUp(e, `${symptom.type}BackRight`)}
+                        onMouseLeave={(e) => handleCanvasMouseUp(e, `${symptom.type}BackRight`)}
+                      />
+                      <button
+                        onClick={() => clearCanvas(`${symptom.type}BackRight`)}
+                        className="mt-4 px-6 py-2 bg-gray-600 text-white hover:bg-gray-700 rounded-lg"
+                      >
+                        Clear
+                      </button>
                     </div>
                   </div>
                 </div>
               </div>
             ))}
-            
-            <div className={`p-4 rounded-lg ${
-              highlightIncomplete && !diagramEase ? 'bg-red-50 border-2 border-red-500' : 'bg-gray-50'
-            }`}>
-              <p className="mb-3 font-medium">How easy was it to complete this section?</p>
-              <div className="flex gap-3">
-                {['very_easy', 'easy', 'neutral', 'difficult', 'very_difficult'].map(level => (
-                  <button
-                    key={level}
-                    onClick={() => setDiagramEase(level)}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                      diagramEase === level
-                        ? 'bg-green-600 text-white'
-                        : 'bg-white text-gray-700 hover:bg-gray-100'
-                    }`}
-                  >
-                    {level.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
-                  </button>
+
+            <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
+              <p className="font-semibold mb-4 text-lg flex items-center gap-3">
+                <span>Was it easy to answer to mark the diagrams?</span>
+              </p>
+              <div className="flex flex-wrap gap-6">
+                {['Very easy', 'Somewhat easy', 'Somewhat difficult', 'Very difficult'].map((option) => (
+                  <label key={option} className="flex items-center cursor-pointer">
+                    <input
+                      type="radio"
+                      name="diagram-ease"
+                      value={option}
+                      checked={diagramEase === option}
+                      onChange={(e) => setDiagramEase(e.target.value)}
+                      className="w-4 h-4 text-purple-600"
+                    />
+                    <span className="ml-3 font-medium">{option}</span>
+                  </label>
                 ))}
               </div>
-            </div>
-            
-            <div className="p-4 bg-gray-50 rounded-lg">
-              <p className="mb-3 font-medium">Comments (optional):</p>
-              <textarea
-                value={diagramComments}
-                onChange={(e) => setDiagramComments(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg"
-                rows="3"
-                placeholder="Any additional comments about the hand diagrams..."
-              />
+
+              <div>
+                  <label className="block text-lg font-semibold text-gray-800 mt-4 mb-3">
+                    If you have any comments on how to improve the hand diagrams, please write them below:
+                  </label>
+                  <textarea
+                    value={diagramComments}
+                    onChange={(e) => setDiagramComments(e.target.value)}
+                    rows={4}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+                    placeholder="Your feedback helps us improve the hand diagrams!"
+                  />
+              </div>
             </div>
           </div>
-        );
 
-        case 2:
+        );
+      
+      case 2:
         return (
-          <div>
-            <h2 className="text-3xl font-bold mb-8">Katz Classification Results</h2>
-            
+          <div className="space-y-8">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-200">
+              <h2 className="text-2xl font-bold text-blue-800 mb-4">Assessment Result</h2>
+              <div className="flex items-center gap-2 mb-2">
+                <AlertCircle className="w-5 h-5 text-blue-700" />
+                <h4 className="font-bold text-blue-700">Important Note</h4>
+              </div>
+              <p className="text-sm text-blue-700">
+                This assessment tool is for screening purposes only and should not replace professional medical diagnosis.
+                If you have concerns about your symptoms, please consult with a healthcare provider for proper evaluation.
+              </p>
+            </div>
+
             {ctsScores && (
-              <div className="space-y-8">
+              <div className="space-y-6">
                 {['left', 'right'].map((hand) => (
-                  <div key={hand} className="bg-gray-50 rounded-xl p-8">
-                    <div className="flex items-center justify-between mb-6">
-                      <h3 className="text-2xl font-bold capitalize">
-                        {hand} Hand
-                      </h3>
-                      <div className="flex items-center gap-4">
-                        <span className={`px-6 py-3 rounded-lg text-white font-bold text-lg ${
-                          ctsScores[hand].katzClassification === 'Classic' ? 'bg-red-600' :
-                          ctsScores[hand].katzClassification === 'Probable' ? 'bg-orange-500' :
-                          ctsScores[hand].katzClassification === 'Possible' ? 'bg-yellow-500' :
-                          'bg-green-500'
-                        }`}>
-                          {ctsScores[hand].katzClassification}
-                        </span>
-                        <span className="text-2xl font-bold">
-                          Score: {ctsScores[hand].katzScore}/3
-                        </span>
-                      </div>
-                    </div>
+                  <div key={hand} className="bg-white rounded-xl shadow-lg p-6 border-2 border-gray-200">
+                    <h3 className="text-2xl font-bold mb-6 capitalize">{hand} Hand Assessment</h3>
                     
-                    {/* Visual hand representation */}
-                    <div className="mb-6 flex justify-center">
-                      <canvas
-                        ref={hand === 'left' ? resultsCanvasRefs.combinedLeft : resultsCanvasRefs.combinedRight}
-                        width={CANVAS_WIDTH}
-                        height={CANVAS_HEIGHT}
-                        className="border-2 border-gray-300 rounded-lg"
-                        style={{ width: '225px', height: '300px' }}
-                      />
-                    </div>
-                    
-                    {/* Katz Classification Details */}
-                    <div className="bg-white rounded-lg p-6 mb-6">
-                      <h4 className="font-bold text-lg mb-4">Classification Analysis</h4>
-                      
-                      <div className="space-y-3">
-                        <div className="flex items-start gap-3">
-                          <span className={`w-5 h-5 rounded-full mt-1 ${
-                            ctsScores[hand].volarDigits.count >= 2 ? 'bg-green-500' : 'bg-gray-300'
-                          }`} />
-                          <div>
-                            <p className="font-medium">Volar digit involvement (≥2 required for Classic/Probable)</p>
-                            <p className="text-sm text-gray-600">
-                              {ctsScores[hand].volarDigits.count} digits affected:
-                              {ctsScores[hand].volarDigits.thumb && ' Thumb'}
-                              {ctsScores[hand].volarDigits.index && ' Index'}
-                              {ctsScores[hand].volarDigits.middle && ' Middle'}
-                              {ctsScores[hand].volarDigits.count === 0 && ' None'}
-                            </p>
+                    {/* SCORE WITH EMBEDDED CANVAS */}
+                    <div className={`p-6 rounded-lg mb-6 ${
+                      ctsScores[hand].MNDSScore.score === 2 ? 'bg-red-50 border-2 border-red-300' :
+                      ctsScores[hand].MNDSScore.score === 1 ? 'bg-yellow-50 border-2 border-yellow-300' :
+                      'bg-green-50 border-2 border-green-300'
+                    }`}>
+                      <div className="flex gap-6">
+                        {/* Left: Canvas */}
+                        <div className="flex-shrink-0">
+                          <div className="space-y-2">
+                            <canvas
+                              ref={hand === 'left' ? resultsCanvasRefs.combinedLeft : resultsCanvasRefs.combinedRight}
+                              width={CANVAS_WIDTH}
+                              height={CANVAS_HEIGHT}
+                              className="border-2 border-gray-400 rounded-lg shadow-md"
+                              style={{width: '180px', height: '240px'}}
+                            />
+                            <div className="flex gap-2 justify-center text-xs">
+                              <div className="flex items-center gap-1">
+                                <div className="w-3 h-3 rounded" style={{backgroundColor: 'rgba(255, 0, 255, 0.7)'}}></div>
+                                <span>Tingling</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <div className="w-3 h-3 rounded" style={{backgroundColor: 'rgba(0, 0, 255, 0.7)'}}></div>
+                                <span>Numbness</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <div className="w-3 h-3 rounded" style={{backgroundColor: 'rgba(255, 165, 0, 0.7)'}}></div>
+                                <span>Pain</span>
+                              </div>
+                            </div>
                           </div>
                         </div>
                         
-                        <div className="flex items-start gap-3">
-                          <span className={`w-5 h-5 rounded-full mt-1 ${
-                            !ctsScores[hand].regions.palm ? 'bg-green-500' : 
-                            !ctsScores[hand].regions.ulnarPalm ? 'bg-yellow-500' : 'bg-red-500'
-                          }`} />
-                          <div>
-                            <p className="font-medium">Palm involvement</p>
-                            <p className="text-sm text-gray-600">
-                              {!ctsScores[hand].regions.palm ? 'No palm involvement (Classic pattern possible)' :
-                               !ctsScores[hand].regions.ulnarPalm ? 'Palm involved but ulnar spared (Probable pattern possible)' :
-                               'Full palm involvement (reduces classification)'}
-                            </p>
+                        {/* Right: Score Info */}
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-4">
+                            <h4 className="font-semibold text-xl">Score:</h4>
+                            <div className={`text-5xl font-bold ${
+                              ctsScores[hand].MNDSScore.score === 2 ? 'text-red-700' :
+                              ctsScores[hand].MNDSScore.score === 1 ? 'text-yellow-700' :
+                              'text-green-700'
+                            }`}>
+                              {ctsScores[hand].MNDSScore.score}
+                            </div>
                           </div>
-                        </div>
-                        
-                        <div className="flex items-start gap-3">
-                          <span className={`w-5 h-5 rounded-full mt-1 ${
-                            !ctsScores[hand].regions.dorsum ? 'bg-green-500' : 'bg-yellow-500'
-                          }`} />
-                          <div>
-                            <p className="font-medium">Dorsum involvement</p>
-                            <p className="text-sm text-gray-600">
-                              {!ctsScores[hand].regions.dorsum ? 
-                               'No dorsum involvement (Classic/Probable pattern possible)' :
-                               'Dorsum involved (Possible pattern maximum)'}
-                            </p>
+                          <div className="space-y-2">
+                            <p className="text-lg">{ctsScores[hand].MNDSScore.description}</p>
                           </div>
                         </div>
                       </div>
                     </div>
-                    
-                    {/* Symptom Distribution */}
-                    <div className="bg-white rounded-lg p-6">
-                      <h4 className="font-bold text-lg mb-4">Symptom Distribution</h4>
-                      <div className="grid grid-cols-3 gap-4">
-                        {['tingling', 'numbness', 'pain'].map(symptom => (
-                          <div key={symptom}>
-                            <h5 className={`font-medium mb-2 capitalize flex items-center gap-2`}>
-                              <span className={`w-4 h-4 rounded-full ${
-                                symptom === 'tingling' ? 'bg-purple-500' :
-                                symptom === 'numbness' ? 'bg-blue-500' : 'bg-orange-500'
-                              }`} />
-                              {symptom}
-                            </h5>
-                            <p className="text-sm text-gray-600">
-                              {ctsScores[hand].symptomBreakdown[symptom].length} regions affected
-                            </p>
+
+                    {/* 3. DETAILED COVERAGE THIRD - BY SYMPTOM TYPE */}
+                    <div className="bg-gray-50 p-6 rounded-lg">
+                      <h4 className="font-semibold text-lg mb-4">Detailed Coverage by Symptom Type</h4>
+                      {/* Iterate through regions */}
+                      <div className="space-y-6">
+                        {/* Thumb */}
+                        <div className="border-l-4 border-red-400 pl-4">
+                          <h5 className="font-medium text-base mb-3">Thumb (Distal): </h5>
+                          <div className="space-y-2">
+                            {['tingling', 'numbness', 'pain'].map(symptom => {
+                              const coverage = ctsScores[hand].MNDSScore.coverageBySymptom?.[symptom]?.['thumb_distal'] || 0;
+                              const isSignificant = coverage > 5;
+                              return (
+                                <div key={symptom}>
+                                  <div className="flex justify-between text-sm mb-1">
+                                    <span className="capitalize">{symptom}:</span>
+                                    <span className={isSignificant ? 'font-bold text-red-600' : 'text-gray-600'}>
+                                      {coverage.toFixed(1)}%
+                                      {isSignificant}
+                                    </span>
+                                  </div>
+                                  <div className="w-full bg-gray-200 rounded h-2">
+                                    <div 
+                                      className={`h-2 rounded ${
+                                        symptom === 'tingling' ? 'bg-purple-500' :
+                                        symptom === 'numbness' ? 'bg-blue-500' : 'bg-orange-500'
+                                      }`}
+                                      style={{ width: `${Math.min(coverage, 100)}%`, opacity: isSignificant ? 1 : 0.5 }}
+                                    />
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
-                        ))}
+                        </div>
+
+                        {/* Index */}
+                        <div className="border-l-4 border-green-400 pl-4">
+                          <h5 className="font-medium text-base mb-3">Index Finger:</h5>
+                          
+                          {/* Index Distal */}
+                          <div className="mb-3">
+                            <p className="text-sm font-medium text-gray-900 mb-2">Distal Phalanx:</p>
+                            <div className="space-y-2">
+                              {['tingling', 'numbness', 'pain'].map(symptom => {
+                                const coverage = ctsScores[hand].MNDSScore.coverageBySymptom?.[symptom]?.['index_distal'] || 0;
+                                const isSignificant = coverage > 5;
+                                return (
+                                  <div key={symptom}>
+                                    <div className="flex justify-between text-sm mb-1">
+                                      <span className="capitalize">{symptom}:</span>
+                                      <span className={isSignificant ? 'font-bold text-red-600' : 'text-gray-600'}>
+                                        {coverage.toFixed(1)}%
+                                        {isSignificant}
+                                      </span>
+                                    </div>
+                                    <div className="w-full bg-gray-200 rounded h-2">
+                                      <div 
+                                        className={`h-2 rounded ${
+                                          symptom === 'tingling' ? 'bg-purple-500' :
+                                          symptom === 'numbness' ? 'bg-blue-500' : 'bg-orange-500'
+                                        }`}
+                                        style={{ width: `${Math.min(coverage, 100)}%`, opacity: isSignificant ? 1 : 0.5 }}
+                                      />
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Index Middle */}
+                          <div>
+                            <p className="text-sm font-medium text-gray-900 mb-2">Middle Phalanx:</p>
+                            <div className="space-y-2">
+                              {['tingling', 'numbness', 'pain'].map(symptom => {
+                                const coverage = ctsScores[hand].MNDSScore.coverageBySymptom?.[symptom]?.['index_middle'] || 0;
+                                const isSignificant = coverage > 50;
+                                return (
+                                  <div key={symptom}>
+                                    <div className="flex justify-between text-sm mb-1">
+                                      <span className="capitalize">{symptom}:</span>
+                                      <span className={isSignificant ? 'font-bold text-red-600' : 'text-gray-600'}>
+                                        {coverage.toFixed(1)}%
+                                        {isSignificant}
+                                      </span>
+                                    </div>
+                                    <div className="w-full bg-gray-200 rounded h-2">
+                                      <div 
+                                        className={`h-2 rounded ${
+                                          symptom === 'tingling' ? 'bg-purple-500' :
+                                          symptom === 'numbness' ? 'bg-blue-500' : 'bg-orange-500'
+                                        }`}
+                                        style={{ width: `${Math.min(coverage, 100)}%`, opacity: isSignificant ? 1 : 0.5 }}
+                                      />
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Middle Finger */}
+                        <div className="border-l-4 border-blue-400 pl-4">
+                          <h5 className="font-medium text-base mb-3">Middle Finger:</h5>
+                          
+                          {/* Middle Distal */}
+                          <div className="mb-3">
+                            <p className="text-sm font-medium text-gray-900 mb-2">Distal Phalanx:</p>
+                            <div className="space-y-2">
+                              {['tingling', 'numbness', 'pain'].map(symptom => {
+                                const coverage = ctsScores[hand].MNDSScore.coverageBySymptom?.[symptom]?.['middle_distal'] || 0;
+                                const isSignificant = coverage > 5;
+                                return (
+                                  <div key={symptom}>
+                                    <div className="flex justify-between text-sm mb-1">
+                                      <span className="capitalize">{symptom}:</span>
+                                      <span className={isSignificant ? 'font-bold text-red-600' : 'text-gray-600'}>
+                                        {coverage.toFixed(1)}%
+                                        {isSignificant}
+                                      </span>
+                                    </div>
+                                    <div className="w-full bg-gray-200 rounded h-2">
+                                      <div 
+                                        className={`h-2 rounded ${
+                                          symptom === 'tingling' ? 'bg-purple-500' :
+                                          symptom === 'numbness' ? 'bg-blue-500' : 'bg-orange-500'
+                                        }`}
+                                        style={{ width: `${Math.min(coverage, 100)}%`, opacity: isSignificant ? 1 : 0.5 }}
+                                      />
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Middle Middle */}
+                          <div>
+                            <p className="text-sm font-medium text-gray-700 mb-2">Middle phalanx:</p>
+                            <div className="space-y-2">
+                              {['tingling', 'numbness', 'pain'].map(symptom => {
+                                const coverage = ctsScores[hand].MNDSScore.coverageBySymptom?.[symptom]?.['middle_middle'] || 0;
+                                const isSignificant = coverage > 50;
+                                return (
+                                  <div key={symptom}>
+                                    <div className="flex justify-between text-sm mb-1">
+                                      <span className="capitalize">{symptom}:</span>
+                                      <span className={isSignificant ? 'font-bold text-red-600' : 'text-gray-600'}>
+                                        {coverage.toFixed(1)}%
+                                        {isSignificant}
+                                      </span>
+                                    </div>
+                                    <div className="w-full bg-gray-200 rounded h-2">
+                                      <div 
+                                        className={`h-2 rounded ${
+                                          symptom === 'tingling' ? 'bg-purple-500' :
+                                          symptom === 'numbness' ? 'bg-blue-500' : 'bg-orange-500'
+                                        }`}
+                                        style={{ width: `${Math.min(coverage, 100)}%`, opacity: isSignificant ? 1 : 0.5 }}
+                                      />
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <p className="text-sm text-gray-600 mt-4">
-                        <strong>Total unique areas affected:</strong> {ctsScores[hand].totalUniqueAreas}
-                      </p>
                     </div>
                   </div>
                 ))}
-                
-                {/* Katz Classification Guide */}
-                <div className="bg-blue-50 rounded-xl p-6">
-                  <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-                    <AlertCircle className="w-6 h-6 text-blue-600" />
-                    Katz Classification System
-                  </h3>
-                  <div className="space-y-3 text-sm">
-                    <div className="flex items-start gap-3">
-                      <span className="bg-red-600 text-white px-2 py-1 rounded font-bold">Classic (3)</span>
-                      <p>Distal volar shading in at least 2 of thumb, index, middle fingers. No palm or dorsum drawings.</p>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <span className="bg-orange-500 text-white px-2 py-1 rounded font-bold">Probable (2)</span>
-                      <p>Same as classic but may extend into palm (unless confined to ulnar side of palm).</p>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <span className="bg-yellow-500 text-white px-2 py-1 rounded font-bold">Possible (1)</span>
-                      <p>Volar shading in at least 1 of thumb, index, middle fingers. May include dorsum.</p>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <span className="bg-green-500 text-white px-2 py-1 rounded font-bold">Unlikely (0)</span>
-                      <p>No volar shading in thumb, index, or middle fingers.</p>
-                    </div>
-                  </div>
-                </div>
               </div>
             )}
           </div>
