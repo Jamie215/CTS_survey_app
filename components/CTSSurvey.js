@@ -18,10 +18,10 @@ const CTSSurveyApp = () => {
   const [diagramEase, setDiagramEase] = useState('');
   const [diagramComments, setDiagramComments] = useState('');
   const [highlightIncomplete, setHighlightIncomplete] = useState(false);
-  const [katzScores, setKatzScores] = useState(null);
+  const [ctsScores, setCtsScores] = useState(null);
   const [hasNumbnessOrTingling, setHasNumbnessOrTingling] = useState(null);
   
-  // SVG regions state
+  // SVG regions state - now includes back views
   const [svgRegions, setSvgRegions] = useState({
     leftFront: {},
     rightFront: {},
@@ -90,45 +90,52 @@ const CTSSurveyApp = () => {
       const leftBackRegions = {};
       const rightBackRegions = {};
       
-      // Load all four SVGs
+      // Load all four SVG files
       const svgFiles = [
-        { path: '/hands/hand_front_left.svg', regions: leftFrontRegions },
-        { path: '/hands/hand_front_right.svg', regions: rightFrontRegions },
-        { path: '/hands/hand_back_left.svg', regions: leftBackRegions },
-        { path: '/hands/hand_back_right.svg', regions: rightBackRegions }
+        { path: '/hands/hand_front_left.svg', regions: leftFrontRegions, name: 'left front' },
+        { path: '/hands/hand_front_right.svg', regions: rightFrontRegions, name: 'right front' },
+        { path: '/hands/hand_back_left.svg', regions: leftBackRegions, name: 'left back' },
+        { path: '/hands/hand_back_right.svg', regions: rightBackRegions, name: 'right back' }
       ];
       
-      for (const { path, regions } of svgFiles) {
-        console.log(`Loading ${path}...`);
+      for (const { path, regions, name } of svgFiles) {
+        console.log(`Loading ${name} SVG...`);
         const response = await fetch(path);
         if (!response.ok) {
           throw new Error(`Failed to load ${path}: ${response.status}`);
         }
-        
         const svgText = await response.text();
         const parser = new DOMParser();
         const svgDoc = parser.parseFromString(svgText, 'image/svg+xml');
         
         if (svgDoc.querySelector('parsererror')) {
-          throw new Error(`${path} parsing failed`);
+          throw new Error(`${name} SVG parsing failed`);
         }
         
+        // Process paths - NO SCALING NEEDED!
         const paths = svgDoc.querySelectorAll('path');
-        console.log(`${path} paths found:`, paths.length);
+        console.log(`${name} paths found:`, paths.length);
         
-        paths.forEach(pathElement => {
-          const label = pathElement.getAttribute('inkscape:label') || 
-                       pathElement.getAttributeNS('http://www.inkscape.org/namespaces/inkscape', 'label') ||
-                       pathElement.getAttribute('id');
-          const d = pathElement.getAttribute('d');
+        paths.forEach(path => {
+          const label = path.getAttribute('inkscape:label') || 
+                       path.getAttributeNS('http://www.inkscape.org/namespaces/inkscape', 'label') ||
+                       path.getAttribute('id');
+          const d = path.getAttribute('d');
           
           if (label && d) {
             const path2D = new Path2D(d);
             regions[label] = { path2D, pathString: d, label };
-            console.log(`✓ Region: ${label}`);
+            console.log(`✓ ${name} region:`, label);
           }
         });
       }
+      
+      console.log('✅ Loaded regions:', {
+        leftFront: Object.keys(leftFrontRegions),
+        rightFront: Object.keys(rightFrontRegions),
+        leftBack: Object.keys(leftBackRegions),
+        rightBack: Object.keys(rightBackRegions)
+      });
       
       setSvgRegions({
         leftFront: leftFrontRegions,
@@ -150,7 +157,7 @@ const CTSSurveyApp = () => {
       
     } catch (error) {
       console.error('❌ Failed to load SVG regions:', error);
-      alert(`Error: ${error.message}`);
+      alert(`Error: ${error.message}\n\nCheck all hand SVG files are present`);
     }
   };
 
@@ -256,19 +263,19 @@ const CTSSurveyApp = () => {
   };
 
   // Katz-based scoring algorithm
-  const calculateKatzScore = () => {
+  const calculateCTSScores = () => {
     const scores = { left: null, right: null };
     
     ['left', 'right'].forEach(hand => {
       // Get unique union of all symptom areas
       const unionAreas = new Set();
-      const symptomDrawings = {
+      const symptomRegions = {
         tingling: new Set(),
         numbness: new Set(),
         pain: new Set()
       };
       
-      // Collect drawn pixels for each symptom
+      // Collect drawn regions for each symptom
       ['tingling', 'numbness', 'pain'].forEach(symptom => {
         ['Front', 'Back'].forEach(side => {
           const canvasKey = `${symptom}${side}${hand.charAt(0).toUpperCase() + hand.slice(1)}`;
@@ -311,28 +318,18 @@ const CTSSurveyApp = () => {
               }
               
               if (hasDrawing) {
-                symptomDrawings[symptom].add(`${side}_${regionName}`);
-                unionAreas.add(`${side}_${regionName}`);
+                const fullRegionName = `${side}_${regionName}`;
+                symptomRegions[symptom].add(fullRegionName);
+                unionAreas.add(fullRegionName);
               }
             });
           }
         });
       });
       
-      // Determine Katz classification based on drawn regions
-      let score = 0;
-      let classification = 'Unlikely';
-      let details = {
-        hasVolarThumb: false,
-        hasVolarIndex: false,
-        hasVolarMiddle: false,
-        hasPalm: false,
-        hasUlnarPalm: false,
-        hasDorsum: false,
-        hasWrist: false,
-        affectedDigits: [],
-        totalUniqueArea: unionAreas.size
-      };
+      // Determine Katz classification
+      let katzScore = 0;
+      let katzClassification = 'Unlikely';
       
       // Check volar (front) digits
       const volarRegions = Array.from(unionAreas).filter(r => r.startsWith('Front_'));
@@ -346,51 +343,61 @@ const CTSSurveyApp = () => {
       const middleVolar = volarRegions.some(r => 
         r.includes('middle_distal') || r.includes('middle_middle'));
       
-      details.hasVolarThumb = thumbVolar;
-      details.hasVolarIndex = indexVolar;
-      details.hasVolarMiddle = middleVolar;
-      
-      if (thumbVolar) details.affectedDigits.push('thumb');
-      if (indexVolar) details.affectedDigits.push('index');
-      if (middleVolar) details.affectedDigits.push('middle');
-      
-      // Check for palm and dorsum
-      details.hasPalm = volarRegions.some(r => 
-        r.includes('palm_radial') || r.includes('palm_ulnar'));
-      details.hasUlnarPalm = volarRegions.some(r => r.includes('palm_ulnar'));
-      details.hasDorsum = dorsalRegions.length > 0;
-      details.hasWrist = volarRegions.some(r => r.includes('wrist')) || 
-                        dorsalRegions.some(r => r.includes('wrist'));
-      
-      // Apply Katz classification logic
       const volarDigitCount = [thumbVolar, indexVolar, middleVolar].filter(Boolean).length;
       
-      if (volarDigitCount >= 2 && !details.hasPalm && !details.hasDorsum) {
+      // Check for palm and dorsum
+      const hasPalm = volarRegions.some(r => 
+        r.includes('palm_radial') || r.includes('palm_ulnar'));
+      const hasUlnarPalm = volarRegions.some(r => r.includes('palm_ulnar'));
+      const hasDorsum = dorsalRegions.length > 0;
+      
+      // Apply Katz classification logic
+      if (volarDigitCount >= 2 && !hasPalm && !hasDorsum) {
         // Classic pattern
-        score = 3;
-        classification = 'Classic';
-      } else if (volarDigitCount >= 2 && details.hasPalm && !details.hasUlnarPalm) {
+        katzScore = 3;
+        katzClassification = 'Classic';
+      } else if (volarDigitCount >= 2 && hasPalm && !hasUlnarPalm) {
         // Probable pattern
-        score = 2;
-        classification = 'Probable';
+        katzScore = 2;
+        katzClassification = 'Probable';
       } else if (volarDigitCount >= 1) {
         // Possible pattern
-        score = 1;
-        classification = 'Possible';
+        katzScore = 1;
+        katzClassification = 'Possible';
       } else {
         // Unlikely pattern
-        score = 0;
-        classification = 'Unlikely';
+        katzScore = 0;
+        katzClassification = 'Unlikely';
       }
       
+      // Store results
       scores[hand] = {
-        score,
-        classification,
-        details,
+        katzScore,
+        katzClassification,
+        totalUniqueAreas: unionAreas.size,
+        volarDigits: {
+          thumb: thumbVolar,
+          index: indexVolar,
+          middle: middleVolar,
+          count: volarDigitCount
+        },
+        regions: {
+          palm: hasPalm,
+          ulnarPalm: hasUlnarPalm,
+          dorsum: hasDorsum,
+          volar: volarRegions.length,
+          dorsal: dorsalRegions.length
+        },
         symptomBreakdown: {
-          tingling: Array.from(symptomDrawings.tingling),
-          numbness: Array.from(symptomDrawings.numbness),
-          pain: Array.from(symptomDrawings.pain)
+          tingling: Array.from(symptomRegions.tingling),
+          numbness: Array.from(symptomRegions.numbness),
+          pain: Array.from(symptomRegions.pain)
+        },
+        // Keep compatibility with original display format
+        MNDSScore: {
+          score: katzScore,
+          significantRegions: Array.from(unionAreas),
+          coverageBySymptom: {} // This can be empty as it's not used in Katz
         }
       };
     });
@@ -424,9 +431,12 @@ const CTSSurveyApp = () => {
         return;
       }
       
-      // Calculate Katz scores
-      const scores = calculateKatzScore();
-      setKatzScores(scores);
+      // Calculate CTS scores
+      const scores = calculateCTSScores();
+      setCtsScores(scores);
+      
+      // Draw combined canvases for results
+      drawCombinedSymptoms();
     }
     
     setCurrentSection(currentSection + 1);
@@ -434,6 +444,33 @@ const CTSSurveyApp = () => {
 
   const handlePreviousSection = () => {
     setCurrentSection(currentSection - 1);
+  };
+
+  const drawCombinedSymptoms = () => {
+    ['left', 'right'].forEach(hand => {
+      const canvasRef = hand === 'left' ? resultsCanvasRefs.combinedLeft : resultsCanvasRefs.combinedRight;
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      
+      canvas.width = CANVAS_WIDTH;
+      canvas.height = CANVAS_HEIGHT;
+      const ctx = canvas.getContext('2d');
+      
+      // Draw hand outline
+      drawHandOutline(canvas, hand === 'left', false);
+      
+      // Overlay all symptoms with transparency
+      setTimeout(() => {
+        ['tingling', 'numbness', 'pain'].forEach(symptom => {
+          const sourceCanvas = canvasRefs[`${symptom}Front${hand.charAt(0).toUpperCase() + hand.slice(1)}`]?.current;
+          if (sourceCanvas) {
+            ctx.globalAlpha = 0.4;
+            ctx.drawImage(sourceCanvas, 0, 0);
+          }
+        });
+        ctx.globalAlpha = 1.0;
+      }, 100);
+    });
   };
 
   const exportData = () => {
@@ -446,7 +483,7 @@ const CTSSurveyApp = () => {
       handDiagramData,
       diagramEase,
       diagramComments,
-      katzScores
+      ctsScores
     };
     
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -718,119 +755,99 @@ const CTSSurveyApp = () => {
           </div>
         );
 
-      case 2:
+        case 2:
         return (
           <div>
             <h2 className="text-3xl font-bold mb-8">Katz Classification Results</h2>
             
-            {katzScores && (
+            {ctsScores && (
               <div className="space-y-8">
                 {['left', 'right'].map((hand) => (
                   <div key={hand} className="bg-gray-50 rounded-xl p-8">
-                    <h3 className="text-2xl font-bold mb-6 capitalize flex items-center gap-3">
-                      {hand} Hand
-                      <span className={`px-4 py-2 rounded-lg text-white font-bold ${
-                        katzScores[hand].classification === 'Classic' ? 'bg-red-600' :
-                        katzScores[hand].classification === 'Probable' ? 'bg-orange-500' :
-                        katzScores[hand].classification === 'Possible' ? 'bg-yellow-500' :
-                        'bg-green-500'
-                      }`}>
-                        {katzScores[hand].classification} (Score: {katzScores[hand].score})
-                      </span>
-                    </h3>
-                    
-                    <div className="grid grid-cols-2 gap-6">
-                      {/* Classification Details */}
-                      <div className="bg-white rounded-lg p-6">
-                        <h4 className="font-bold text-lg mb-4">Classification Criteria</h4>
-                        
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-2">
-                            <span className={`w-5 h-5 rounded-full ${
-                              katzScores[hand].details.affectedDigits.length >= 2 ? 'bg-green-500' : 'bg-gray-300'
-                            }`} />
-                            <span>Volar shading in ≥2 digits: {
-                              katzScores[hand].details.affectedDigits.length >= 2 ? 'Yes' : 'No'
-                            }</span>
-                          </div>
-                          
-                          <div className="flex items-center gap-2">
-                            <span className={`w-5 h-5 rounded-full ${
-                              !katzScores[hand].details.hasPalm ? 'bg-green-500' : 'bg-red-500'
-                            }`} />
-                            <span>No palm involvement: {
-                              !katzScores[hand].details.hasPalm ? 'Yes' : 'No'
-                            }</span>
-                          </div>
-                          
-                          <div className="flex items-center gap-2">
-                            <span className={`w-5 h-5 rounded-full ${
-                              !katzScores[hand].details.hasDorsum ? 'bg-green-500' : 'bg-red-500'
-                            }`} />
-                            <span>No dorsum involvement: {
-                              !katzScores[hand].details.hasDorsum ? 'Yes' : 'No'
-                            }</span>
-                          </div>
-                          
-                          {katzScores[hand].details.hasPalm && (
-                            <div className="flex items-center gap-2 ml-6">
-                              <span className={`w-5 h-5 rounded-full ${
-                                !katzScores[hand].details.hasUlnarPalm ? 'bg-yellow-500' : 'bg-red-500'
-                              }`} />
-                              <span className="text-sm">Ulnar palm spared: {
-                                !katzScores[hand].details.hasUlnarPalm ? 'Yes' : 'No'
-                              }</span>
-                            </div>
-                          )}
-                        </div>
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-2xl font-bold capitalize">
+                        {hand} Hand
+                      </h3>
+                      <div className="flex items-center gap-4">
+                        <span className={`px-6 py-3 rounded-lg text-white font-bold text-lg ${
+                          ctsScores[hand].katzClassification === 'Classic' ? 'bg-red-600' :
+                          ctsScores[hand].katzClassification === 'Probable' ? 'bg-orange-500' :
+                          ctsScores[hand].katzClassification === 'Possible' ? 'bg-yellow-500' :
+                          'bg-green-500'
+                        }`}>
+                          {ctsScores[hand].katzClassification}
+                        </span>
+                        <span className="text-2xl font-bold">
+                          Score: {ctsScores[hand].katzScore}/3
+                        </span>
                       </div>
+                    </div>
+                    
+                    {/* Visual hand representation */}
+                    <div className="mb-6 flex justify-center">
+                      <canvas
+                        ref={hand === 'left' ? resultsCanvasRefs.combinedLeft : resultsCanvasRefs.combinedRight}
+                        width={CANVAS_WIDTH}
+                        height={CANVAS_HEIGHT}
+                        className="border-2 border-gray-300 rounded-lg"
+                        style={{ width: '225px', height: '300px' }}
+                      />
+                    </div>
+                    
+                    {/* Katz Classification Details */}
+                    <div className="bg-white rounded-lg p-6 mb-6">
+                      <h4 className="font-bold text-lg mb-4">Classification Analysis</h4>
                       
-                      {/* Affected Areas */}
-                      <div className="bg-white rounded-lg p-6">
-                        <h4 className="font-bold text-lg mb-4">Affected Areas</h4>
+                      <div className="space-y-3">
+                        <div className="flex items-start gap-3">
+                          <span className={`w-5 h-5 rounded-full mt-1 ${
+                            ctsScores[hand].volarDigits.count >= 2 ? 'bg-green-500' : 'bg-gray-300'
+                          }`} />
+                          <div>
+                            <p className="font-medium">Volar digit involvement (≥2 required for Classic/Probable)</p>
+                            <p className="text-sm text-gray-600">
+                              {ctsScores[hand].volarDigits.count} digits affected:
+                              {ctsScores[hand].volarDigits.thumb && ' Thumb'}
+                              {ctsScores[hand].volarDigits.index && ' Index'}
+                              {ctsScores[hand].volarDigits.middle && ' Middle'}
+                              {ctsScores[hand].volarDigits.count === 0 && ' None'}
+                            </p>
+                          </div>
+                        </div>
                         
-                        <div className="space-y-2">
-                          <p className="text-sm">
-                            <strong>Volar Digits:</strong> {
-                              katzScores[hand].details.affectedDigits.length > 0 
-                                ? katzScores[hand].details.affectedDigits.map(d => 
-                                    d.charAt(0).toUpperCase() + d.slice(1)
-                                  ).join(', ')
-                                : 'None'
-                            }
-                          </p>
-                          
-                          <p className="text-sm">
-                            <strong>Palm:</strong> {
-                              katzScores[hand].details.hasPalm ? 'Yes' : 'No'
-                            }
-                            {katzScores[hand].details.hasPalm && katzScores[hand].details.hasUlnarPalm && 
-                              ' (including ulnar side)'}
-                          </p>
-                          
-                          <p className="text-sm">
-                            <strong>Dorsum:</strong> {
-                              katzScores[hand].details.hasDorsum ? 'Yes' : 'No'
-                            }
-                          </p>
-                          
-                          <p className="text-sm">
-                            <strong>Wrist:</strong> {
-                              katzScores[hand].details.hasWrist ? 'Yes' : 'No'
-                            }
-                          </p>
-                          
-                          <p className="text-sm mt-3">
-                            <strong>Total unique areas:</strong> {
-                              katzScores[hand].details.totalUniqueArea
-                            }
-                          </p>
+                        <div className="flex items-start gap-3">
+                          <span className={`w-5 h-5 rounded-full mt-1 ${
+                            !ctsScores[hand].regions.palm ? 'bg-green-500' : 
+                            !ctsScores[hand].regions.ulnarPalm ? 'bg-yellow-500' : 'bg-red-500'
+                          }`} />
+                          <div>
+                            <p className="font-medium">Palm involvement</p>
+                            <p className="text-sm text-gray-600">
+                              {!ctsScores[hand].regions.palm ? 'No palm involvement (Classic pattern possible)' :
+                               !ctsScores[hand].regions.ulnarPalm ? 'Palm involved but ulnar spared (Probable pattern possible)' :
+                               'Full palm involvement (reduces classification)'}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-start gap-3">
+                          <span className={`w-5 h-5 rounded-full mt-1 ${
+                            !ctsScores[hand].regions.dorsum ? 'bg-green-500' : 'bg-yellow-500'
+                          }`} />
+                          <div>
+                            <p className="font-medium">Dorsum involvement</p>
+                            <p className="text-sm text-gray-600">
+                              {!ctsScores[hand].regions.dorsum ? 
+                               'No dorsum involvement (Classic/Probable pattern possible)' :
+                               'Dorsum involved (Possible pattern maximum)'}
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </div>
                     
-                    {/* Symptom Breakdown */}
-                    <div className="mt-6 bg-white rounded-lg p-6">
+                    {/* Symptom Distribution */}
+                    <div className="bg-white rounded-lg p-6">
                       <h4 className="font-bold text-lg mb-4">Symptom Distribution</h4>
                       <div className="grid grid-cols-3 gap-4">
                         {['tingling', 'numbness', 'pain'].map(symptom => (
@@ -843,36 +860,40 @@ const CTSSurveyApp = () => {
                               {symptom}
                             </h5>
                             <p className="text-sm text-gray-600">
-                              {katzScores[hand].symptomBreakdown[symptom].length} regions
+                              {ctsScores[hand].symptomBreakdown[symptom].length} regions affected
                             </p>
                           </div>
                         ))}
                       </div>
+                      <p className="text-sm text-gray-600 mt-4">
+                        <strong>Total unique areas affected:</strong> {ctsScores[hand].totalUniqueAreas}
+                      </p>
                     </div>
                   </div>
                 ))}
                 
-                {/* Interpretation Guide */}
-                <div className="bg-blue-50 rounded-xl p-6 mt-8">
+                {/* Katz Classification Guide */}
+                <div className="bg-blue-50 rounded-xl p-6">
                   <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
                     <AlertCircle className="w-6 h-6 text-blue-600" />
-                    Katz Classification Guide
+                    Katz Classification System
                   </h3>
                   <div className="space-y-3 text-sm">
-                    <div>
-                      <strong className="text-red-600">Classic (3):</strong> Volar shading in ≥2 digits (thumb, index, middle), 
-                      no palm or dorsum involvement
+                    <div className="flex items-start gap-3">
+                      <span className="bg-red-600 text-white px-2 py-1 rounded font-bold">Classic (3)</span>
+                      <p>Distal volar shading in at least 2 of thumb, index, middle fingers. No palm or dorsum drawings.</p>
                     </div>
-                    <div>
-                      <strong className="text-orange-500">Probable (2):</strong> Same as classic but may extend into palm 
-                      (unless confined to ulnar side)
+                    <div className="flex items-start gap-3">
+                      <span className="bg-orange-500 text-white px-2 py-1 rounded font-bold">Probable (2)</span>
+                      <p>Same as classic but may extend into palm (unless confined to ulnar side of palm).</p>
                     </div>
-                    <div>
-                      <strong className="text-yellow-600">Possible (1):</strong> Volar shading in ≥1 digit (thumb, index, middle), 
-                      may include dorsum
+                    <div className="flex items-start gap-3">
+                      <span className="bg-yellow-500 text-white px-2 py-1 rounded font-bold">Possible (1)</span>
+                      <p>Volar shading in at least 1 of thumb, index, middle fingers. May include dorsum.</p>
                     </div>
-                    <div>
-                      <strong className="text-green-600">Unlikely (0):</strong> No volar shading in thumb, index, or middle fingers
+                    <div className="flex items-start gap-3">
+                      <span className="bg-green-500 text-white px-2 py-1 rounded font-bold">Unlikely (0)</span>
+                      <p>No volar shading in thumb, index, or middle fingers.</p>
                     </div>
                   </div>
                 </div>
@@ -892,7 +913,7 @@ const CTSSurveyApp = () => {
         <div className="max-w-7xl mx-auto px-6 py-6">
           <h1 className="text-4xl font-bold text-gray-900 flex items-center gap-4">
             <Hand className="w-10 h-10 text-blue-600" />
-            Carpal Tunnel Syndrome Diagnostic Tool (Katz Classification)
+            Carpal Tunnel Syndrome Diagnostic Tool
           </h1>
         </div>
       </header>
@@ -946,7 +967,7 @@ const CTSSurveyApp = () => {
                       : 'bg-blue-600 text-white hover:bg-blue-700'
                   }`}
                 >
-                  {currentSection === 1 ? 'Calculate Katz Scores' : 'Next'}
+                  {currentSection === 1 ? 'Calculate CTS Scores' : 'Next'}
                   <ChevronRight className="w-5 h-5" />
                 </button>
               )}
