@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Download, Hand, Check, AlertCircle } from 'lucide-react';
 
 const CTSSurveyApp = () => {
-  // Canvas dimensions - using pre-split images
+  // Canvas dimensions - using pre-split images that match exactly
   const CANVAS_WIDTH = 300;
   const CANVAS_HEIGHT = 400;
   
@@ -24,7 +24,7 @@ const CTSSurveyApp = () => {
   // Track drawing state with a ref to avoid stale closures
   const isDrawingRef = useRef(false);
   const currentCanvasKeyRef = useRef(null);
-
+  
   // SVG regions state
   const [svgRegions, setSvgRegions] = useState({
     leftFront: {},
@@ -119,11 +119,11 @@ const CTSSurveyApp = () => {
         const paths = svgDoc.querySelectorAll('path');
         console.log(`Paths found in ${name}:`, paths.length);
 
-        paths.forEach(path => {
-          const label = path.getAttribute('inkscape:label') ||
-                        path.getAttributeNS('http://www.inkscape.org/namespaces/inkscape', 'label') ||
-                        path.getAttribute('id');
-          const d = path.getAttribute('d'); 
+        paths.forEach(pathEl => {
+          const label = pathEl.getAttribute('inkscape:label') ||
+                        pathEl.getAttributeNS('http://www.inkscape.org/namespaces/inkscape', 'label') ||
+                        pathEl.getAttribute('id');
+          const d = pathEl.getAttribute('d'); 
           if (label && d) {
             const path2D = new Path2D(d);
             regions[label] = { path2D, pathString: d, label };
@@ -184,7 +184,7 @@ const CTSSurveyApp = () => {
       return { percentage: 0, coveredPixels: 0, totalPixels: 0 };
     }
     
-    // Create canvas for drawings
+    // Create canvas for drawing
     const combinedCanvas = document.createElement('canvas');
     combinedCanvas.width = CANVAS_WIDTH;
     combinedCanvas.height = CANVAS_HEIGHT;
@@ -239,7 +239,7 @@ const CTSSurveyApp = () => {
     };
   };
 
-  // Calculate coverage of a region for individaul symptom
+  // Calculate coverage of a region for individual symptom
   const calculateRegionCoverage = (drawings, regionPath) => {
     if (!drawings || drawings.length === 0) {
       return { percentage: 0, coveredPixels: 0, totalPixels: 0 };
@@ -1022,11 +1022,14 @@ const CTSSurveyApp = () => {
                         ref={canvasRefs[`${symptom.type}FrontLeft`]}
                         width={CANVAS_WIDTH}
                         height={CANVAS_HEIGHT}
-                        className="border-2 border-gray-300 rounded-lg cursor-crosshair shadow-md hover:shadow-lg"
+                        className="border-2 border-gray-300 rounded-lg cursor-crosshair shadow-md hover:shadow-lg touch-none"
                         onMouseDown={(e) => handleCanvasMouseDown(e, `${symptom.type}FrontLeft`)}
                         onMouseMove={(e) => handleCanvasMouseMove(e, `${symptom.type}FrontLeft`)}
                         onMouseUp={(e) => handleCanvasMouseUp(e, `${symptom.type}FrontLeft`)}
                         onMouseLeave={(e) => handleCanvasMouseUp(e, `${symptom.type}FrontLeft`)}
+                        onTouchStart={(e) => handleCanvasTouchStart(e, `${symptom.type}FrontLeft`)}
+                        onTouchMove={(e) => handleCanvasTouchMove(e, `${symptom.type}FrontLeft`)}
+                        onTouchEnd={(e) => handleCanvasTouchEnd(e, `${symptom.type}FrontLeft`)}
                       />
                       <button
                         onClick={() => clearCanvas(`${symptom.type}FrontLeft`)}
@@ -1041,11 +1044,14 @@ const CTSSurveyApp = () => {
                         ref={canvasRefs[`${symptom.type}FrontRight`]}
                         width={CANVAS_WIDTH}
                         height={CANVAS_HEIGHT}
-                        className="border-2 border-gray-300 rounded-lg cursor-crosshair shadow-md hover:shadow-lg"
+                        className="border-2 border-gray-300 rounded-lg cursor-crosshair shadow-md hover:shadow-lg touch-none"
                         onMouseDown={(e) => handleCanvasMouseDown(e, `${symptom.type}FrontRight`)}
                         onMouseMove={(e) => handleCanvasMouseMove(e, `${symptom.type}FrontRight`)}
                         onMouseUp={(e) => handleCanvasMouseUp(e, `${symptom.type}FrontRight`)}
                         onMouseLeave={(e) => handleCanvasMouseUp(e, `${symptom.type}FrontRight`)}
+                        onTouchStart={(e) => handleCanvasTouchStart(e, `${symptom.type}FrontRight`)}
+                        onTouchMove={(e) => handleCanvasTouchMove(e, `${symptom.type}FrontRight`)}
+                        onTouchEnd={(e) => handleCanvasTouchEnd(e, `${symptom.type}FrontRight`)}
                       />
                       <button
                         onClick={() => clearCanvas(`${symptom.type}FrontRight`)}
@@ -1067,11 +1073,14 @@ const CTSSurveyApp = () => {
                         ref={canvasRefs[`${symptom.type}BackLeft`]}
                         width={CANVAS_WIDTH}
                         height={CANVAS_HEIGHT}
-                        className="border-2 border-gray-300 rounded-lg cursor-crosshair shadow-md hover:shadow-lg"
+                        className="border-2 border-gray-300 rounded-lg cursor-crosshair shadow-md hover:shadow-lg touch-none"
                         onMouseDown={(e) => handleCanvasMouseDown(e, `${symptom.type}BackLeft`)}
                         onMouseMove={(e) => handleCanvasMouseMove(e, `${symptom.type}BackLeft`)}
                         onMouseUp={(e) => handleCanvasMouseUp(e, `${symptom.type}BackLeft`)}
                         onMouseLeave={(e) => handleCanvasMouseUp(e, `${symptom.type}BackLeft`)}
+                        onTouchStart={(e) => handleCanvasTouchStart(e, `${symptom.type}BackLeft`)}
+                        onTouchMove={(e) => handleCanvasTouchMove(e, `${symptom.type}BackLeft`)}
+                        onTouchEnd={(e) => handleCanvasTouchEnd(e, `${symptom.type}BackLeft`)}
                       />
                       <button
                         onClick={() => clearCanvas(`${symptom.type}BackLeft`)}
@@ -1086,11 +1095,14 @@ const CTSSurveyApp = () => {
                         ref={canvasRefs[`${symptom.type}BackRight`]}
                         width={CANVAS_WIDTH}
                         height={CANVAS_HEIGHT}
-                        className="border-2 border-gray-300 rounded-lg cursor-crosshair shadow-md hover:shadow-lg"
+                        className="border-2 border-gray-300 rounded-lg cursor-crosshair shadow-md hover:shadow-lg touch-none"
                         onMouseDown={(e) => handleCanvasMouseDown(e, `${symptom.type}BackRight`)}
                         onMouseMove={(e) => handleCanvasMouseMove(e, `${symptom.type}BackRight`)}
                         onMouseUp={(e) => handleCanvasMouseUp(e, `${symptom.type}BackRight`)}
                         onMouseLeave={(e) => handleCanvasMouseUp(e, `${symptom.type}BackRight`)}
+                        onTouchStart={(e) => handleCanvasTouchStart(e, `${symptom.type}BackRight`)}
+                        onTouchMove={(e) => handleCanvasTouchMove(e, `${symptom.type}BackRight`)}
+                        onTouchEnd={(e) => handleCanvasTouchEnd(e, `${symptom.type}BackRight`)}
                       />
                       <button
                         onClick={() => clearCanvas(`${symptom.type}BackRight`)}
@@ -1164,7 +1176,8 @@ const CTSSurveyApp = () => {
                     
                     {/* SCORE WITH EMBEDDED CANVAS */}
                     <div className={`p-6 rounded-lg mb-6 ${
-                      ctsScores[hand].KatzScore.score === 2 ? 'bg-red-50 border-2 border-red-300' :
+                      ctsScores[hand].KatzScore.score === 3 ? 'bg-red-50 border-2 border-red-300' :
+                      ctsScores[hand].KatzScore.score === 2 ? 'bg-orange-50 border-2 border-orange-300' :
                       ctsScores[hand].KatzScore.score === 1 ? 'bg-yellow-50 border-2 border-yellow-300' :
                       'bg-green-50 border-2 border-green-300'
                     }`}>
@@ -1181,15 +1194,15 @@ const CTSSurveyApp = () => {
                             />
                             <div className="flex gap-2 justify-center text-xs">
                               <div className="flex items-center gap-1">
-                                <div className="w-3 h-3 rounded" style={{backgroundColor: 'rgba(255, 0, 255, 0.7)'}}></div>
+                                <div className="w-3 h-3 rounded" style={{backgroundColor: 'rgba(147, 51, 234, 0.7)'}}></div>
                                 <span>Tingling</span>
                               </div>
                               <div className="flex items-center gap-1">
-                                <div className="w-3 h-3 rounded" style={{backgroundColor: 'rgba(0, 0, 255, 0.7)'}}></div>
+                                <div className="w-3 h-3 rounded" style={{backgroundColor: 'rgba(59, 130, 246, 0.7)'}}></div>
                                 <span>Numbness</span>
                               </div>
                               <div className="flex items-center gap-1">
-                                <div className="w-3 h-3 rounded" style={{backgroundColor: 'rgba(255, 165, 0, 0.7)'}}></div>
+                                <div className="w-3 h-3 rounded" style={{backgroundColor: 'rgba(249, 115, 22, 0.7)'}}></div>
                                 <span>Pain</span>
                               </div>
                             </div>
@@ -1201,7 +1214,8 @@ const CTSSurveyApp = () => {
                           <div className="flex items-center justify-between mb-4">
                             <h4 className="font-semibold text-xl">Score:</h4>
                             <div className={`text-5xl font-bold ${
-                              ctsScores[hand].KatzScore.score === 2 ? 'text-red-700' :
+                              ctsScores[hand].KatzScore.score === 3 ? 'text-red-700' :
+                              ctsScores[hand].KatzScore.score === 2 ? 'text-orange-700' :
                               ctsScores[hand].KatzScore.score === 1 ? 'text-yellow-700' :
                               'text-green-700'
                             }`}>
@@ -1233,7 +1247,7 @@ const CTSSurveyApp = () => {
                                     <span className="capitalize">{symptom}:</span>
                                     <span className={isSignificant ? 'font-bold text-red-600' : 'text-gray-600'}>
                                       {coverage.toFixed(1)}%
-                                      {isSignificant}
+                                      {isSignificant && ' ⚠️'}
                                     </span>
                                   </div>
                                   <div className="w-full bg-gray-200 rounded h-2">
@@ -1268,7 +1282,7 @@ const CTSSurveyApp = () => {
                                       <span className="capitalize">{symptom}:</span>
                                       <span className={isSignificant ? 'font-bold text-red-600' : 'text-gray-600'}>
                                         {coverage.toFixed(1)}%
-                                        {isSignificant}
+                                        {isSignificant && ' ⚠️'}
                                       </span>
                                     </div>
                                     <div className="w-full bg-gray-200 rounded h-2">
@@ -1299,7 +1313,7 @@ const CTSSurveyApp = () => {
                                       <span className="capitalize">{symptom}:</span>
                                       <span className={isSignificant ? 'font-bold text-red-600' : 'text-gray-600'}>
                                         {coverage.toFixed(1)}%
-                                        {isSignificant}
+                                        {isSignificant && ' ⚠️'}
                                       </span>
                                     </div>
                                     <div className="w-full bg-gray-200 rounded h-2">
@@ -1335,7 +1349,7 @@ const CTSSurveyApp = () => {
                                       <span className="capitalize">{symptom}:</span>
                                       <span className={isSignificant ? 'font-bold text-red-600' : 'text-gray-600'}>
                                         {coverage.toFixed(1)}%
-                                        {isSignificant}
+                                        {isSignificant && ' ⚠️'}
                                       </span>
                                     </div>
                                     <div className="w-full bg-gray-200 rounded h-2">
@@ -1366,7 +1380,7 @@ const CTSSurveyApp = () => {
                                       <span className="capitalize">{symptom}:</span>
                                       <span className={isSignificant ? 'font-bold text-red-600' : 'text-gray-600'}>
                                         {coverage.toFixed(1)}%
-                                        {isSignificant}
+                                        {isSignificant && ' ⚠️'}
                                       </span>
                                     </div>
                                     <div className="w-full bg-gray-200 rounded h-2">
