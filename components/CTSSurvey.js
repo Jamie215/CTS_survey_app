@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Download, Hand, Check, AlertCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Hand, Check, AlertCircle, Waves, CircleSlash, Zap } from 'lucide-react';
 
 const CTSSurveyApp = () => {
   // Canvas dimensions - using pre-split images that match exactly
@@ -1345,14 +1345,17 @@ const CTSSurveyApp = () => {
                             <div className="flex gap-3 justify-center text-base">
                               <div className="flex items-center gap-1">
                                 <div className="w-3 h-3 rounded" style={{backgroundColor: 'rgba(147, 51, 234, 0.7)'}}></div>
-                                <span className="text-gray-600">Tingling</span>
+                                <Waves className="w-3 h-3 text-gray-600" />
+                                <span className="text-gray-600"> Tingling</span>
                               </div>
                               <div className="flex items-center gap-1">
                                 <div className="w-3 h-3 rounded" style={{backgroundColor: 'rgba(59, 130, 246, 0.7)'}}></div>
+                                <CircleSlash className="w-3 h-3 text-gray-600" />
                                 <span className="text-gray-600">Numbness</span>
                               </div>
                               <div className="flex items-center gap-1">
                                 <div className="w-3 h-3 rounded" style={{backgroundColor: 'rgba(249, 115, 22, 0.7)'}}></div>
+                                <Zap className="w-3 h-3 text-gray-600" />
                                 <span className="text-gray-600">Pain</span>
                               </div>
                             </div>
@@ -1498,7 +1501,7 @@ const CTSSurveyApp = () => {
             {sections.map((section, index) => (
               <React.Fragment key={section.id}>
                 {/* Step - fixed width for equal spacing */}
-                <div className="flex flex-col items-center w-40">
+                <div className="flex flex-col items-center w-48">
                   <span className={`text-lg font-medium mb-2 text-center ${
                     currentSection === index 
                       ? 'text-purple-700' 
@@ -1524,7 +1527,7 @@ const CTSSurveyApp = () => {
                 </div>
                 {/* Connector Line - positioned between steps */}
                 {index < sections.length - 1 && (
-                  <div className="flex items-end pb-5 -mx-6">
+                  <div className="flex items-end pb-2 -mx-2">
                     <div className={`w-20 h-0.5 ${
                       currentSection > index ? 'bg-purple-600' : 'bg-gray-300'
                     }`} />
