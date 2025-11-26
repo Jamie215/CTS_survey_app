@@ -48,10 +48,12 @@ const CTSSurveyApp = () => {
     painBackRight: useRef(null),
   };
 
-  // Refs for results display - combined symptom canvases
+  // Refs for results display - combined symptom canvases (volar and dorsal)
   const resultsCanvasRefs = {
-    combinedLeft: useRef(null),
-    combinedRight: useRef(null),
+    combinedLeftVolar: useRef(null),
+    combinedRightVolar: useRef(null),
+    combinedLeftDorsal: useRef(null),
+    combinedRightDorsal: useRef(null),
   };
 
   const diagnosticQuestions = [
@@ -804,46 +806,69 @@ const CTSSurveyApp = () => {
     setCurrentSection(currentSection - 1);
   };
 
+  // Helper function to draw symptoms on a canvas
+  const drawSymptomsOnCanvas = (canvas, hand, isBack) => {
+    if (!canvas) return;
+    
+    canvas.width = CANVAS_WIDTH;
+    canvas.height = CANVAS_HEIGHT;
+    const ctx = canvas.getContext('2d');
+    
+    const isLeft = hand === 'Left';
+    drawHandOutline(canvas, isLeft, isBack);
+    
+    setTimeout(() => {
+      ['tingling', 'numbness', 'pain'].forEach((symptom) => {
+        const dataKey = isBack ? `${symptom}Back${hand}` : `${symptom}Front${hand}`;
+        const data = handDiagramData[dataKey] || [];
+        
+        ctx.strokeStyle = symptom === 'tingling' ? 'rgba(147, 51, 234, 0.4)' :
+                         symptom === 'numbness' ? 'rgba(59, 130, 246, 0.4)' : 
+                         'rgba(249, 115, 22, 0.4)';
+        ctx.lineWidth = 12;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        
+        let isDrawing = false;
+        data.forEach(point => {
+          if (point.type === 'start') {
+            ctx.beginPath();
+            ctx.moveTo(point.x, point.y);
+            isDrawing = true;
+          } else if (point.type === 'draw' && isDrawing) {
+            ctx.lineTo(point.x, point.y);
+            ctx.stroke();
+          } else if (point.type === 'end') {
+            isDrawing = false;
+          }
+        });
+      });
+    }, 150);
+  };
+
   const drawCombinedSymptoms = () => {
     ['Left', 'Right'].forEach(hand => {
-      const canvasRef = hand === 'Left' ? resultsCanvasRefs.combinedLeft : resultsCanvasRefs.combinedRight;
-      const canvas = canvasRef.current;
-      if (!canvas) return;
+      // Draw volar (front/palm) view
+      const volarRef = hand === 'Left' ? resultsCanvasRefs.combinedLeftVolar : resultsCanvasRefs.combinedRightVolar;
+      drawSymptomsOnCanvas(volarRef.current, hand, false);
       
-      canvas.width = CANVAS_WIDTH;
-      canvas.height = CANVAS_HEIGHT;
-      const ctx = canvas.getContext('2d');
-      
-      drawHandOutline(canvas, hand === 'Left', false);
-      
-      setTimeout(() => {
-        ['tingling', 'numbness', 'pain'].forEach((symptom) => {
-          const data = handDiagramData[`${symptom}Front${hand}`] || [];
-          
-          ctx.strokeStyle = symptom === 'tingling' ? 'rgba(147, 51, 234, 0.4)' :
-                           symptom === 'numbness' ? 'rgba(59, 130, 246, 0.4)' : 
-                           'rgba(249, 115, 22, 0.4)';
-          ctx.lineWidth = 12;
-          ctx.lineCap = 'round';
-          ctx.lineJoin = 'round';
-          
-          let isDrawing = false;
-          data.forEach(point => {
-            if (point.type === 'start') {
-              ctx.beginPath();
-              ctx.moveTo(point.x, point.y);
-              isDrawing = true;
-            } else if (point.type === 'draw' && isDrawing) {
-              ctx.lineTo(point.x, point.y);
-              ctx.stroke();
-            } else if (point.type === 'end') {
-              isDrawing = false;
-            }
-          });
-        });
-      }, 150);
+      // Draw dorsal (back) view
+      const dorsalRef = hand === 'Left' ? resultsCanvasRefs.combinedLeftDorsal : resultsCanvasRefs.combinedRightDorsal;
+      drawSymptomsOnCanvas(dorsalRef.current, hand, true);
     });
   };
+
+  // Re-initialize results canvases when navigating to Results section (Page 3)
+  useEffect(() => {
+    if (currentSection === 2) {
+      // Small delay to ensure canvases are mounted
+      const timer = setTimeout(() => {
+        drawCombinedSymptoms();
+      }, 50);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [currentSection]);
 
   const exportData = () => {
     const data = {
@@ -1201,15 +1226,34 @@ const CTSSurveyApp = () => {
                     }`}>
                       <div className="flex gap-6">
                         <div className="flex-shrink-0">
-                          <div className="space-y-2">
-                            <canvas
-                              ref={hand === 'left' ? resultsCanvasRefs.combinedLeft : resultsCanvasRefs.combinedRight}
-                              width={CANVAS_WIDTH}
-                              height={CANVAS_HEIGHT}
-                              className="border-2 border-gray-400 rounded-lg shadow-md"
-                              style={{width: '180px', height: '240px'}}
-                            />
-                            <div className="flex gap-2 justify-center text-xs">
+                          <div className="space-y-3">
+                            {/* Two canvases side by side: Volar and Dorsal */}
+                            <div className="flex gap-4">
+                              {/* Volar (Palm) View */}
+                              <div className="text-center">
+                                <p className="text-xs font-semibold text-gray-600 mb-1">Palm (Volar)</p>
+                                <canvas
+                                  ref={hand === 'left' ? resultsCanvasRefs.combinedLeftVolar : resultsCanvasRefs.combinedRightVolar}
+                                  width={CANVAS_WIDTH}
+                                  height={CANVAS_HEIGHT}
+                                  className="border-2 border-gray-400 rounded-lg shadow-md"
+                                  style={{width: '140px', height: '187px'}}
+                                />
+                              </div>
+                              {/* Dorsal (Back) View */}
+                              <div className="text-center">
+                                <p className="text-xs font-semibold text-gray-600 mb-1">Back (Dorsal)</p>
+                                <canvas
+                                  ref={hand === 'left' ? resultsCanvasRefs.combinedLeftDorsal : resultsCanvasRefs.combinedRightDorsal}
+                                  width={CANVAS_WIDTH}
+                                  height={CANVAS_HEIGHT}
+                                  className="border-2 border-gray-400 rounded-lg shadow-md"
+                                  style={{width: '140px', height: '187px'}}
+                                />
+                              </div>
+                            </div>
+                            {/* Legend */}
+                            <div className="flex gap-3 justify-center text-xs">
                               <div className="flex items-center gap-1">
                                 <div className="w-3 h-3 rounded" style={{backgroundColor: 'rgba(147, 51, 234, 0.7)'}}></div>
                                 <span>Tingling</span>
@@ -1281,7 +1325,7 @@ const CTSSurveyApp = () => {
                                   <div className="flex justify-between text-sm mb-1">
                                     <span className="capitalize">{symptom}:</span>
                                     <span className={isSignificant ? 'font-bold text-red-600' : 'text-gray-600'}>
-                                      {coverage.toFixed(1)}%{isSignificant && ' ⚠️'}
+                                      {coverage.toFixed(1)}%{isSignificant}
                                     </span>
                                   </div>
                                   <div className="w-full bg-gray-200 rounded h-2">
@@ -1313,7 +1357,7 @@ const CTSSurveyApp = () => {
                                     <div className="flex justify-between text-sm mb-1">
                                       <span className="capitalize">{symptom}:</span>
                                       <span className={isSignificant ? 'font-bold text-red-600' : 'text-gray-600'}>
-                                        {coverage.toFixed(1)}%{isSignificant && ' ⚠️'}
+                                        {coverage.toFixed(1)}%{isSignificant}
                                       </span>
                                     </div>
                                     <div className="w-full bg-gray-200 rounded h-2">
@@ -1341,7 +1385,7 @@ const CTSSurveyApp = () => {
                                     <div className="flex justify-between text-sm mb-1">
                                       <span className="capitalize">{symptom}:</span>
                                       <span className={isSignificant ? 'font-bold text-red-600' : 'text-gray-600'}>
-                                        {coverage.toFixed(1)}%{isSignificant && ' ⚠️'}
+                                        {coverage.toFixed(1)}%{isSignificant}
                                       </span>
                                     </div>
                                     <div className="w-full bg-gray-200 rounded h-2">
@@ -1374,7 +1418,7 @@ const CTSSurveyApp = () => {
                                     <div className="flex justify-between text-sm mb-1">
                                       <span className="capitalize">{symptom}:</span>
                                       <span className={isSignificant ? 'font-bold text-red-600' : 'text-gray-600'}>
-                                        {coverage.toFixed(1)}%{isSignificant && ' ⚠️'}
+                                        {coverage.toFixed(1)}%{isSignificant}
                                       </span>
                                     </div>
                                     <div className="w-full bg-gray-200 rounded h-2">
@@ -1402,7 +1446,7 @@ const CTSSurveyApp = () => {
                                     <div className="flex justify-between text-sm mb-1">
                                       <span className="capitalize">{symptom}:</span>
                                       <span className={isSignificant ? 'font-bold text-red-600' : 'text-gray-600'}>
-                                        {coverage.toFixed(1)}%{isSignificant && ' ⚠️'}
+                                        {coverage.toFixed(1)}%{isSignificant}
                                       </span>
                                     </div>
                                     <div className="w-full bg-gray-200 rounded h-2">
@@ -1429,14 +1473,14 @@ const CTSSurveyApp = () => {
                               <p className="text-sm font-medium text-gray-900 mb-2">Radial Side:</p>
                               <p className="text-lg font-bold">
                                 {(ctsScores[hand].detailedCoverage?.palm_radial || 0).toFixed(1)}%
-                                {(ctsScores[hand].detailedCoverage?.palm_radial || 0) > 5 && ' ⚠️'}
+                                {(ctsScores[hand].detailedCoverage?.palm_radial || 0) > 5}
                               </p>
                             </div>
                             <div>
                               <p className="text-sm font-medium text-gray-900 mb-2">Ulnar Side:</p>
                               <p className="text-lg font-bold">
                                 {(ctsScores[hand].detailedCoverage?.palm_ulnar || 0).toFixed(1)}%
-                                {(ctsScores[hand].detailedCoverage?.palm_ulnar || 0) > 5 && ' ⚠️'}
+                                {(ctsScores[hand].detailedCoverage?.palm_ulnar || 0) > 5}
                               </p>
                             </div>
                           </div>
@@ -1447,7 +1491,7 @@ const CTSSurveyApp = () => {
                           <h5 className="font-medium text-base mb-3">Dorsum (Back of Hand):</h5>
                           <p className="text-lg font-bold">
                             {(ctsScores[hand].detailedCoverage?.dorsum || 0).toFixed(1)}%
-                            {(ctsScores[hand].detailedCoverage?.dorsum || 0) > 5 && ' ⚠️ (reduces classification)'}
+                            {(ctsScores[hand].detailedCoverage?.dorsum || 0) > 5 && ' (reduces classification)'}
                           </p>
                         </div>
                       </div>
