@@ -571,16 +571,71 @@ const CTSSurveyApp = () => {
     img.src = imagePath;
   };
 
+  // Initialize canvases when component mounts
   useEffect(() => {
     Object.entries(canvasRefs).forEach(([key, ref]) => {
       if (ref.current) {
         const isLeft = key.includes('Left');
         const isBack = key.includes('Back');
         drawHandOutline(ref.current, isLeft, isBack);
-        setHandDiagramData(prev => ({ ...prev, [canvasKey]: [] }));
       }
     });
   }, [isClient]);
+
+  // Re-initialize canvases when navigating to hand digram section
+  useEffect(() => {
+    if (currentSection === 1) {
+      // Small delay to ensure canvases are mounted
+      const timer = setTimeout(() => {
+        Object.entries(canvasRefs).forEach(([key, ref]) => {
+          if (ref.current) {
+            const isLeft = key.includes('Left');
+            const isBack = key.includes('Back');
+            
+            // Only draw if canvas doesn't already have drawing data
+            // (to preserve user's drawings if they go back and forth)
+            const existingData = handDiagramData[key];
+            if (!existingData || existingData.length === 0) {
+              drawHandOutline(ref.current, isLeft, isBack);
+            } else {
+              // Redraw the hand outline first, then redraw the user's strokes
+              drawHandOutline(ref.current, isLeft, isBack);
+              
+              // Wait for image to load, then redraw strokes
+              setTimeout(() => {
+                const canvas = ref.current;
+                if (!canvas) return;
+                
+                const ctx = canvas.getContext('2d');
+                const symptomType = getSymptomType(key);
+                ctx.strokeStyle = getStrokeColor(symptomType);
+                ctx.lineWidth = 12;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                
+                let isDrawing = false;
+                existingData.forEach(point => {
+                  if (point.type === 'start') {
+                    ctx.beginPath();
+                    ctx.moveTo(point.x, point.y);
+                    isDrawing = true;
+                  } else if (point.type === 'draw' && isDrawing) {
+                    ctx.lineTo(point.x, point.y);
+                    ctx.stroke();
+                  } else if (point.type === 'end') {
+                    isDrawing = false;
+                  }
+                });
+              }, 150);
+            }
+          }
+        });
+      }, 50);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [currentSection]);
+
 
   const clearCanvas = (canvasKey) => {
     const ref = canvasRefs[canvasKey];
