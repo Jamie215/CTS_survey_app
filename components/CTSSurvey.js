@@ -57,24 +57,24 @@ const CTSSurveyApp = () => {
   };
 
   const diagnosticQuestions = [
-    { id: 0, text: "Do you ever have numbness and tingling in your fingers?", hasNumbnessOrTingling: true },
-    { id: 1, text: "Do you wake up because of tingling or numbness in your fingers?", requiresNumbnessOrTingling: true },
-    { id: 2, text: "Do you have tingling or numbness in your fingers when you first wake up?", requiresNumbnessOrTingling: true },
-    { id: 3, text: "Is your numbness or tingling mainly in your thumb, index, and/or middle finger?", requiresNumbnessOrTingling: true },
-    { id: 4, text: "Do you have any quick movements or positions that relieve your tingling or numbness?", requiresNumbnessOrTingling: true },
-    { id: 5, text: "Do you have numbness or tingling in your little (small/pinky) finger?", requiresNumbnessOrTingling: true },
-    { id: 6, text: "Do certain activities (for example, holding objects or repetitive finger movement) increase the numbness or tingling in your fingers?", requiresNumbnessOrTingling: true },
-    { id: 7, text: "Did you have numbness or tingling in your fingers when you were pregnant? (If relevant)", hasNotRelevant: true, requiresNumbnessOrTingling: true },
-    { id: 8, text: "Do you wake up because of pain in your wrist?" },
-    { id: 9, text: "Do you drop small objects like coins or a cup?" },
-    { id: 10, text: "Do you often have neck pain?" },
-    { id: 11, text: "Do you have numbness or tingling in your toes?" },
-    { id: 12, text: "Have your symptoms improved with using wrist support brace or splint? (If relevant)", hasNotRelevant: true }
+    { id: 0, number: '1', text: "Do you ever have numbness and tingling in your fingers?", hasNumbnessOrTingling: true },
+    { id: 1, number: '1a', text: "Do you wake up because of tingling or numbness in your fingers?", requiresNumbnessOrTingling: true },
+    { id: 2, number: '1b', text: "Do you have tingling or numbness in your fingers when you first wake up?", requiresNumbnessOrTingling: true },
+    { id: 3, number: '1c', text: "Is your numbness or tingling mainly in your thumb, index, and/or middle finger?", requiresNumbnessOrTingling: true },
+    { id: 4, number: '1d', text: "Do you have any quick movements or positions that relieve your tingling or numbness?", requiresNumbnessOrTingling: true },
+    { id: 5, number: '1e', text: "Do you have numbness or tingling in your little (small/pinky) finger?", requiresNumbnessOrTingling: true },
+    { id: 6, number: '1f', text: "Do certain activities (for example, holding objects or repetitive finger movement) increase the numbness or tingling in your fingers?", requiresNumbnessOrTingling: true },
+    { id: 7, number: '1g', text: "Did you have numbness or tingling in your fingers when you were pregnant? (If relevant)", hasNotRelevant: true, requiresNumbnessOrTingling: true },
+    { id: 8, number: '2', text: "Do you wake up because of pain in your wrist?" },
+    { id: 9, number: '3', text: "Do you drop small objects like coins or a cup?" },
+    { id: 10, number: '4', text: "Do you often have neck pain?" },
+    { id: 11, number: '5', text: "Do you have numbness or tingling in your toes?" },
+    { id: 12, number: '6', text: "Have your symptoms improved with using wrist support brace or splint? (If relevant)", hasNotRelevant: true }
   ];
 
   const sections = [
-    { id: 0, title: "Page 1" },
-    { id: 1, title: "Page 2" },
+    { id: 0, title: "Diagnostic Questions" },
+    { id: 1, title: "Hand Diagrams" },
     { id: 2, title: "Results" },
   ];
 
@@ -903,126 +903,179 @@ const CTSSurveyApp = () => {
       case 0:
         return (
           <div className="space-y-6">
-            <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-xl border border-green-200">
-              <h2 className="text-2xl font-bold text-green-800 mb-4 flex items-center gap-3">
+            {/* Section Header */}
+            <div>
+              <h2 className="text-2xl font-semibold text-gray-800 mb-2">
                 Diagnostic Questions
               </h2>
-              <p className="text-green-700 text-lg">
-                Please answer the following questions about your symptoms.
+              <p className="text-gray-600">
+                Please answer the following questions as yes or no. We will ask about numbness which some people describe 
+                as having no feeling or dead feeling. We will also ask about tingling which some people call pins and needles or 
+                prickly feelings. Please pick the answer about how your hand has felt over the last month.
               </p>
             </div>
 
-            <div className="space-y-4">
-              {diagnosticQuestions.map((question) => {
-                // Skip dependent questions if user answered "No" to Q0
-                if (question.requiresNumbnessOrTingling && hasNumbnessOrTingling === false) {
-                  return null;
-                }
-                // Also skip dependent questions if Q0 hasn't been answered yet
-                if (question.requiresNumbnessOrTingling && hasNumbnessOrTingling === null && question.id !== 0) {
-                  return null;
-                }
+            {/* Questions Container - Single Background */}
+            <div className="bg-gray-50 rounded-xl p-6">
+              <div className="space-y-6">
+                {diagnosticQuestions.map((question) => {
+                  // Skip dependent questions if user answered "No" to Q0
+                  if (question.requiresNumbnessOrTingling && hasNumbnessOrTingling === false) {
+                    return null;
+                  }
+                  // Also skip dependent questions if Q0 hasn't been answered yet
+                  if (question.requiresNumbnessOrTingling && hasNumbnessOrTingling === null && question.id !== 0) {
+                    return null;
+                  }
 
-                // All visible questions are required
-                const isIncomplete = highlightIncomplete && diagnosticAnswers[question.id] === undefined;
-                
-                return (
-                  <div
-                    key={question.id}
-                    className={`bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border ${
-                      isIncomplete
-                        ? 'border-red-500 bg-red-50 animate-pulse'
-                        : 'border-gray-200'
-                    } ${question.hasNumbnessOrTingling ? 'border-blue-300 bg-blue-50' : ''}`}
-                  >
-                    <p className="font-semibold mb-4 text-lg flex items-center gap-3">
-                      <span className="flex-1">{question.text}</span>
-                    </p>
-                    <div className="flex flex-wrap gap-6">
-                      <label className="flex items-center cursor-pointer">
-                        <input
-                          type="radio"
-                          name={`question-${question.id}`}
-                          value="Yes"
-                          checked={diagnosticAnswers[question.id] === 'Yes'}
-                          onChange={(e) => {
-                            const newAnswers = { ...diagnosticAnswers, [question.id]: e.target.value };
-                            setDiagnosticAnswers(newAnswers);
-                            if (question.hasNumbnessOrTingling) {
-                              setHasNumbnessOrTingling(true);
-                            }
-                          }}
-                          className="w-4 h-4 text-green-600"
-                        />
-                        <span className="ml-3 font-medium">Yes</span>
-                      </label>
-                      <label className="flex items-center cursor-pointer">
-                        <input
-                          type="radio"
-                          name={`question-${question.id}`}
-                          value="No"
-                          checked={diagnosticAnswers[question.id] === 'No'}
-                          onChange={(e) => {
-                            const newAnswers = { ...diagnosticAnswers, [question.id]: e.target.value };
-                            setDiagnosticAnswers(newAnswers);
-                            if (question.hasNumbnessOrTingling) {
-                              setHasNumbnessOrTingling(false);
-                            }
-                          }}
-                          className="w-4 h-4 text-green-600"
-                        />
-                        <span className="ml-3 font-medium">No</span>
-                      </label>
-                      {question.hasNotRelevant && (
-                        <label className="flex items-center cursor-pointer">
+                  // All visible questions are required
+                  const isIncomplete = highlightIncomplete && diagnosticAnswers[question.id] === undefined;
+                  const isSubQuestion = question.number.includes('a') || question.number.includes('b') || 
+                                        question.number.includes('c') || question.number.includes('d') ||
+                                        question.number.includes('e') || question.number.includes('f') ||
+                                        question.number.includes('g');
+                  
+                  return (
+                    <div
+                      key={question.id}
+                      className={`${isSubQuestion ? 'ml-6' : ''} ${
+                        isIncomplete ? 'bg-red-50 rounded-lg p-3 -m-3 border border-red-300' : ''
+                      }`}
+                    >
+                      <p className={`font-medium mb-3 text-gray-800 ${isSubQuestion ? 'text-base' : 'text-lg'}`}>
+                        {question.number}. {question.text}
+                      </p>
+                      <div className="flex flex-wrap gap-6">
+                        <label className="flex items-center cursor-pointer group">
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+                            diagnosticAnswers[question.id] === 'Yes' 
+                              ? 'border-purple-600 bg-purple-600' 
+                              : 'border-gray-400 group-hover:border-purple-400'
+                          }`}>
+                            {diagnosticAnswers[question.id] === 'Yes' && (
+                              <div className="w-2 h-2 rounded-full bg-white" />
+                            )}
+                          </div>
                           <input
                             type="radio"
                             name={`question-${question.id}`}
-                            value="Not relevant"
-                            checked={diagnosticAnswers[question.id] === 'Not relevant'}
-                            onChange={(e) => setDiagnosticAnswers({ ...diagnosticAnswers, [question.id]: e.target.value })}
-                            className="w-4 h-4 text-green-600"
+                            value="Yes"
+                            checked={diagnosticAnswers[question.id] === 'Yes'}
+                            onChange={(e) => {
+                              const newAnswers = { ...diagnosticAnswers, [question.id]: e.target.value };
+                              setDiagnosticAnswers(newAnswers);
+                              if (question.hasNumbnessOrTingling) {
+                                setHasNumbnessOrTingling(true);
+                              }
+                            }}
+                            className="sr-only"
                           />
-                          <span className="ml-3 font-medium">Not relevant</span>
+                          <span className={`ml-2 font-medium ${
+                            diagnosticAnswers[question.id] === 'Yes' ? 'text-purple-600' : 'text-gray-600'
+                          }`}>Yes</span>
                         </label>
-                      )}
+                        <label className="flex items-center cursor-pointer group">
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+                            diagnosticAnswers[question.id] === 'No' 
+                              ? 'border-purple-600 bg-purple-600' 
+                              : 'border-gray-400 group-hover:border-purple-400'
+                          }`}>
+                            {diagnosticAnswers[question.id] === 'No' && (
+                              <div className="w-2 h-2 rounded-full bg-white" />
+                            )}
+                          </div>
+                          <input
+                            type="radio"
+                            name={`question-${question.id}`}
+                            value="No"
+                            checked={diagnosticAnswers[question.id] === 'No'}
+                            onChange={(e) => {
+                              const newAnswers = { ...diagnosticAnswers, [question.id]: e.target.value };
+                              setDiagnosticAnswers(newAnswers);
+                              if (question.hasNumbnessOrTingling) {
+                                setHasNumbnessOrTingling(false);
+                              }
+                            }}
+                            className="sr-only"
+                          />
+                          <span className={`ml-2 font-medium ${
+                            diagnosticAnswers[question.id] === 'No' ? 'text-purple-600' : 'text-gray-600'
+                          }`}>No</span>
+                        </label>
+                        {question.hasNotRelevant && (
+                          <label className="flex items-center cursor-pointer group">
+                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+                              diagnosticAnswers[question.id] === 'Not relevant' 
+                                ? 'border-purple-600 bg-purple-600' 
+                                : 'border-gray-400 group-hover:border-purple-400'
+                            }`}>
+                              {diagnosticAnswers[question.id] === 'Not relevant' && (
+                                <div className="w-2 h-2 rounded-full bg-white" />
+                              )}
+                            </div>
+                            <input
+                              type="radio"
+                              name={`question-${question.id}`}
+                              value="Not relevant"
+                              checked={diagnosticAnswers[question.id] === 'Not relevant'}
+                              onChange={(e) => setDiagnosticAnswers({ ...diagnosticAnswers, [question.id]: e.target.value })}
+                              className="sr-only"
+                            />
+                            <span className={`ml-2 font-medium ${
+                              diagnosticAnswers[question.id] === 'Not relevant' ? 'text-purple-600' : 'text-gray-600'
+                            }`}>Not relevant</span>
+                          </label>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
 
-            <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 space-y-6">
+            {/* Optional Feedback Section */}
+            <div className="bg-gray-50 rounded-xl p-6 space-y-4">
               <div>
-                <p className="font-semibold mb-4 text-lg flex items-center gap-3">
-                  <span>Was it easy to answer these questions about your hand symptoms?</span>
+                <p className="font-medium mb-3 text-gray-800">
+                  Was it easy to answer these questions about your hand symptoms?
                 </p>
-                <div className="flex flex-wrap gap-6">
+                <div className="flex flex-wrap gap-4">
                   {['Very easy', 'Somewhat easy', 'Somewhat difficult', 'Very difficult'].map((option) => (
-                    <label key={option} className="flex items-center cursor-pointer">
+                    <label key={option} className="flex items-center cursor-pointer group">
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+                        diagnosticEase === option 
+                          ? 'border-purple-600 bg-purple-600' 
+                          : 'border-gray-400 group-hover:border-purple-400'
+                      }`}>
+                        {diagnosticEase === option && (
+                          <div className="w-2 h-2 rounded-full bg-white" />
+                        )}
+                      </div>
                       <input
                         type="radio"
                         name="diagnostic-ease"
                         value={option}
                         checked={diagnosticEase === option}
                         onChange={(e) => setDiagnosticEase(e.target.value)}
-                        className="w-4 h-4 text-green-600"
+                        className="sr-only"
                       />
-                      <span className="ml-3 font-medium">{option}</span>
+                      <span className={`ml-2 text-sm ${
+                        diagnosticEase === option ? 'text-purple-600 font-medium' : 'text-gray-600'
+                      }`}>{option}</span>
                     </label>
                   ))}
                 </div>
               </div>
 
               <div>
-                <label className="block text-lg font-semibold text-gray-800 mb-3">
-                  If you have any comments on how to improve the questions, please write them below:
+                <label className="block font-medium text-gray-800 mb-2">
+                  If you have any comments on how to improve the hand diagrams, please werite them below:
                 </label>
                 <textarea
                   value={diagnosticComments}
                   onChange={(e) => setDiagnosticComments(e.target.value)}
-                  rows={4}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
+                  rows={3}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none bg-white"
                   placeholder="Your feedback helps us improve this survey..."
                 />
               </div>
@@ -1032,9 +1085,9 @@ const CTSSurveyApp = () => {
       
       case 1:
         const allSymptoms = [
-          { type: 'tingling', label: 'Tingling', instruction: 'Mark areas where you feel pins and needles or tingling sensations' },
-          { type: 'numbness', label: 'Numbness', instruction: 'Mark areas where you have reduced or no sensation' },
-          { type: 'pain', label: 'Pain', instruction: 'Mark areas where you experience pain or discomfort' }
+          { type: 'tingling', label: 'Tingling', color: 'purple', instruction: 'Mark areas where you feel pins and needles or tingling sensations' },
+          { type: 'numbness', label: 'Numbness', color: 'blue', instruction: 'Mark areas where you have reduced or no sensation' },
+          { type: 'pain', label: 'Pain', color: 'orange', instruction: 'Mark areas where you experience pain or discomfort' }
         ];
         
         const symptoms = hasNumbnessOrTingling === false
@@ -1042,32 +1095,44 @@ const CTSSurveyApp = () => {
           : allSymptoms;
 
         return (
-          <div className="space-y-8">
-            <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-xl border border-purple-200">
-              <h2 className="text-2xl font-bold text-purple-800 mb-4">Hand Diagrams</h2>
-              <p className="text-purple-700 text-lg mb-2">
-                Please mark the areas where you experience symptoms on the hand diagrams below.
+          <div className="space-y-6">
+            {/* Section Header */}
+            <div>
+              <h2 className="text-2xl font-semibold text-gray-800 mb-2">
+                Hand Diagrams
+              </h2>
+              <p className="text-gray-600">
+                Please mark the areas where you experience symptoms on the hand diagrams below. 
+                Use your mouse or finger to draw on the hand images.
               </p>
             </div>
 
-            {symptoms.map((symptom) => (
-              <div key={symptom.type} className="space-y-6">
-                <div className="bg-gradient-to-r from-gray-100 to-gray-50 p-4 rounded-lg">
-                  <h3 className="text-2xl font-bold text-gray-800">{symptom.label}</h3>
-                  <p className="text-gray-600 mt-2">{symptom.instruction}</p>
+            {symptoms.map((symptom, symptomIndex) => (
+              <div key={symptom.type} className="bg-gray-50 rounded-xl p-6">
+                {/* Symptom Header */}
+                <div className="mb-6">
+                  <h3 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
+                    <span className={`w-4 h-4 rounded-full ${
+                      symptom.type === 'tingling' ? 'bg-purple-500' :
+                      symptom.type === 'numbness' ? 'bg-blue-500' : 'bg-orange-500'
+                    }`}></span>
+                    {symptomIndex + 1}. {symptom.label}
+                  </h3>
+                  <p className="text-gray-600 mt-1 ml-6">{symptom.instruction}</p>
                 </div>
 
-                {/* Front view */}
-                <div className="bg-white rounded-lg p-6 shadow-sm">
-                  <h4 className="text-xl font-semibold mb-6 text-center">Palm side (Volar view):</h4>
-                  <div className="flex gap-12 justify-center">
+                {/* Volar (Palm) View */}
+                <div className="mb-6">
+                  <h4 className="text-base font-medium text-gray-700 mb-4">Palm side (Volar view):</h4>
+                  <div className="flex gap-8 justify-center flex-wrap">
                     <div className="text-center">
-                      <p className="mb-4 font-bold text-lg">Left Hand</p>
+                      <p className="mb-2 font-medium text-gray-700">Left Hand</p>
                       <canvas
                         ref={canvasRefs[`${symptom.type}FrontLeft`]}
                         width={CANVAS_WIDTH}
                         height={CANVAS_HEIGHT}
-                        className="border-2 border-gray-300 rounded-lg cursor-crosshair shadow-md hover:shadow-lg touch-none"
+                        className="border border-gray-300 rounded-lg cursor-crosshair bg-white touch-none"
+                        style={{width: '200px', height: '267px'}}
                         onMouseDown={(e) => handleCanvasMouseDown(e, `${symptom.type}FrontLeft`)}
                         onMouseMove={(e) => handleCanvasMouseMove(e, `${symptom.type}FrontLeft`)}
                         onMouseUp={(e) => handleCanvasMouseUp(e, `${symptom.type}FrontLeft`)}
@@ -1078,18 +1143,19 @@ const CTSSurveyApp = () => {
                       />
                       <button
                         onClick={() => clearCanvas(`${symptom.type}FrontLeft`)}
-                        className="mt-4 px-6 py-2 bg-gray-600 text-white hover:bg-gray-700 rounded-lg"
+                        className="mt-2 px-4 py-1.5 text-sm bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-md transition-colors"
                       >
                         Clear
                       </button>
                     </div>
                     <div className="text-center">
-                      <p className="mb-4 font-bold text-lg">Right Hand</p>
+                      <p className="mb-2 font-medium text-gray-700">Right Hand</p>
                       <canvas
                         ref={canvasRefs[`${symptom.type}FrontRight`]}
                         width={CANVAS_WIDTH}
                         height={CANVAS_HEIGHT}
-                        className="border-2 border-gray-300 rounded-lg cursor-crosshair shadow-md hover:shadow-lg touch-none"
+                        className="border border-gray-300 rounded-lg cursor-crosshair bg-white touch-none"
+                        style={{width: '200px', height: '267px'}}
                         onMouseDown={(e) => handleCanvasMouseDown(e, `${symptom.type}FrontRight`)}
                         onMouseMove={(e) => handleCanvasMouseMove(e, `${symptom.type}FrontRight`)}
                         onMouseUp={(e) => handleCanvasMouseUp(e, `${symptom.type}FrontRight`)}
@@ -1100,7 +1166,7 @@ const CTSSurveyApp = () => {
                       />
                       <button
                         onClick={() => clearCanvas(`${symptom.type}FrontRight`)}
-                        className="mt-4 px-6 py-2 bg-gray-600 text-white hover:bg-gray-700 rounded-lg"
+                        className="mt-2 px-4 py-1.5 text-sm bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-md transition-colors"
                       >
                         Clear
                       </button>
@@ -1108,17 +1174,18 @@ const CTSSurveyApp = () => {
                   </div>
                 </div>
 
-                {/* Back view */}
-                <div className="bg-white rounded-lg p-6 shadow-sm">
-                  <h4 className="text-xl font-semibold mb-6 text-center">Back of hands (Dorsal view):</h4>
-                  <div className="flex gap-12 justify-center">
+                {/* Dorsal (Back) View */}
+                <div>
+                  <h4 className="text-base font-medium text-gray-700 mb-4">Back of hands (Dorsal view):</h4>
+                  <div className="flex gap-8 justify-center flex-wrap">
                     <div className="text-center">
-                      <p className="mb-4 font-bold text-lg">Left Hand</p>
+                      <p className="mb-2 font-medium text-gray-700">Left Hand</p>
                       <canvas
                         ref={canvasRefs[`${symptom.type}BackLeft`]}
                         width={CANVAS_WIDTH}
                         height={CANVAS_HEIGHT}
-                        className="border-2 border-gray-300 rounded-lg cursor-crosshair shadow-md hover:shadow-lg touch-none"
+                        className="border border-gray-300 rounded-lg cursor-crosshair bg-white touch-none"
+                        style={{width: '200px', height: '267px'}}
                         onMouseDown={(e) => handleCanvasMouseDown(e, `${symptom.type}BackLeft`)}
                         onMouseMove={(e) => handleCanvasMouseMove(e, `${symptom.type}BackLeft`)}
                         onMouseUp={(e) => handleCanvasMouseUp(e, `${symptom.type}BackLeft`)}
@@ -1129,18 +1196,19 @@ const CTSSurveyApp = () => {
                       />
                       <button
                         onClick={() => clearCanvas(`${symptom.type}BackLeft`)}
-                        className="mt-4 px-6 py-2 bg-gray-600 text-white hover:bg-gray-700 rounded-lg"
+                        className="mt-2 px-4 py-1.5 text-sm bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-md transition-colors"
                       >
                         Clear
                       </button>
                     </div>
                     <div className="text-center">
-                      <p className="mb-4 font-bold text-lg">Right Hand</p>
+                      <p className="mb-2 font-medium text-gray-700">Right Hand</p>
                       <canvas
                         ref={canvasRefs[`${symptom.type}BackRight`]}
                         width={CANVAS_WIDTH}
                         height={CANVAS_HEIGHT}
-                        className="border-2 border-gray-300 rounded-lg cursor-crosshair shadow-md hover:shadow-lg touch-none"
+                        className="border border-gray-300 rounded-lg cursor-crosshair bg-white touch-none"
+                        style={{width: '200px', height: '267px'}}
                         onMouseDown={(e) => handleCanvasMouseDown(e, `${symptom.type}BackRight`)}
                         onMouseMove={(e) => handleCanvasMouseMove(e, `${symptom.type}BackRight`)}
                         onMouseUp={(e) => handleCanvasMouseUp(e, `${symptom.type}BackRight`)}
@@ -1151,7 +1219,7 @@ const CTSSurveyApp = () => {
                       />
                       <button
                         onClick={() => clearCanvas(`${symptom.type}BackRight`)}
-                        className="mt-4 px-6 py-2 bg-gray-600 text-white hover:bg-gray-700 rounded-lg"
+                        className="mt-2 px-4 py-1.5 text-sm bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-md transition-colors"
                       >
                         Clear
                       </button>
@@ -1161,36 +1229,50 @@ const CTSSurveyApp = () => {
               </div>
             ))}
 
-            <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
-              <p className="font-semibold mb-4 text-lg flex items-center gap-3">
-                <span>Was it easy to mark the diagrams?</span>
-              </p>
-              <div className="flex flex-wrap gap-6">
-                {['Very easy', 'Somewhat easy', 'Somewhat difficult', 'Very difficult'].map((option) => (
-                  <label key={option} className="flex items-center cursor-pointer">
-                    <input
-                      type="radio"
-                      name="diagram-ease"
-                      value={option}
-                      checked={diagramEase === option}
-                      onChange={(e) => setDiagramEase(e.target.value)}
-                      className="w-4 h-4 text-purple-600"
-                    />
-                    <span className="ml-3 font-medium">{option}</span>
-                  </label>
-                ))}
+            {/* Optional Feedback Section */}
+            <div className="bg-gray-50 rounded-xl p-6 space-y-4">
+              <div>
+                <p className="font-medium mb-3 text-gray-800">
+                  Was it easy to mark the diagrams?
+                </p>
+                <div className="flex flex-wrap gap-4">
+                  {['Very easy', 'Somewhat easy', 'Somewhat difficult', 'Very difficult'].map((option) => (
+                    <label key={option} className="flex items-center cursor-pointer group">
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+                        diagramEase === option 
+                          ? 'border-purple-600 bg-purple-600' 
+                          : 'border-gray-400 group-hover:border-purple-400'
+                      }`}>
+                        {diagramEase === option && (
+                          <div className="w-2 h-2 rounded-full bg-white" />
+                        )}
+                      </div>
+                      <input
+                        type="radio"
+                        name="diagram-ease"
+                        value={option}
+                        checked={diagramEase === option}
+                        onChange={(e) => setDiagramEase(e.target.value)}
+                        className="sr-only"
+                      />
+                      <span className={`ml-2 text-sm ${
+                        diagramEase === option ? 'text-purple-600 font-medium' : 'text-gray-600'
+                      }`}>{option}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
 
-              <div className="mt-4">
-                <label className="block text-lg font-semibold text-gray-800 mb-3">
-                  If you have any comments on how to improve the hand diagrams, please write them below:
+              <div>
+                <label className="block font-medium text-gray-800 mb-2">
+                  If you have any comments on how to improve the questions, please write them below:
                 </label>
                 <textarea
                   value={diagramComments}
                   onChange={(e) => setDiagramComments(e.target.value)}
-                  rows={4}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
-                  placeholder="Your feedback helps us improve the hand diagrams!"
+                  rows={3}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none bg-white"
+                  placeholder="Your feedback helps us improve the hand diagrams..."
                 />
               </div>
             </div>
@@ -1199,81 +1281,88 @@ const CTSSurveyApp = () => {
       
       case 2:
         return (
-          <div className="space-y-8">
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-200">
-              <h2 className="text-2xl font-bold text-blue-800 mb-4">Assessment Result</h2>
-              <div className="flex items-center gap-2 mb-2">
-                <AlertCircle className="w-5 h-5 text-blue-700" />
-                <h4 className="font-bold text-blue-700">Important Note</h4>
+          <div className="space-y-6">
+            {/* Section Header */}
+            <div>
+              <h2 className="text-2xl font-semibold text-gray-800 mb-2">
+                Assessment Results
+              </h2>
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mt-4">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-purple-800">Important Note</p>
+                    <p className="text-sm text-purple-700">
+                      This assessment tool is for screening purposes only and should not replace professional medical diagnosis.
+                      If you have concerns about your symptoms, please consult with a healthcare provider for proper evaluation.
+                    </p>
+                  </div>
+                </div>
               </div>
-              <p className="text-sm text-blue-700">
-                This assessment tool is for screening purposes only and should not replace professional medical diagnosis.
-                If you have concerns about your symptoms, please consult with a healthcare provider for proper evaluation.
-              </p>
             </div>
 
             {ctsScores && (
               <div className="space-y-6">
                 {['left', 'right'].map((hand) => (
-                  <div key={hand} className="bg-white rounded-xl shadow-lg p-6 border-2 border-gray-200">
-                    <h3 className="text-2xl font-bold mb-6 capitalize">{hand} Hand Assessment</h3>
+                  <div key={hand} className="bg-gray-50 rounded-xl p-6">
+                    <h3 className="text-xl font-semibold mb-4 capitalize text-gray-800">{hand} Hand Assessment</h3>
                     
-                    <div className={`p-6 rounded-lg mb-6 ${
-                      ctsScores[hand].KatzScore.score === 3 ? 'bg-red-50 border-2 border-red-300' :
-                      ctsScores[hand].KatzScore.score === 2 ? 'bg-orange-50 border-2 border-orange-300' :
-                      ctsScores[hand].KatzScore.score === 1 ? 'bg-yellow-50 border-2 border-yellow-300' :
-                      'bg-green-50 border-2 border-green-300'
+                    <div className={`p-4 rounded-lg mb-4 ${
+                      ctsScores[hand].KatzScore.score === 3 ? 'bg-red-50 border border-red-200' :
+                      ctsScores[hand].KatzScore.score === 2 ? 'bg-orange-50 border border-orange-200' :
+                      ctsScores[hand].KatzScore.score === 1 ? 'bg-yellow-50 border border-yellow-200' :
+                      'bg-green-50 border border-green-200'
                     }`}>
-                      <div className="flex gap-6">
+                      <div className="flex gap-6 flex-wrap">
                         <div className="flex-shrink-0">
                           <div className="space-y-3">
                             {/* Two canvases side by side: Volar and Dorsal */}
-                            <div className="flex gap-4">
+                            <div className="flex gap-3">
                               {/* Volar (Palm) View */}
                               <div className="text-center">
-                                <p className="text-xs font-semibold text-gray-600 mb-1">Palm (Volar)</p>
+                                <p className="text-xs font-medium text-gray-600 mb-1">Palm (Volar)</p>
                                 <canvas
                                   ref={hand === 'left' ? resultsCanvasRefs.combinedLeftVolar : resultsCanvasRefs.combinedRightVolar}
                                   width={CANVAS_WIDTH}
                                   height={CANVAS_HEIGHT}
-                                  className="border-2 border-gray-400 rounded-lg shadow-md"
-                                  style={{width: '140px', height: '187px'}}
+                                  className="border border-gray-300 rounded-lg bg-white"
+                                  style={{width: '120px', height: '160px'}}
                                 />
                               </div>
                               {/* Dorsal (Back) View */}
                               <div className="text-center">
-                                <p className="text-xs font-semibold text-gray-600 mb-1">Back (Dorsal)</p>
+                                <p className="text-xs font-medium text-gray-600 mb-1">Back (Dorsal)</p>
                                 <canvas
                                   ref={hand === 'left' ? resultsCanvasRefs.combinedLeftDorsal : resultsCanvasRefs.combinedRightDorsal}
                                   width={CANVAS_WIDTH}
                                   height={CANVAS_HEIGHT}
-                                  className="border-2 border-gray-400 rounded-lg shadow-md"
-                                  style={{width: '140px', height: '187px'}}
+                                  className="border border-gray-300 rounded-lg bg-white"
+                                  style={{width: '120px', height: '160px'}}
                                 />
                               </div>
                             </div>
                             {/* Legend */}
-                            <div className="flex gap-3 justify-center text-xs">
+                            <div className="flex gap-2 justify-center text-xs">
                               <div className="flex items-center gap-1">
-                                <div className="w-3 h-3 rounded" style={{backgroundColor: 'rgba(147, 51, 234, 0.7)'}}></div>
-                                <span>Tingling</span>
+                                <div className="w-2.5 h-2.5 rounded" style={{backgroundColor: 'rgba(147, 51, 234, 0.7)'}}></div>
+                                <span className="text-gray-600">Tingling</span>
                               </div>
                               <div className="flex items-center gap-1">
-                                <div className="w-3 h-3 rounded" style={{backgroundColor: 'rgba(59, 130, 246, 0.7)'}}></div>
-                                <span>Numbness</span>
+                                <div className="w-2.5 h-2.5 rounded" style={{backgroundColor: 'rgba(59, 130, 246, 0.7)'}}></div>
+                                <span className="text-gray-600">Numbness</span>
                               </div>
                               <div className="flex items-center gap-1">
-                                <div className="w-3 h-3 rounded" style={{backgroundColor: 'rgba(249, 115, 22, 0.7)'}}></div>
-                                <span>Pain</span>
+                                <div className="w-2.5 h-2.5 rounded" style={{backgroundColor: 'rgba(249, 115, 22, 0.7)'}}></div>
+                                <span className="text-gray-600">Pain</span>
                               </div>
                             </div>
                           </div>
                         </div>
                         
-                        <div className="flex-1">
-                          <div className="mb-4">
-                            <h4 className="font-semibold text-xl">Katz Classification:</h4>
-                            <p className={`text-2xl font-bold ${
+                        <div className="flex-1 min-w-[200px]">
+                          <div className="mb-3">
+                            <p className="text-sm font-medium text-gray-600">Katz Classification:</p>
+                            <p className={`text-xl font-bold ${
                               ctsScores[hand].KatzScore.score === 3 ? 'text-red-700' :
                               ctsScores[hand].KatzScore.score === 2 ? 'text-orange-700' :
                               ctsScores[hand].KatzScore.score === 1 ? 'text-yellow-700' :
@@ -1282,220 +1371,103 @@ const CTSSurveyApp = () => {
                               {ctsScores[hand].KatzScore.classification} (Score: {ctsScores[hand].KatzScore.score})
                             </p>
                           </div>
-                          <p className="text-lg mb-4">{ctsScores[hand].KatzScore.description}</p>
+                          <p className="text-sm text-gray-700 mb-3">{ctsScores[hand].KatzScore.description}</p>
                           
-                          <div className="p-3 bg-white/50 rounded-lg">
-                            <p className="text-sm font-medium">
-                              Affected median nerve digits: {
-                                [
-                                  ctsScores[hand].detailedCoverage?.thumb_distal > 5 ? 'Thumb' : null,
-                                  (ctsScores[hand].detailedCoverage?.index_distal > 5 || ctsScores[hand].detailedCoverage?.index_middle >= 50) ? 'Index' : null,
-                                  (ctsScores[hand].detailedCoverage?.middle_distal > 5 || ctsScores[hand].detailedCoverage?.middle_middle >= 50) ? 'Middle' : null,
-                                ].filter(Boolean).join(', ') || 'None'
-                              }
+                          <div className="text-sm space-y-1">
+                            <p>
+                              <span className="font-medium">Affected digits:</span>{' '}
+                              {[
+                                ctsScores[hand].detailedCoverage?.thumb_distal > 5 ? 'Thumb' : null,
+                                (ctsScores[hand].detailedCoverage?.index_distal > 5 || ctsScores[hand].detailedCoverage?.index_middle >= 50) ? 'Index' : null,
+                                (ctsScores[hand].detailedCoverage?.middle_distal > 5 || ctsScores[hand].detailedCoverage?.middle_middle >= 50) ? 'Middle' : null,
+                              ].filter(Boolean).join(', ') || 'None'}
                             </p>
-                            <p className="text-sm">
-                              Palm involvement: {
-                                (ctsScores[hand].detailedCoverage?.palm_radial > 5 || ctsScores[hand].detailedCoverage?.palm_ulnar > 5) 
-                                  ? (ctsScores[hand].detailedCoverage?.palm_ulnar > 5 && !(ctsScores[hand].detailedCoverage?.palm_radial > 5) 
-                                      ? 'Ulnar only (confined)' 
-                                      : 'Yes') 
-                                  : 'No'
-                              }
+                            <p>
+                              <span className="font-medium">Palm:</span>{' '}
+                              {(ctsScores[hand].detailedCoverage?.palm_radial > 5 || ctsScores[hand].detailedCoverage?.palm_ulnar > 5) 
+                                ? (ctsScores[hand].detailedCoverage?.palm_ulnar > 5 && !(ctsScores[hand].detailedCoverage?.palm_radial > 5) 
+                                    ? 'Ulnar only' 
+                                    : 'Yes') 
+                                : 'No'}
                             </p>
-                            <p className="text-sm">Dorsum involvement: {ctsScores[hand].detailedCoverage?.dorsum > 5 ? 'Yes' : 'No'}</p>
+                            <p>
+                              <span className="font-medium">Dorsum:</span>{' '}
+                              {ctsScores[hand].detailedCoverage?.dorsum > 5 ? 'Yes' : 'No'}
+                            </p>
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    {/* Detailed Coverage */}
-                    <div className="bg-gray-50 p-6 rounded-lg">
-                      <h4 className="font-semibold text-lg mb-4">Detailed Coverage by Symptom Type</h4>
-                      <div className="space-y-6">
-                        {/* Thumb */}
-                        <div className="border-l-4 border-red-400 pl-4">
-                          <h5 className="font-medium text-base mb-3">Thumb (Distal Phalanx):</h5>
-                          <div className="space-y-2">
+                    {/* Detailed Coverage - Collapsible or simplified */}
+                    <details className="mt-4">
+                      <summary className="cursor-pointer text-sm font-medium text-purple-600 hover:text-purple-800">
+                        View detailed coverage breakdown
+                      </summary>
+                      <div className="mt-3 bg-white rounded-lg p-4 border border-gray-200">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                          {/* Thumb */}
+                          <div>
+                            <p className="font-medium text-gray-700 mb-1">Thumb (Distal)</p>
                             {['tingling', 'numbness', 'pain'].map(symptom => {
                               const coverage = ctsScores[hand].KatzScore.coverageBySymptom?.[symptom]?.['thumb_distal'] || 0;
-                              const isSignificant = coverage > 5;
                               return (
-                                <div key={symptom}>
-                                  <div className="flex justify-between text-sm mb-1">
-                                    <span className="capitalize">{symptom}:</span>
-                                    <span className={isSignificant ? 'font-bold text-red-600' : 'text-gray-600'}>
-                                      {coverage.toFixed(1)}%{isSignificant}
-                                    </span>
-                                  </div>
-                                  <div className="w-full bg-gray-200 rounded h-2">
-                                    <div 
-                                      className={`h-2 rounded ${
-                                        symptom === 'tingling' ? 'bg-purple-500' :
-                                        symptom === 'numbness' ? 'bg-blue-500' : 'bg-orange-500'
-                                      }`}
-                                      style={{ width: `${Math.min(coverage, 100)}%`, opacity: isSignificant ? 1 : 0.5 }}
-                                    />
-                                  </div>
+                                <div key={symptom} className="flex justify-between text-xs text-gray-600">
+                                  <span className="capitalize">{symptom}:</span>
+                                  <span>{coverage.toFixed(1)}%</span>
                                 </div>
                               );
                             })}
                           </div>
-                        </div>
-
-                        {/* Index */}
-                        <div className="border-l-4 border-green-400 pl-4">
-                          <h5 className="font-medium text-base mb-3">Index Finger:</h5>
-                          <div className="mb-3">
-                            <p className="text-sm font-medium text-gray-900 mb-2">Distal Phalanx (any shading &gt;5%):</p>
-                            <div className="space-y-2">
-                              {['tingling', 'numbness', 'pain'].map(symptom => {
-                                const coverage = ctsScores[hand].KatzScore.coverageBySymptom?.[symptom]?.['index_distal'] || 0;
-                                const isSignificant = coverage > 5;
-                                return (
-                                  <div key={symptom}>
-                                    <div className="flex justify-between text-sm mb-1">
-                                      <span className="capitalize">{symptom}:</span>
-                                      <span className={isSignificant ? 'font-bold text-red-600' : 'text-gray-600'}>
-                                        {coverage.toFixed(1)}%{isSignificant}
-                                      </span>
-                                    </div>
-                                    <div className="w-full bg-gray-200 rounded h-2">
-                                      <div 
-                                        className={`h-2 rounded ${
-                                          symptom === 'tingling' ? 'bg-purple-500' :
-                                          symptom === 'numbness' ? 'bg-blue-500' : 'bg-orange-500'
-                                        }`}
-                                        style={{ width: `${Math.min(coverage, 100)}%`, opacity: isSignificant ? 1 : 0.5 }}
-                                      />
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
+                          {/* Index */}
                           <div>
-                            <p className="text-sm font-medium text-gray-900 mb-2">Middle Phalanx (≥50% required):</p>
-                            <div className="space-y-2">
-                              {['tingling', 'numbness', 'pain'].map(symptom => {
-                                const coverage = ctsScores[hand].KatzScore.coverageBySymptom?.[symptom]?.['index_middle'] || 0;
-                                const isSignificant = coverage >= 50;
-                                return (
-                                  <div key={symptom}>
-                                    <div className="flex justify-between text-sm mb-1">
-                                      <span className="capitalize">{symptom}:</span>
-                                      <span className={isSignificant ? 'font-bold text-red-600' : 'text-gray-600'}>
-                                        {coverage.toFixed(1)}%{isSignificant}
-                                      </span>
-                                    </div>
-                                    <div className="w-full bg-gray-200 rounded h-2">
-                                      <div 
-                                        className={`h-2 rounded ${
-                                          symptom === 'tingling' ? 'bg-purple-500' :
-                                          symptom === 'numbness' ? 'bg-blue-500' : 'bg-orange-500'
-                                        }`}
-                                        style={{ width: `${Math.min(coverage, 100)}%`, opacity: isSignificant ? 1 : 0.5 }}
-                                      />
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
+                            <p className="font-medium text-gray-700 mb-1">Index (Distal/Middle)</p>
+                            {['tingling', 'numbness', 'pain'].map(symptom => {
+                              const distal = ctsScores[hand].KatzScore.coverageBySymptom?.[symptom]?.['index_distal'] || 0;
+                              const middle = ctsScores[hand].KatzScore.coverageBySymptom?.[symptom]?.['index_middle'] || 0;
+                              return (
+                                <div key={symptom} className="flex justify-between text-xs text-gray-600">
+                                  <span className="capitalize">{symptom}:</span>
+                                  <span>{distal.toFixed(1)}% / {middle.toFixed(1)}%</span>
+                                </div>
+                              );
+                            })}
                           </div>
-                        </div>
-
-                        {/* Middle */}
-                        <div className="border-l-4 border-blue-400 pl-4">
-                          <h5 className="font-medium text-base mb-3">Middle (Long) Finger:</h5>
-                          <div className="mb-3">
-                            <p className="text-sm font-medium text-gray-900 mb-2">Distal Phalanx (any shading &gt;5%):</p>
-                            <div className="space-y-2">
-                              {['tingling', 'numbness', 'pain'].map(symptom => {
-                                const coverage = ctsScores[hand].KatzScore.coverageBySymptom?.[symptom]?.['middle_distal'] || 0;
-                                const isSignificant = coverage > 5;
-                                return (
-                                  <div key={symptom}>
-                                    <div className="flex justify-between text-sm mb-1">
-                                      <span className="capitalize">{symptom}:</span>
-                                      <span className={isSignificant ? 'font-bold text-red-600' : 'text-gray-600'}>
-                                        {coverage.toFixed(1)}%{isSignificant}
-                                      </span>
-                                    </div>
-                                    <div className="w-full bg-gray-200 rounded h-2">
-                                      <div 
-                                        className={`h-2 rounded ${
-                                          symptom === 'tingling' ? 'bg-purple-500' :
-                                          symptom === 'numbness' ? 'bg-blue-500' : 'bg-orange-500'
-                                        }`}
-                                        style={{ width: `${Math.min(coverage, 100)}%`, opacity: isSignificant ? 1 : 0.5 }}
-                                      />
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
+                          {/* Middle */}
                           <div>
-                            <p className="text-sm font-medium text-gray-700 mb-2">Middle Phalanx (≥50% required):</p>
-                            <div className="space-y-2">
-                              {['tingling', 'numbness', 'pain'].map(symptom => {
-                                const coverage = ctsScores[hand].KatzScore.coverageBySymptom?.[symptom]?.['middle_middle'] || 0;
-                                const isSignificant = coverage >= 50;
-                                return (
-                                  <div key={symptom}>
-                                    <div className="flex justify-between text-sm mb-1">
-                                      <span className="capitalize">{symptom}:</span>
-                                      <span className={isSignificant ? 'font-bold text-red-600' : 'text-gray-600'}>
-                                        {coverage.toFixed(1)}%{isSignificant}
-                                      </span>
-                                    </div>
-                                    <div className="w-full bg-gray-200 rounded h-2">
-                                      <div 
-                                        className={`h-2 rounded ${
-                                          symptom === 'tingling' ? 'bg-purple-500' :
-                                          symptom === 'numbness' ? 'bg-blue-500' : 'bg-orange-500'
-                                        }`}
-                                        style={{ width: `${Math.min(coverage, 100)}%`, opacity: isSignificant ? 1 : 0.5 }}
-                                      />
-                                    </div>
-                                  </div>
-                                );
-                              })}
+                            <p className="font-medium text-gray-700 mb-1">Middle (Distal/Middle)</p>
+                            {['tingling', 'numbness', 'pain'].map(symptom => {
+                              const distal = ctsScores[hand].KatzScore.coverageBySymptom?.[symptom]?.['middle_distal'] || 0;
+                              const middle = ctsScores[hand].KatzScore.coverageBySymptom?.[symptom]?.['middle_middle'] || 0;
+                              return (
+                                <div key={symptom} className="flex justify-between text-xs text-gray-600">
+                                  <span className="capitalize">{symptom}:</span>
+                                  <span>{distal.toFixed(1)}% / {middle.toFixed(1)}%</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          {/* Palm & Dorsum */}
+                          <div>
+                            <p className="font-medium text-gray-700 mb-1">Palm & Dorsum</p>
+                            <div className="text-xs text-gray-600 space-y-0.5">
+                              <div className="flex justify-between">
+                                <span>Palm (Radial):</span>
+                                <span>{(ctsScores[hand].detailedCoverage?.palm_radial || 0).toFixed(1)}%</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Palm (Ulnar):</span>
+                                <span>{(ctsScores[hand].detailedCoverage?.palm_ulnar || 0).toFixed(1)}%</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Dorsum:</span>
+                                <span>{(ctsScores[hand].detailedCoverage?.dorsum || 0).toFixed(1)}%</span>
+                              </div>
                             </div>
                           </div>
-                        </div>
-
-                        {/* Palm */}
-                        <div className="border-l-4 border-yellow-400 pl-4">
-                          <h5 className="font-medium text-base mb-3">Palm:</h5>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <p className="text-sm font-medium text-gray-900 mb-2">Radial Side:</p>
-                              <p className="text-lg font-bold">
-                                {(ctsScores[hand].detailedCoverage?.palm_radial || 0).toFixed(1)}%
-                                {(ctsScores[hand].detailedCoverage?.palm_radial || 0) > 5}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium text-gray-900 mb-2">Ulnar Side:</p>
-                              <p className="text-lg font-bold">
-                                {(ctsScores[hand].detailedCoverage?.palm_ulnar || 0).toFixed(1)}%
-                                {(ctsScores[hand].detailedCoverage?.palm_ulnar || 0) > 5}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Dorsum */}
-                        <div className="border-l-4 border-purple-400 pl-4">
-                          <h5 className="font-medium text-base mb-3">Dorsum (Back of Hand):</h5>
-                          <p className="text-lg font-bold">
-                            {(ctsScores[hand].detailedCoverage?.dorsum || 0).toFixed(1)}%
-                            {(ctsScores[hand].detailedCoverage?.dorsum || 0) > 5 && ' (reduces classification)'}
-                          </p>
                         </div>
                       </div>
-                    </div>
+                    </details>
                   </div>
                 ))}
               </div>
@@ -1509,77 +1481,92 @@ const CTSSurveyApp = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
-      <header className="bg-white shadow-lg border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 py-6">
-          <h1 className="text-4xl font-bold text-gray-900 flex items-center gap-4">
-            <Hand className="w-10 h-10 text-blue-600" />
+    <div className="min-h-screen bg-gray-50">
+      {/* Simple Header */}
+      <header className="bg-gray-50 pt-8 pb-4">
+        <div className="max-w-4xl mx-auto px-6">
+          <h1 className="text-3xl font-light text-gray-800">
             Carpal Tunnel Syndrome Diagnostic Tool
           </h1>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-6 py-10">
-        <div className="flex gap-10">
-          <div className="w-64 bg-white rounded-xl shadow-lg p-6 h-fit">
-            <h2 className="text-lg font-bold mb-4">Progress</h2>
-            <div className="space-y-3">
-              {sections.map((section, index) => (
-                <div
-                  key={section.id}
-                  className={`flex items-center gap-3 p-3 rounded-lg ${
+      <div className="max-w-4xl mx-auto px-6 py-8">
+        {/* Stepper Progress Indicator */}
+        <div className="mb-8">
+          <div className="flex items-center justify-center">
+            {sections.map((section, index) => (
+              <React.Fragment key={section.id}>
+                {/* Step */}
+                <div className="flex flex-col items-center">
+                  <span className={`text-sm font-medium mb-2 ${
+                    currentSection === index 
+                      ? 'text-purple-700' 
+                      : currentSection > index 
+                        ? 'text-purple-600' 
+                        : 'text-gray-500'
+                  }`}>
+                    {section.title}
+                  </span>
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-semibold border-2 ${
                     currentSection === index
-                      ? 'bg-blue-100 text-blue-800'
+                      ? 'border-purple-600 bg-white text-purple-600'
                       : currentSection > index
-                      ? 'bg-green-50 text-green-800'
-                      : 'bg-gray-50 text-gray-500'
-                  }`}
-                >
-                  <span className="font-medium">{section.title}</span>
-                  {currentSection > index && <Check className="w-4 h-4 ml-auto" />}
+                        ? 'border-purple-600 bg-purple-600 text-white'
+                        : 'border-gray-300 bg-gray-100 text-gray-500'
+                  }`}>
+                    {currentSection > index ? (
+                      <Check className="w-5 h-5" />
+                    ) : (
+                      index + 1
+                    )}
+                  </div>
                 </div>
-              ))}
-            </div>
+                {/* Connector Line */}
+                {index < sections.length - 1 && (
+                  <div className={`w-32 h-0.5 mx-2 mt-6 ${
+                    currentSection > index ? 'bg-purple-600' : 'bg-gray-300'
+                  }`} />
+                )}
+              </React.Fragment>
+            ))}
           </div>
+        </div>
 
-          <div className="flex-1 bg-white rounded-2xl shadow-lg p-10">
-            {renderSection()}
+        {/* Main Content */}
+        <div className="bg-white rounded-2xl shadow-lg p-8">
+          {renderSection()}
 
-            <div className={`flex ${currentSection === 0 ? 'justify-end' : 'justify-between'} mt-12 pt-8 border-t border-gray-200`}>
-              {currentSection > 0 && currentSection !== 2 && (
-                <button
-                  onClick={handlePreviousSection}
-                  className="flex items-center gap-3 px-8 py-4 rounded-xl font-semibold bg-gray-600 text-white hover:bg-gray-700"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                  Previous
-                </button>
-              )}
+          <div className={`flex ${currentSection === 0 ? 'justify-end' : 'justify-between'} mt-10 pt-6 border-t border-gray-200`}>
+            {currentSection > 0 && currentSection !== 2 && (
+              <button
+                onClick={handlePreviousSection}
+                className="flex items-center gap-2 px-6 py-3 rounded-lg font-semibold bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors"
+              >
+                <ChevronLeft className="w-5 h-5" />
+                Previous
+              </button>
+            )}
 
-              {currentSection < sections.length - 1 && (
-                <button
-                  onClick={handleNextSection}
-                  className={`flex items-center gap-3 px-8 py-4 rounded-xl font-semibold ${
-                    currentSection === 1
-                      ? 'bg-green-600 text-white hover:bg-green-700'
-                      : 'bg-blue-600 text-white hover:bg-blue-700'
-                  }`}
-                >
-                  {currentSection === 1 ? 'Calculate CTS Scores' : 'Next'}
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-              )}
+            {currentSection < sections.length - 1 && (
+              <button
+                onClick={handleNextSection}
+                className="flex items-center gap-2 px-6 py-3 rounded-lg font-semibold bg-purple-600 text-white hover:bg-purple-700 transition-colors"
+              >
+                {currentSection === 1 ? 'Calculate CTS Scores' : 'Next'}
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            )}
 
-              {currentSection === 2 && (
-                <button
-                  onClick={exportData}
-                  className="flex items-center gap-3 px-8 py-4 rounded-xl font-semibold bg-indigo-600 text-white hover:bg-indigo-700"
-                >
-                  <Download className="w-5 h-5" />
-                  Download Results
-                </button>
-              )}
-            </div>
+            {currentSection === 2 && (
+              <button
+                onClick={exportData}
+                className="flex items-center gap-2 px-6 py-3 rounded-lg font-semibold bg-purple-600 text-white hover:bg-purple-700 transition-colors"
+              >
+                <Download className="w-5 h-5" />
+                Download Results
+              </button>
+            )}
           </div>
         </div>
       </div>
