@@ -579,7 +579,7 @@ const CTSSurveyApp = () => {
         drawHandOutline(ref.current, isLeft, isBack);
       }
     });
-  }, [isClient]);
+  }, [isClient, svgRegions]);
 
   const clearCanvas = (canvasKey) => {
     const ref = canvasRefs[canvasKey];
