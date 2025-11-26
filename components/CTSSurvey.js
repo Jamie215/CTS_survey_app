@@ -577,9 +577,10 @@ const CTSSurveyApp = () => {
         const isLeft = key.includes('Left');
         const isBack = key.includes('Back');
         drawHandOutline(ref.current, isLeft, isBack);
+        setHandDiagramData(prev => ({ ...prev, [canvasKey]: [] }));
       }
     });
-  }, [isClient, svgRegions]);
+  }, [isClient]);
 
   const clearCanvas = (canvasKey) => {
     const ref = canvasRefs[canvasKey];
