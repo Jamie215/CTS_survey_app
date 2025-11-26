@@ -94,7 +94,6 @@ const CTSSurveyApp = () => {
       const leftBackRegions = {};
       const rightBackRegions = {};
 
-      // Load SVGs
       console.log('Load SVG regions for hand diagrams...');
       const svgFiles = [
         { path: '/hands/hand_front_left.svg', regions: leftFrontRegions, name: 'left front' },
@@ -159,17 +158,14 @@ const CTSSurveyApp = () => {
       return { percentage: 0, coveredPixels: 0, totalPixels: 0 };
     }
 
-    // Create canvas for the region
     const regionCanvas = document.createElement('canvas');
     regionCanvas.width = CANVAS_WIDTH;
     regionCanvas.height = CANVAS_HEIGHT;
     const regionCtx = regionCanvas.getContext('2d');
     
-    // Fill the region
     regionCtx.fillStyle = 'white';
     regionCtx.fill(regionPath);
     
-    // Count region pixels
     const regionImageData = regionCtx.getImageData(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     const regionPixels = regionImageData.data;
     
@@ -184,13 +180,11 @@ const CTSSurveyApp = () => {
       return { percentage: 0, coveredPixels: 0, totalPixels: 0 };
     }
     
-    // Create canvas for drawings - FIX: Use correct variable name
     const combinedCanvas = document.createElement('canvas');
     combinedCanvas.width = CANVAS_WIDTH;
     combinedCanvas.height = CANVAS_HEIGHT;
     const combinedCtx = combinedCanvas.getContext('2d');
     
-    // Combine all drawings into one
     allDrawings.forEach(drawings => {
       if (!drawings || drawings.length === 0) return;
       
@@ -214,7 +208,6 @@ const CTSSurveyApp = () => {
       });
     });
     
-    // Count overlap
     const combinedImageData = combinedCtx.getImageData(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     const combinedPixels = combinedImageData.data;
     
@@ -245,17 +238,14 @@ const CTSSurveyApp = () => {
       return { percentage: 0, coveredPixels: 0, totalPixels: 0 };
     }
 
-    // Create canvas for the region
     const regionCanvas = document.createElement('canvas');
     regionCanvas.width = CANVAS_WIDTH;
     regionCanvas.height = CANVAS_HEIGHT;
     const regionCtx = regionCanvas.getContext('2d');
     
-    // Fill the region
     regionCtx.fillStyle = 'white';
     regionCtx.fill(regionPath);
     
-    // Count region pixels
     const regionImageData = regionCtx.getImageData(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     const regionPixels = regionImageData.data;
     
@@ -270,13 +260,11 @@ const CTSSurveyApp = () => {
       return { percentage: 0, coveredPixels: 0, totalPixels: 0 };
     }
     
-    // Create canvas for drawings
     const drawingCanvas = document.createElement('canvas');
     drawingCanvas.width = CANVAS_WIDTH;
     drawingCanvas.height = CANVAS_HEIGHT;
     const drawingCtx = drawingCanvas.getContext('2d');
     
-    // Replay drawings
     drawingCtx.strokeStyle = 'red';
     drawingCtx.lineWidth = 12;
     drawingCtx.lineCap = 'round';
@@ -296,7 +284,6 @@ const CTSSurveyApp = () => {
       }
     });
     
-    // Count overlap
     const drawingImageData = drawingCtx.getImageData(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     const drawingPixels = drawingImageData.data;
     
@@ -321,7 +308,6 @@ const CTSSurveyApp = () => {
     };
   };
 
-  // Calculate CTS scores based on hand diagram data
   const calculateCTSScores = () => {
     const scores = {
       left: analyzeSingleHand('Left'),
@@ -352,40 +338,28 @@ const CTSSurveyApp = () => {
       console.warn('No SVG regions loaded for', hand);
       return {
         medianDigitsAffected: 0,
-        palmAffected: { radial: false, ulnar: false, any: false },
+        palmAffected: { radial: false, ulnar: false, any: false, confinedToUlnar: false },
         wristAffected: false,
         dorsumAffected: false,
         thumbAffected: false,
         indexAffected: false,
         middleAffected: false,
-        details: {
-          thumb: {},
-          index: {},
-          middle: {},
-          palm: {},
-          wrist: {},
-          dorsum: {}
-        },
+        details: {},
         detailedCoverage: {},
         coverageBySymptom: {},
       };
     }
 
-    // Track combined coverage for each region (using all three symptom types)
     const coverage = {};
-    
-    // Track coverage by symptom type for detailed display
     const coverageBySymptom = {
       tingling: {},
       numbness: {},
       pain: {}
     };
 
-    // Get region names
     const requiredFrontRegions = Object.keys(regionsFront);
     const requiredBackRegions = Object.keys(regionsBack);
     
-    // Calculate individual symptom coverage for display
     ['tingling', 'numbness', 'pain'].forEach(symptomType => {
       const frontKey = `${symptomType}Front${hand}`;
       const frontData = handDiagramData[frontKey] || [];
@@ -409,7 +383,6 @@ const CTSSurveyApp = () => {
       });
     });
 
-    // Calculate combined coverage for front regions
     requiredFrontRegions.forEach(regionName => {
       const regionData = regionsFront[regionName];
       if (!regionData) return;
@@ -426,7 +399,6 @@ const CTSSurveyApp = () => {
       coverage[regionName] = combinedCoverage.percentage;
     });
 
-    // Calculate combined coverage for back regions
     requiredBackRegions.forEach(regionName => {
       const regionData = regionsBack[regionName];
       if (!regionData) return;
@@ -443,51 +415,42 @@ const CTSSurveyApp = () => {
       coverage[regionName] = combinedCoverage.percentage;
     });
 
-    // =========================================
-    // KATZ SCORING CRITERIA (Updated per spec)
-    // =========================================
-    // Thresholds:
-    // - "some" shading on distal = any coverage > 5%
-    // - "at least half" of middle phalanx = coverage >= 50%
-    
-    const SOME_THRESHOLD = 5;      // "some" shading
-    const HALF_THRESHOLD = 50;     // "at least half"
+    // Katz scoring thresholds
+    const SOME_THRESHOLD = 5;
+    const HALF_THRESHOLD = 50;
 
     // THUMB: Must have volar shading over distal phalanx
     const thumbDistalCoverage = coverage['thumb_distal'] || 0;
     const thumbAffected = thumbDistalCoverage > SOME_THRESHOLD;
 
-    // INDEX: Must have at least half of volar surface over middle phalanx AND/OR some of distal phalanx
+    // INDEX: At least half of middle phalanx OR some of distal phalanx
     const indexDistalCoverage = coverage['index_distal'] || 0;
     const indexMiddleCoverage = coverage['index_middle'] || 0;
     const indexAffected = (indexMiddleCoverage >= HALF_THRESHOLD) || (indexDistalCoverage > SOME_THRESHOLD);
 
-    // MIDDLE (Long): Must have at least half of volar surface over middle phalanx AND/OR some of distal phalanx
+    // MIDDLE (Long): At least half of middle phalanx OR some of distal phalanx
     const middleDistalCoverage = coverage['middle_distal'] || 0;
     const middleMiddleCoverage = coverage['middle_middle'] || 0;
     const middleAffected = (middleMiddleCoverage >= HALF_THRESHOLD) || (middleDistalCoverage > SOME_THRESHOLD);
 
-    // Count affected digits
     let affectedDigits = 0;
     if (thumbAffected) affectedDigits++;
     if (indexAffected) affectedDigits++;
     if (middleAffected) affectedDigits++;
 
-    // Check palm regions
+    // Palm regions
     const palmRadialCoverage = coverage['palm_radial'] || 0;
     const palmUlnarCoverage = coverage['palm_ulnar'] || 0;
     const palmRadialAffected = palmRadialCoverage > SOME_THRESHOLD;
     const palmUlnarAffected = palmUlnarCoverage > SOME_THRESHOLD;
     const palmAffected = palmRadialAffected || palmUlnarAffected;
-    
-    // "Confined to ulnar side" means ulnar is affected but radial is NOT
     const palmConfinedToUlnar = palmUlnarAffected && !palmRadialAffected;
 
-    // Check dorsum
+    // Dorsum
     const dorsumCoverage = coverage['dorsum'] || 0;
     const dorsumAffected = dorsumCoverage > SOME_THRESHOLD;
 
-    // Check wrist
+    // Wrist
     const wristCoverage = coverage['wrist'] || 0;
     const wristAffected = wristCoverage > SOME_THRESHOLD;
 
@@ -517,18 +480,14 @@ const CTSSurveyApp = () => {
     };
   };
 
-  // =========================================
-  // KATZ SCORE CALCULATION (Updated per spec)
-  // =========================================
-  // 3 (Classic): Symptoms in at least 2 of digits 1-3, NO palm involvement, NO dorsum involvement
-  // 2 (Probable): Same as classic but palm involvement allowed UNLESS confined to ulnar side
-  // 1 (Possible): Symptoms in at least 1 of digits 1-3, MAY include dorsum
-  // 0 (Unlikely): No volar shading in thumb, index, or middle fingers
-  
+  // Katz Score Calculation
+  // 3 (Classic): ≥2 digits, NO palm, NO dorsum
+  // 2 (Probable): ≥2 digits, palm allowed unless confined to ulnar only, NO dorsum
+  // 1 (Possible): ≥1 digit, may include dorsum
+  // 0 (Unlikely): No volar shading in thumb, index, or middle
   const calculateKatzScore = (symptoms) => {
     const { medianDigitsAffected, palmAffected, dorsumAffected } = symptoms;
     
-    // Score 0: No volar shading in thumb, index, or middle
     if (medianDigitsAffected === 0) {
       return {
         score: 0,
@@ -537,7 +496,7 @@ const CTSSurveyApp = () => {
       };
     }
     
-    // Score 3 (Classic): 2+ digits affected, NO palm, NO dorsum
+    // Classic: 2+ digits, NO palm, NO dorsum
     if (medianDigitsAffected >= 2 && !palmAffected.any && !dorsumAffected) {
       return {
         score: 3,
@@ -546,21 +505,18 @@ const CTSSurveyApp = () => {
       };
     }
     
-    // Score 2 (Probable): 2+ digits affected, palm involvement allowed UNLESS confined to ulnar only, NO dorsum
+    // Probable: 2+ digits, palm allowed unless confined to ulnar only, NO dorsum
     if (medianDigitsAffected >= 2 && !dorsumAffected) {
-      // Palm is affected - check if it's confined to ulnar side only
       if (palmAffected.any && !palmAffected.confinedToUlnar) {
-        // Palm extends beyond just ulnar (includes radial) - this is Probable
         return {
           score: 2,
           classification: 'Probable',
           description: 'Symptoms in 2+ median nerve digits with palm involvement (not confined to ulnar side)'
         };
       }
-      // If palm is confined to ulnar only, fall through to Possible
     }
     
-    // Score 1 (Possible): At least 1 digit affected, may include dorsum
+    // Possible: At least 1 digit, may include dorsum
     if (medianDigitsAffected >= 1) {
       let reason = '';
       if (dorsumAffected) {
@@ -578,7 +534,6 @@ const CTSSurveyApp = () => {
       };
     }
     
-    // Fallback to Unlikely
     return {
       score: 0,
       classification: 'Unlikely',
@@ -610,6 +565,7 @@ const CTSSurveyApp = () => {
       ctx.font = '16px Arial';
       ctx.textAlign = 'center';
       ctx.fillText(isBack ? 'Back View' : 'Palm View', canvas.width / 2, canvas.height / 2);
+      ctx.fillText(isLeft ? '(Left Hand)' : '(Right Hand)', canvas.width / 2, canvas.height / 2 + 20);
     };
     
     img.src = imagePath;
@@ -636,7 +592,6 @@ const CTSSurveyApp = () => {
     }
   };
 
-  // Helper to get coordinates from mouse or touch event
   const getEventCoordinates = (e, canvas) => {
     const rect = canvas.getBoundingClientRect();
     let clientX, clientY;
@@ -758,48 +713,30 @@ const CTSSurveyApp = () => {
     handleCanvasMouseUp(e, canvasKey);
   };
 
-  // =========================================
-  // FIXED: handleNextSection validation logic
-  // =========================================
+  // ALL diagnostic questions are REQUIRED (including those with hasNotRelevant)
+  // diagnosticEase, diagnosticComments, diagramEase, diagramComments are all OPTIONAL
   const handleNextSection = () => {
     if (currentSection === 0) {
-      // Determine which questions need to be answered
-      const questionsToAnswer = diagnosticQuestions.filter(q => {
-        // Skip optional "Not relevant" questions for validation
-        if (q.hasNotRelevant) return false;
-        
-        // If question requires numbness/tingling, only include if user said Yes to Q0
+      // Determine which questions are currently visible and need to be answered
+      const visibleQuestions = diagnosticQuestions.filter(q => {
+        // If question requires numbness/tingling, only visible if user said Yes to Q0
         if (q.requiresNumbnessOrTingling) {
           return hasNumbnessOrTingling === true;
         }
-        
-        // Include all other questions
         return true;
       });
       
-      const unanswered = questionsToAnswer.filter(q => diagnosticAnswers[q.id] === undefined);
+      const unanswered = visibleQuestions.filter(q => diagnosticAnswers[q.id] === undefined);
       
       if (unanswered.length > 0) {
-        console.log('Unanswered questions:', unanswered.map(q => q.id));
+        console.log('Unanswered required questions:', unanswered.map(q => q.id));
         setHighlightIncomplete(true);
         setTimeout(() => setHighlightIncomplete(false), 3000);
         return;
-      }
-      
-      if (!diagnosticEase) {
-        setHighlightIncomplete(true);
-        setTimeout(() => setHighlightIncomplete(false), 3000);
-        return;
-      }
+      }      
     }
     
     if (currentSection === 1) {
-      if (!diagramEase) {
-        setHighlightIncomplete(true);
-        setTimeout(() => setHighlightIncomplete(false), 3000);
-        return;
-      }
-      
       calculateCTSScores();
       drawCombinedSymptoms();
     }
@@ -848,7 +785,7 @@ const CTSSurveyApp = () => {
             }
           });
         });
-      }, 100);
+      }, 150);
     });
   };
 
@@ -896,18 +833,17 @@ const CTSSurveyApp = () => {
 
             <div className="space-y-4">
               {diagnosticQuestions.map((question) => {
-                // Skip numbness/tingling questions if user answered "No" to Q0
+                // Skip dependent questions if user answered "No" to Q0
                 if (question.requiresNumbnessOrTingling && hasNumbnessOrTingling === false) {
                   return null;
                 }
-                // Also skip if Q0 hasn't been answered yet (for dependent questions)
+                // Also skip dependent questions if Q0 hasn't been answered yet
                 if (question.requiresNumbnessOrTingling && hasNumbnessOrTingling === null && question.id !== 0) {
                   return null;
                 }
 
-                const isIncomplete = highlightIncomplete && 
-                  !question.hasNotRelevant && 
-                  diagnosticAnswers[question.id] === undefined;
+                // All visible questions are required
+                const isIncomplete = highlightIncomplete && diagnosticAnswers[question.id] === undefined;
                 
                 return (
                   <div
@@ -975,7 +911,7 @@ const CTSSurveyApp = () => {
               })}
             </div>
 
-            <div className={`bg-gray-50 p-6 rounded-xl border ${highlightIncomplete && !diagnosticEase ? 'border-red-500 bg-red-50' : 'border-gray-200'} space-y-6`}>
+            <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 space-y-6">
               <div>
                 <p className="font-semibold mb-4 text-lg flex items-center gap-3">
                   <span>Was it easy to answer these questions about your hand symptoms?</span>
@@ -1144,7 +1080,7 @@ const CTSSurveyApp = () => {
               </div>
             ))}
 
-            <div className={`bg-gray-50 p-6 rounded-xl border ${highlightIncomplete && !diagramEase ? 'border-red-500 bg-red-50' : 'border-gray-200'}`}>
+            <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
               <p className="font-semibold mb-4 text-lg flex items-center gap-3">
                 <span>Was it easy to mark the diagrams?</span>
               </p>
@@ -1164,8 +1100,8 @@ const CTSSurveyApp = () => {
                 ))}
               </div>
 
-              <div>
-                <label className="block text-lg font-semibold text-gray-800 mt-4 mb-3">
+              <div className="mt-4">
+                <label className="block text-lg font-semibold text-gray-800 mb-3">
                   If you have any comments on how to improve the hand diagrams, please write them below:
                 </label>
                 <textarea
@@ -1235,42 +1171,45 @@ const CTSSurveyApp = () => {
                         </div>
                         
                         <div className="flex-1">
-                          <div className="flex items-center justify-between mb-4">
-                            <div>
-                              <h4 className="font-semibold text-xl">Katz Classification:</h4>
-                              <p className={`text-2xl font-bold ${
-                                ctsScores[hand].KatzScore.score === 3 ? 'text-red-700' :
-                                ctsScores[hand].KatzScore.score === 2 ? 'text-orange-700' :
-                                ctsScores[hand].KatzScore.score === 1 ? 'text-yellow-700' :
-                                'text-green-700'
-                              }`}>
-                                {ctsScores[hand].KatzScore.classification} (Score: {ctsScores[hand].KatzScore.score})
-                              </p>
-                            </div>
+                          <div className="mb-4">
+                            <h4 className="font-semibold text-xl">Katz Classification:</h4>
+                            <p className={`text-2xl font-bold ${
+                              ctsScores[hand].KatzScore.score === 3 ? 'text-red-700' :
+                              ctsScores[hand].KatzScore.score === 2 ? 'text-orange-700' :
+                              ctsScores[hand].KatzScore.score === 1 ? 'text-yellow-700' :
+                              'text-green-700'
+                            }`}>
+                              {ctsScores[hand].KatzScore.classification} (Score: {ctsScores[hand].KatzScore.score})
+                            </p>
                           </div>
-                          <div className="space-y-2">
-                            <p className="text-lg">{ctsScores[hand].KatzScore.description}</p>
-                          </div>
+                          <p className="text-lg mb-4">{ctsScores[hand].KatzScore.description}</p>
                           
-                          {/* Affected digits summary */}
-                          <div className="mt-4 p-3 bg-white/50 rounded-lg">
-                            <p className="text-sm font-medium">Affected median nerve digits: {ctsScores[hand].detailedCoverage ? 
-                              [
-                                ctsScores[hand].KatzScore.coverageBySymptom && ctsScores[hand].detailedCoverage.thumb_distal > 5 ? 'Thumb' : null,
-                                ctsScores[hand].KatzScore.coverageBySymptom && (ctsScores[hand].detailedCoverage.index_distal > 5 || ctsScores[hand].detailedCoverage.index_middle >= 50) ? 'Index' : null,
-                                ctsScores[hand].KatzScore.coverageBySymptom && (ctsScores[hand].detailedCoverage.middle_distal > 5 || ctsScores[hand].detailedCoverage.middle_middle >= 50) ? 'Middle' : null,
-                              ].filter(Boolean).join(', ') || 'None'
-                              : 'None'}</p>
-                            <p className="text-sm">Palm involvement: {ctsScores[hand].detailedCoverage?.palm_radial > 5 || ctsScores[hand].detailedCoverage?.palm_ulnar > 5 ? 
-                              (ctsScores[hand].detailedCoverage?.palm_ulnar > 5 && !(ctsScores[hand].detailedCoverage?.palm_radial > 5) ? 'Ulnar only (confined)' : 'Yes') 
-                              : 'No'}</p>
+                          <div className="p-3 bg-white/50 rounded-lg">
+                            <p className="text-sm font-medium">
+                              Affected median nerve digits: {
+                                [
+                                  ctsScores[hand].detailedCoverage?.thumb_distal > 5 ? 'Thumb' : null,
+                                  (ctsScores[hand].detailedCoverage?.index_distal > 5 || ctsScores[hand].detailedCoverage?.index_middle >= 50) ? 'Index' : null,
+                                  (ctsScores[hand].detailedCoverage?.middle_distal > 5 || ctsScores[hand].detailedCoverage?.middle_middle >= 50) ? 'Middle' : null,
+                                ].filter(Boolean).join(', ') || 'None'
+                              }
+                            </p>
+                            <p className="text-sm">
+                              Palm involvement: {
+                                (ctsScores[hand].detailedCoverage?.palm_radial > 5 || ctsScores[hand].detailedCoverage?.palm_ulnar > 5) 
+                                  ? (ctsScores[hand].detailedCoverage?.palm_ulnar > 5 && !(ctsScores[hand].detailedCoverage?.palm_radial > 5) 
+                                      ? 'Ulnar only (confined)' 
+                                      : 'Yes') 
+                                  : 'No'
+                              }
+                            </p>
                             <p className="text-sm">Dorsum involvement: {ctsScores[hand].detailedCoverage?.dorsum > 5 ? 'Yes' : 'No'}</p>
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    {/* Detailed Coverage by Symptom Type */}
+                    {/* Detailed Coverage */}
                     <div className="bg-gray-50 p-6 rounded-lg">
                       <h4 className="font-semibold text-lg mb-4">Detailed Coverage by Symptom Type</h4>
                       <div className="space-y-6">
@@ -1307,9 +1246,8 @@ const CTSSurveyApp = () => {
                         {/* Index */}
                         <div className="border-l-4 border-green-400 pl-4">
                           <h5 className="font-medium text-base mb-3">Index Finger:</h5>
-                          
                           <div className="mb-3">
-                            <p className="text-sm font-medium text-gray-900 mb-2">Distal Phalanx (any shading counts):</p>
+                            <p className="text-sm font-medium text-gray-900 mb-2">Distal Phalanx (any shading &gt;5%):</p>
                             <div className="space-y-2">
                               {['tingling', 'numbness', 'pain'].map(symptom => {
                                 const coverage = ctsScores[hand].KatzScore.coverageBySymptom?.[symptom]?.['index_distal'] || 0;
@@ -1336,7 +1274,6 @@ const CTSSurveyApp = () => {
                               })}
                             </div>
                           </div>
-
                           <div>
                             <p className="text-sm font-medium text-gray-900 mb-2">Middle Phalanx (≥50% required):</p>
                             <div className="space-y-2">
@@ -1367,12 +1304,11 @@ const CTSSurveyApp = () => {
                           </div>
                         </div>
 
-                        {/* Middle Finger */}
+                        {/* Middle */}
                         <div className="border-l-4 border-blue-400 pl-4">
                           <h5 className="font-medium text-base mb-3">Middle (Long) Finger:</h5>
-                          
                           <div className="mb-3">
-                            <p className="text-sm font-medium text-gray-900 mb-2">Distal Phalanx (any shading counts):</p>
+                            <p className="text-sm font-medium text-gray-900 mb-2">Distal Phalanx (any shading &gt;5%):</p>
                             <div className="space-y-2">
                               {['tingling', 'numbness', 'pain'].map(symptom => {
                                 const coverage = ctsScores[hand].KatzScore.coverageBySymptom?.[symptom]?.['middle_distal'] || 0;
@@ -1399,7 +1335,6 @@ const CTSSurveyApp = () => {
                               })}
                             </div>
                           </div>
-
                           <div>
                             <p className="text-sm font-medium text-gray-700 mb-2">Middle Phalanx (≥50% required):</p>
                             <div className="space-y-2">
