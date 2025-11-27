@@ -1118,9 +1118,9 @@ const CTSSurveyApp = () => {
                       symptom.type === 'tingling' ? 'bg-purple-500' :
                       symptom.type === 'numbness' ? 'bg-blue-500' : 'bg-orange-500'
                     }`}></span>
-                    {symptomIndex + 1}. {symptom.icon} {symptom.label}
+                    {symptomIndex + 1}. <symptom.icon className="w-5 h-5 inline" /> {symptom.label}
                   </h3>
-                  <p className="text-lg text-gray-600 mt-1 italic">{symptom.instruction}</p>
+                  <p className="text-lg text-gray-600 mt-1" style={{ fontStyle: 'italic' }}>{symptom.instruction}</p>
                 </div>
 
                 {/* Volar (Palm) View */}
