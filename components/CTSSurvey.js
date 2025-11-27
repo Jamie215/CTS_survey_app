@@ -214,6 +214,7 @@ const CTSSurveyApp = () => {
     const combinedPixels = combinedImageData.data;
     
     let overlapPixels = 0;
+    // Check by red channel value (R, G, B, A)
     for (let i = 0; i < regionPixels.length; i += 4) {
       const isInRegion = regionPixels[i] > 200;
       const isDrawn = combinedPixels[i] > 50;
@@ -290,6 +291,7 @@ const CTSSurveyApp = () => {
     const drawingPixels = drawingImageData.data;
     
     let overlapPixels = 0;
+    // Check by red channel value (R, G, B, A)
     for (let i = 0; i < regionPixels.length; i += 4) {
       const isInRegion = regionPixels[i] > 200;
       const isDrawn = drawingPixels[i] > 50;
@@ -942,7 +944,7 @@ const CTSSurveyApp = () => {
                         isIncomplete ? 'bg-red-50 rounded-lg p-3 -m-3 border border-red-300' : ''
                       }`}
                     >
-                      <p className="text-lg font-medium mb-3 text-gray-800">
+                      <p className="text-lg font-medium mb-6 text-gray-800">
                         {question.number}. {question.text}
                       </p>
                       <div className="flex flex-wrap gap-6">
@@ -1085,9 +1087,9 @@ const CTSSurveyApp = () => {
       
       case 1:
         const allSymptoms = [
-          { type: 'tingling', label: 'Tingling', color: 'purple', instruction: 'Mark areas where you feel pins and needles or tingling sensations' },
-          { type: 'numbness', label: 'Numbness', color: 'blue', instruction: 'Mark areas where you have reduced or no sensation' },
-          { type: 'pain', label: 'Pain', color: 'orange', instruction: 'Mark areas where you experience pain or discomfort' }
+          { type: 'tingling', label: 'Tingling', color: 'purple', icon: Waves, instruction: 'Mark areas where you feel pins and needles or tingling sensations' },
+          { type: 'numbness', label: 'Numbness', color: 'blue', icon: CircleSlash, instruction: 'Mark areas where you have reduced or no sensation' },
+          { type: 'pain', label: 'Pain', color: 'orange', icon: Zap, instruction: 'Mark areas where you experience pain or discomfort' }
         ];
         
         const symptoms = hasNumbnessOrTingling === false
@@ -1116,9 +1118,9 @@ const CTSSurveyApp = () => {
                       symptom.type === 'tingling' ? 'bg-purple-500' :
                       symptom.type === 'numbness' ? 'bg-blue-500' : 'bg-orange-500'
                     }`}></span>
-                    {symptomIndex + 1}. {symptom.label}
+                    {symptomIndex + 1}. {symptom.icon} {symptom.label}
                   </h3>
-                  <p className="text-lg text-gray-600 mt-1 font-italic">{symptom.instruction}</p>
+                  <p className="text-lg text-gray-600 mt-1 italic">{symptom.instruction}</p>
                 </div>
 
                 {/* Volar (Palm) View */}
@@ -1265,7 +1267,7 @@ const CTSSurveyApp = () => {
 
               <div>
                 <label className="block text-lg font-medium text-gray-800 mb-2">
-                  If you have any comments on how to improve the hand diagrams, please werite them below:
+                  If you have any comments on how to improve the hand diagrams, please write them below:
                 </label>
                 <textarea
                   value={diagramComments}
@@ -1345,17 +1347,14 @@ const CTSSurveyApp = () => {
                             <div className="flex gap-3 justify-center text-base">
                               <div className="flex items-center gap-1">
                                 <div className="w-3 h-3 rounded" style={{backgroundColor: 'rgba(147, 51, 234, 0.7)'}}></div>
-                                <Waves className="w-3 h-3 text-gray-600" />
                                 <span className="text-gray-600"> Tingling</span>
                               </div>
                               <div className="flex items-center gap-1">
                                 <div className="w-3 h-3 rounded" style={{backgroundColor: 'rgba(59, 130, 246, 0.7)'}}></div>
-                                <CircleSlash className="w-3 h-3 text-gray-600" />
                                 <span className="text-gray-600">Numbness</span>
                               </div>
                               <div className="flex items-center gap-1">
                                 <div className="w-3 h-3 rounded" style={{backgroundColor: 'rgba(249, 115, 22, 0.7)'}}></div>
-                                <Zap className="w-3 h-3 text-gray-600" />
                                 <span className="text-gray-600">Pain</span>
                               </div>
                             </div>
