@@ -1104,7 +1104,7 @@ const CTSSurveyApp = () => {
                 Hand Diagrams
               </h2>
               <p className="text-lg text-gray-600">
-                Please mark the areas where you experience symptoms on the hand diagrams below. 
+                Please mark the areas where you experience for each symptoms (tingling, numbness, pain) on the corresponding hand diagrams below. 
                 Use your mouse or finger to draw on the hand images.
               </p>
             </div>
@@ -1113,11 +1113,10 @@ const CTSSurveyApp = () => {
               <div key={symptom.type} className="bg-gray-50 rounded-xl p-6">
                 {/* Symptom Header */}
                 <div className="mb-6">
-                  <h3 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
-                    <span className={`w-4 h-4 rounded-full ${
-                      symptom.type === 'tingling' ? 'bg-purple-500' :
-                      symptom.type === 'numbness' ? 'bg-blue-500' : 'bg-orange-500'
-                    }`}></span>
+                  <h3 className={`text-xl font-semibold flex items-center gap-2 ${
+                    symptom.type === 'tingling' ? 'text-purple-600' :
+                    symptom.type === 'numbness' ? 'text-blue-600' : 'text-orange-600'
+                  }`}>
                     {symptomIndex + 1}. <symptom.icon className="w-5 h-5 inline" /> {symptom.label}
                   </h3>
                   <p className="text-lg text-gray-600 mt-1" style={{ fontStyle: 'italic' }}>{symptom.instruction}</p>
