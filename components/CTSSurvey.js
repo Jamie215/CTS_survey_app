@@ -658,7 +658,7 @@ const CTSSurveyApp = () => {
                   onChange={(e) => setDiagnosticComments(e.target.value)}
                   rows={3}
                   className="w-full px-4 py-3 text-lg border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none bg-white"
-                  placeholder="Your feedback helps us improve the diagrams..."
+                  placeholder="Your feedback helps us improve the survey..."
                 />
               </div>
             </div>
@@ -821,11 +821,20 @@ const CTSSurveyApp = () => {
           <div className="space-y-6">
             <div>
               <h2 className="text-2xl font-semibold text-gray-800 mb-3">
-                Results Summary
+                Assessment Results
               </h2>
-              <p className="text-lg text-gray-600">
-                Based on your responses and hand diagram markings, here is your CTS assessment.
-              </p>
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mt-4">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-6 h-6 text-purple-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-lg font-medium text-purple-800">Important Note</p>
+                    <p className="text-lg text-purple-700">
+                      This assessment tool is for screening purposes only and should not replace professional medical diagnosis.
+                      If you have concerns about your symptoms, please consult with a healthcare provider for proper evaluation.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {ctsScores && (
