@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Download, Check, Waves, CircleSlash, Zap } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, AlertCircle, Check, Waves, CircleSlash, Zap } from 'lucide-react';
 
 // Data imports
 import { diagnosticQuestions } from '../data/diagnosticQuestions';
