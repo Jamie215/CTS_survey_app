@@ -1087,9 +1087,9 @@ const CTSSurveyApp = () => {
       
       case 1:
         const allSymptoms = [
-          { type: 'tingling', label: 'Tingling', color: 'purple', icon: Waves, instruction: 'Mark areas where you feel pins and needles or tingling sensations' },
-          { type: 'numbness', label: 'Numbness', color: 'blue', icon: CircleSlash, instruction: 'Mark areas where you have reduced or no sensation' },
-          { type: 'pain', label: 'Pain', color: 'orange', icon: Zap, instruction: 'Mark areas where you experience pain or discomfort' }
+          { type: 'tingling', label: 'Tingling', color: 'purple', icon: Waves, instruction: 'Mark areas where you feel pins and needles or tingling sensations. You will see purple shading' },
+          { type: 'numbness', label: 'Numbness', color: 'blue', icon: CircleSlash, instruction: 'Mark areas where you have reduced or no sensation. You will see blue shading' },
+          { type: 'pain', label: 'Pain', color: 'orange', icon: Zap, instruction: 'Mark areas where you experience pain or discomfort. You will see orange shading' }
         ];
         
         const symptoms = hasNumbnessOrTingling === false
@@ -1113,18 +1113,18 @@ const CTSSurveyApp = () => {
               <div key={symptom.type} className="bg-gray-50 rounded-xl p-6">
                 {/* Symptom Header */}
                 <div className="mb-6">
-                  <h3 className={`text-xl font-semibold flex items-center gap-2 ${
+                  <h3 className={`text-xl font-bold flex items-center gap-2 ${
                     symptom.type === 'tingling' ? 'text-purple-600' :
                     symptom.type === 'numbness' ? 'text-blue-600' : 'text-orange-600'
                   }`}>
-                    {symptomIndex + 1}. <symptom.icon className="w-5 h-5 inline" /> {symptom.label}
+                    <symptom.icon className="w-5 h-5 inline" /> {symptom.label}
                   </h3>
                   <p className="text-lg text-gray-600 mt-1" style={{ fontStyle: 'italic' }}>{symptom.instruction}</p>
                 </div>
 
                 {/* Volar (Palm) View */}
                 <div className="mb-6">
-                  <h4 className="text-lg font-medium text-gray-700 mb-4">Palm side (Volar view):</h4>
+                  <h4 className="text-lg font-medium text-gray-700 mb-4">Palm side:</h4>
                   <div className="flex gap-8 justify-center flex-wrap">
                     <div className="text-center">
                       <p className="mb-2 text-lg font-medium text-gray-700">Left Hand</p>
@@ -1177,7 +1177,7 @@ const CTSSurveyApp = () => {
 
                 {/* Dorsal (Back) View */}
                 <div>
-                  <h4 className="text-lg font-medium text-gray-700 mb-4">Back of hands (Dorsal view):</h4>
+                  <h4 className="text-lg font-medium text-gray-700 mb-4">Back of hands:</h4>
                   <div className="flex gap-8 justify-center flex-wrap">
                     <div className="text-center">
                       <p className="mb-2 text-lg font-medium text-gray-700">Left Hand</p>
