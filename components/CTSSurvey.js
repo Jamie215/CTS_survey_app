@@ -560,7 +560,7 @@ const CTSSurveyApp = () => {
                       }`}
                     >
                       {isIncomplete ? 
-                        <p className="text-lg font-medium text-red-800">This question is required.</p> :
+                        <p className="text-md font-medium text-red-800">This question is required.</p> :
                          null
                       } 
                       <p className="text-lg font-medium text-red-800"></p>
