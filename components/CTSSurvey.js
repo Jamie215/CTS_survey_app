@@ -458,7 +458,16 @@ const CTSSurveyApp = () => {
       
       if (unanswered.length > 0) {
         setHighlightIncomplete(true);
-        setTimeout(() => setHighlightIncomplete(false), 3000);
+
+        // Scroll to the first unanswered question
+        const firstUnansweredId = unanswered[0].id;
+        setTimeout( () => {
+          const element = document.querySelector(`[name="question-${firstUnansweredId}"]`);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 100);
+        
         return;
       }      
     }
@@ -531,7 +540,7 @@ const CTSSurveyApp = () => {
 
             {/* Questions Container */}
             <div className="bg-gray-50 rounded-xl p-6">
-              <div className="space-y-6">
+              <div className="space-y-8">
                 {diagnosticQuestions.map((question) => {
                   if (question.requiresNumbnessOrTingling && hasNumbnessOrTingling === false) {
                     return null;
@@ -547,11 +556,18 @@ const CTSSurveyApp = () => {
                     <div
                       key={question.id}
                       className={`${isSubQuestion ? 'ml-6' : ''} ${
-                        isIncomplete ? 'bg-red-50 rounded-lg p-3 -m-3 border border-red-300' : ''
+                        isIncomplete ? 'bg-red-50 rounded-lg p-4 -mx-4 border border-red-300' : ''
                       }`}
                     >
-                      <p className="text-lg font-medium mb-6 text-gray-800">
+                      {isIncomplete ? 
+                        <p className="text-lg font-medium text-red-800">This question is required.</p> :
+                         null
+                      } 
+                      <p className="text-lg font-medium text-red-800"></p>
+
+                      <p className="text-lg font-medium mb-4 text-gray-800">
                         {question.number}. {question.text}
+                        <span className="text-red-500 ml-1">*</span>
                       </p>
                       <div className="flex flex-wrap gap-6">
                         {['Yes', 'No'].map((option) => (
