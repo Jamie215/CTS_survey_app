@@ -1,6 +1,8 @@
 "use client"
 
 import React, { useState, useRef, useEffect } from 'react';
+import { driver } from 'driver';
+import { questionsTourSteps, handDiagramTourSteps, driverConfig, hasTourBeenCompleted, markTourCompleted, resetTour } from '../lib/tourConfig';
 import { ChevronLeft, ChevronRight, Download, AlertCircle, Check, Waves, CircleSlash, Zap } from 'lucide-react';
 
 // Data imports
@@ -16,6 +18,7 @@ const CTSSurveyApp = () => {
   // STATE
   // ============================================
   const [currentSection, setCurrentSection] = useState(0);
+  const [showHelpButton, setShowHelpButton] = useState(true);
   const [isClient, setIsClient] = useState(false);
   const [participantId, setParticipantId] = useState('');
   const [diagnosticAnswers, setDiagnosticAnswers] = useState({});
@@ -28,6 +31,7 @@ const CTSSurveyApp = () => {
   const [assessmentResults, setAssessmentResults] = useState(null);
   const [hasNumbnessOrTingling, setHasNumbnessOrTingling] = useState(null);
   
+  const driverRef = 
   // Track drawing state with refs to avoid stale closures
   const isDrawingRef = useRef(false);
   const currentCanvasKeyRef = useRef(null);
@@ -77,6 +81,28 @@ const CTSSurveyApp = () => {
       loadSVGRegions();
     }
   }, [isClient]);
+
+  // Initialize and trigger tours based on current section
+  useEffect(() => {
+    if (!isClient) return;
+
+    // Small delay to ensure DOM elements are rendered
+    const timer = setTimeout(() => {
+      if (currentSection === 0 && !hasTourBeenCompleted('questions')) {
+        startTour('questions');
+      } else if (currentSection === 1 && !hasTourBeenCompleted('handDiagram')) {
+        startTour('handDiagram');
+      }
+    }, 500);
+
+    return () => {
+      clearTimeout(timer);
+      // Cleanup driver instance when section changes
+      if (driverRef.current) {
+        driverRef.current.destroy();
+      }
+    };
+  }, [currentSection, isClient]);
 
   // Initialize canvases when component mounts
   useEffect(() => {
@@ -528,6 +554,39 @@ const CTSSurveyApp = () => {
   }
 
   // ============================================
+  // HELP BUTTON
+  // ============================================
+  const startTour = (tourType) => {
+    const steps = tourType === 'questions' ? questionsTourSteps : handDiagramTourSteps;
+  
+    // Check if all target elements exist
+    const allElementsExist = steps.every(step => document.querySelector(step.element));
+    if (!allElementsExist) {
+      console.warn(`Some tour elements not found for ${tourType} tour`);
+      return;
+    }
+
+    driverRef.current = driver({
+      ...driverConfig,
+      steps: steps,
+      onDestroyStarted: () => {
+        markTourCompleted(tourType);
+        if (driverRef.current) {
+          driverRef.current.destroy();
+        }
+      }
+    });
+
+    driverRef.current.drive();
+  };
+
+  const handleHelpClick = () => {
+    const tourType = currentSection === 0 ? 'questions' : 'handDiagram';
+    resetTour(tourType);
+    startTour(tourType);
+  };
+
+  // ============================================
   // RENDER SECTIONS
   // ============================================
   const renderSection = () => {
@@ -536,7 +595,7 @@ const CTSSurveyApp = () => {
         return (
           <div className="space-y-6">
             {/* Section Header */}
-            <div>
+            <div id="diagnostic-header">
               <h2 className="text-2xl font-semibold text-gray-800 mb-3">
                 Diagnostic Questions
               </h2>
@@ -713,8 +772,8 @@ const CTSSurveyApp = () => {
               </p>
             </div>
 
-            {symptoms.map((symptom) => (
-              <div key={symptom.type} className="bg-gray-50 rounded-xl p-6">
+            {symptoms.map((symptom, index) => (
+              <div key={symptom.type} id={`symptom-section-${symptom.type}`} className="bg-gray-50 rounded-xl p-6">
                 <div className="mb-6">
                   <h3 className={`text-xl font-bold flex items-center gap-2 ${
                     symptom.type === 'tingling' ? 'text-purple-600' :
@@ -733,6 +792,7 @@ const CTSSurveyApp = () => {
                       <div key={side} className="text-center">
                         <p className="mb-2 text-lg font-medium text-gray-700">{side} Hand</p>
                         <canvas
+                          id={`canvas-${symptom.type}Front${side}`}
                           ref={canvasRefs[`${symptom.type}Front${side}`]}
                           width={CANVAS_WIDTH}
                           height={CANVAS_HEIGHT}
@@ -747,6 +807,7 @@ const CTSSurveyApp = () => {
                           onTouchEnd={(e) => handleCanvasTouchEnd(e, `${symptom.type}Front${side}`)}
                         />
                         <button
+                          id={`clear-btn-${symptom.type}Front${side}`}
                           onClick={() => clearCanvas(`${symptom.type}Front${side}`)}
                           className="mt-2 px-4 py-2 text-lg bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-md transition-colors"
                         >
@@ -765,6 +826,7 @@ const CTSSurveyApp = () => {
                       <div key={side} className="text-center">
                         <p className="mb-2 text-lg font-medium text-gray-700">{side} Hand</p>
                         <canvas
+                          id={`canvas-${symptom.type}Back${side}`}
                           ref={canvasRefs[`${symptom.type}Back${side}`]}
                           width={CANVAS_WIDTH}
                           height={CANVAS_HEIGHT}
@@ -779,6 +841,7 @@ const CTSSurveyApp = () => {
                           onTouchEnd={(e) => handleCanvasTouchEnd(e, `${symptom.type}Back${side}`)}
                         />
                         <button
+                          id={`clear-btn-${symptom.type}Back${side}`}
                           onClick={() => clearCanvas(`${symptom.type}Back${side}`)}
                           className="mt-2 px-4 py-2 text-lg bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-md transition-colors"
                         >
@@ -1116,6 +1179,19 @@ const CTSSurveyApp = () => {
           <h1 className="text-3xl font-normal text-gray-800">
             Carpal Tunnel Syndrome Diagnostic Tool
           </h1>
+          {currentSection !== 2 && (
+            <button
+              onClick={handleHelpClick}
+              className="flex items-center gap-2 px-4 py-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+              </svg>
+              <span className="font-medium">Help</span>
+            </button>
+          )}
         </div>
       </header>
 

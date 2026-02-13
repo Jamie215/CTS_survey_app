@@ -1,3 +1,91 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* =============================================================================
+   Driver.js Tour Styles for CTS Survey App
+   ============================================================================= */
+
+/* Popover base styles */
+.driver-popover {
+  font-family: inherit;
+  max-width: 360px;
+}
+
+/* Title styling */
+.driver-popover-title {
+  font-size: 1.125rem !important;
+  font-weight: 600 !important;
+  color: #1f2937 !important;
+  margin-bottom: 0.5rem !important;
+}
+
+/* Description styling */
+.driver-popover-description {
+  font-size: 1rem !important;
+  color: #4b5563 !important;
+  line-height: 1.6 !important;
+}
+
+/* Progress text */
+.driver-popover-progress-text {
+  font-size: 0.875rem !important;
+  color: #6b7280 !important;
+}
+
+/* Next button - matches your purple theme */
+.driver-popover-next-btn {
+  background-color: #9333ea !important;
+  color: white !important;
+  font-size: 0.938rem !important;
+  font-weight: 500 !important;
+  padding: 0.5rem 1rem !important;
+  border-radius: 0.5rem !important;
+  border: none !important;
+  transition: background-color 0.2s ease !important;
+}
+
+.driver-popover-next-btn:hover {
+  background-color: #7e22ce !important;
+}
+
+/* Previous button */
+.driver-popover-prev-btn {
+  font-size: 0.938rem !important;
+  font-weight: 500 !important;
+  padding: 0.5rem 1rem !important;
+  border-radius: 0.5rem !important;
+  color: #6b7280 !important;
+  border: 1px solid #d1d5db !important;
+  transition: all 0.2s ease !important;
+}
+
+.driver-popover-prev-btn:hover {
+  background-color: #f3f4f6 !important;
+  color: #374151 !important;
+}
+
+/* Close button */
+.driver-popover-close-btn {
+  color: #9ca3af !important;
+  transition: color 0.2s ease !important;
+}
+
+.driver-popover-close-btn:hover {
+  color: #4b5563 !important;
+}
+
+/* Arrow styling */
+.driver-popover-arrow {
+  border: none !important;
+}
+
+/* Overlay */
+.driver-overlay {
+  background-color: rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Highlighted element */
+.driver-active-element {
+  border-radius: 8px !important;
+}
