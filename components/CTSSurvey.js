@@ -580,7 +580,7 @@ const CTSSurveyApp = () => {
       return;
     }
 
-    driverRef.current = window.driver.driver({
+    driverRef.current = window.driver({
       ...driverConfig,
       steps: steps,
       onDestroyStarted: () => {
