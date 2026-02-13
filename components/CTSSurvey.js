@@ -911,9 +911,10 @@ const CTSSurveyApp = () => {
                         </thead>
                         <tbody>
                           {assessmentResults.kamath.scoredQuestions.map((q) => {
+                            const question = diagnosticQuestions.find(dq => dq.id === q.id);
                             return (
                               <tr key={q.id} className="border-b border-gray-100">
-                                <td className="py-2 text-gray-700">Q{q.text}</td>
+                                <td className="py-2 text-gray-700">{question?.text}</td>
                                 <td className="py-2 text-gray-700">{q.answer}</td>
                                 <td className={`py-2 text-right font-medium ${
                                   q.score > 0 ? 'text-green-600' : q.score < 0 ? 'text-red-600' : 'text-gray-400'
