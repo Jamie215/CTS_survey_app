@@ -911,21 +911,9 @@ const CTSSurveyApp = () => {
                         </thead>
                         <tbody>
                           {assessmentResults.kamath.scoredQuestions.map((q) => {
-                            // Map question ID to display number
-                            const getQuestionNumber = (id) => {
-                              if (id === 0) return '1';
-                              if (id >= 1 && id <= 7) return `1${'abcdefg'[id - 1]}`;
-                              if (id === 8) return '2';
-                              if (id === 9) return '3';
-                              if (id === 10) return '4';
-                              if (id === 11) return '5';
-                              if (id === 12) return '6';
-                              return id;
-                            };
-                            
                             return (
                               <tr key={q.id} className="border-b border-gray-100">
-                                <td className="py-2 text-gray-700">Q{getQuestionNumber(q.id)}</td>
+                                <td className="py-2 text-gray-700">Q{q.text}</td>
                                 <td className="py-2 text-gray-700">{q.answer}</td>
                                 <td className={`py-2 text-right font-medium ${
                                   q.score > 0 ? 'text-green-600' : q.score < 0 ? 'text-red-600' : 'text-gray-400'
