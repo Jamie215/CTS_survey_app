@@ -872,16 +872,16 @@ const CTSSurveyApp = () => {
                   <p className="text-sm text-gray-600 mt-1">Questionnaire-based assessment (Kamath & Stothard, 2003)</p>
                 </div>
                 
-                <div className={`p-6 ${KAMATH_COLORS(assessmentResults.kamath.colorClass).bg}`}>
+                <div className={`p-6 ${KAMATH_COLORS[assessmentResults.kamath.colorClass].bg}`}>
                   <div className="flex items-center justify-between mb-4">
                     <div>
-                      <div className={`text-2xl font-bold ${KAMATH_COLORS(assessmentResults.kamath.colorClass).textDark}`}>
+                      <div className={`text-2xl font-bold ${KAMATH_COLORS[assessmentResults.kamath.colorClass].textDark}`}>
                         {assessmentResults.kamath.classification}
                       </div>
                       <p className="text-gray-600 mt-1">{assessmentResults.kamath.description}</p>
                     </div>
                     <div className="text-right">
-                      <span className={`text-4xl font-bold ${KAMATH_COLORS(assessmentResults.kamath.colorClass).text}`}>
+                      <span className={`text-4xl font-bold ${KAMATH_COLORS[assessmentResults.kamath.colorClass].text}`}>
                         {assessmentResults.kamath.totalScore}
                       </span>
                       <span className="text-gray-500 text-lg ml-1">pts</span>
@@ -939,7 +939,7 @@ const CTSSurveyApp = () => {
                         <tfoot>
                           <tr className="font-bold">
                             <td className="py-2" colSpan={2}>Total</td>
-                            <td className={`py-2 text-right ${KAMATH_COLORS(assessmentResults.kamath.colorClass).text}`}>
+                            <td className={`py-2 text-right ${KAMATH_COLORS[assessmentResults.kamath.colorClass].text}`}>
                               {assessmentResults.kamath.totalScore}
                             </td>
                           </tr>
