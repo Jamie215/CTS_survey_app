@@ -557,14 +557,24 @@ const CTSSurveyApp = () => {
   // HELP BUTTON
   // ============================================
   const startTour = (tourType) => {
+    console.log('startTour called:', tourType);
+    console.log('window.driver:', window.driver);
+    
     if (typeof window === 'undefined' || !window.driver) {
       console.warn('Driver.js not loaded yet');
       return;
     }
+
     const steps = tourType === 'questions' ? questionsTourSteps : handDiagramTourSteps;
-  
+    console.log('Steps:', steps);
+    
     // Check if all target elements exist
-    const allElementsExist = steps.every(step => document.querySelector(step.element));
+    const allElementsExist = steps.every(step => {
+      const exists = document.querySelector(step.element);
+      console.log(`Element ${step.element}:`, exists ? 'found' : 'NOT FOUND');
+      return exists;
+    });
+    
     if (!allElementsExist) {
       console.warn(`Some tour elements not found for ${tourType} tour`);
       return;
