@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useRef, useEffect, use } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { questionsTourSteps, handDiagramTourSteps, driverConfig, hasTourBeenCompleted, markTourCompleted, resetTour } from '../lib/tourConfig';
 import { ChevronLeft, ChevronRight, Download, AlertCircle, Check, Waves, CircleSlash, Zap } from 'lucide-react';
 
@@ -557,6 +557,10 @@ const CTSSurveyApp = () => {
   // HELP BUTTON
   // ============================================
   const startTour = (tourType) => {
+    if (typeof window === 'undefined' || !window.driver) {
+      console.warn('Driver.js not loaded yet');
+      return;
+    }
     const steps = tourType === 'questions' ? questionsTourSteps : handDiagramTourSteps;
   
     // Check if all target elements exist
@@ -819,7 +823,7 @@ const CTSSurveyApp = () => {
                 </div>
 
                 {/* Back View */}
-                <div>
+                <div id={`back-view-section-${symptom.type}`}>
                   <h4 className="text-lg font-medium text-gray-700 mb-4">Back of hands:</h4>
                   <div className="flex gap-8 justify-center flex-wrap">
                     {['Left', 'Right'].map((side) => (
