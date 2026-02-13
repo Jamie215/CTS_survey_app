@@ -13,7 +13,7 @@ export default function RootLayout({ children }) {
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@latest/dist/driver.css"/>
       </head>
       <body>
-        <script src="https://cdn.jsdelivr.net/npm/driver.js@latest/dist/driver.js.iife.js"></script>
+        <Script src="https://cdn.jsdelivr.net/npm/driver.js@latest/dist/driver.js.iife.js"></Script>
         {children}
       </body>
     </html>
