@@ -905,7 +905,7 @@ const CTSSurveyApp = () => {
                         <thead>
                           <tr className="border-b">
                             <th className="text-left py-2 text-gray-600">Question</th>
-                            <th className="text-left py-2 text-gray-600">Answer</th>
+                            <th className="text-left py-2 text-gray-600 w-28">Answer</th>
                             <th className="text-right py-2 text-gray-600">Points</th>
                           </tr>
                         </thead>
@@ -915,7 +915,7 @@ const CTSSurveyApp = () => {
                             return (
                               <tr key={q.id} className="border-b border-gray-100">
                                 <td className="py-2 text-gray-700">{question?.text}</td>
-                                <td className="py-2 text-gray-700">{q.answer}</td>
+                                <td className="py-2 text-gray-700 w-28">{q.answer}</td>
                                 <td className={`py-2 text-right font-medium ${
                                   q.score > 0 ? 'text-green-600' : q.score < 0 ? 'text-red-600' : 'text-gray-400'
                                 }`}>
