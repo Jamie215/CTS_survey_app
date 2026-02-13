@@ -1,7 +1,6 @@
 "use client"
 
-import React, { useState, useRef, useEffect } from 'react';
-import { driver } from 'driver';
+import React, { useState, useRef, useEffect, use } from 'react';
 import { questionsTourSteps, handDiagramTourSteps, driverConfig, hasTourBeenCompleted, markTourCompleted, resetTour } from '../lib/tourConfig';
 import { ChevronLeft, ChevronRight, Download, AlertCircle, Check, Waves, CircleSlash, Zap } from 'lucide-react';
 
@@ -31,7 +30,8 @@ const CTSSurveyApp = () => {
   const [assessmentResults, setAssessmentResults] = useState(null);
   const [hasNumbnessOrTingling, setHasNumbnessOrTingling] = useState(null);
   
-  const driverRef = 
+  const driverRef = useRef(null);
+
   // Track drawing state with refs to avoid stale closures
   const isDrawingRef = useRef(false);
   const currentCanvasKeyRef = useRef(null);
@@ -566,7 +566,7 @@ const CTSSurveyApp = () => {
       return;
     }
 
-    driverRef.current = driver({
+    driverRef.current = window.driver.driver({
       ...driverConfig,
       steps: steps,
       onDestroyStarted: () => {
