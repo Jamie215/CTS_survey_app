@@ -20,3 +20,24 @@ export const sections = [
   { id: 1, title: "Hand Diagrams" },
   { id: 2, title: "Results" },
 ];
+
+export const KAMATH_COLORS = {
+  green: {
+    bg: 'bg-green-50',
+    border: 'border-green-200',
+    text: 'text-green-600',
+    textDark: 'text-green-800'
+  },
+  yellow: {
+    bg: 'bg-yellow-50',
+    border: 'border-yellow-200',
+    text: 'text-yellow-600',
+    textDark: 'text-yellow-800'
+  },
+  red: {
+    bg: 'bg-red-50',
+    border: 'border-red-200',
+    text: 'text-red-600',
+    textDark: 'text-red-800'
+  }
+};

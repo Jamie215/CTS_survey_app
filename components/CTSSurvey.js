@@ -5,9 +5,10 @@ import { ChevronLeft, ChevronRight, Download, AlertCircle, Check, Waves, CircleS
 
 // Data imports
 import { diagnosticQuestions } from '../data/diagnosticQuestions';
-import { CANVAS_WIDTH, CANVAS_HEIGHT, sections, STROKE_COLORS, OVERLAY_COLORS } from '../data/constants';
+import { CANVAS_WIDTH, CANVAS_HEIGHT, sections, STROKE_COLORS, OVERLAY_COLORS, KAMATH_COLORS } from '../data/constants';
 
 // Scoring imports
+import  { calculateKamathScore } from '../lib/kamathScoring';
 import { calculateKatzScore, analyzeSymptomDistribution } from '../lib/katzScoring';
 
 const CTSSurveyApp = () => {
@@ -24,7 +25,7 @@ const CTSSurveyApp = () => {
   const [diagramEase, setDiagramEase] = useState('');
   const [diagramComments, setDiagramComments] = useState('');
   const [highlightIncomplete, setHighlightIncomplete] = useState(false);
-  const [ctsScores, setCtsScores] = useState(null);
+  const [assessmentResults, setAssessmentResults] = useState(null);
   const [hasNumbnessOrTingling, setHasNumbnessOrTingling] = useState(null);
   
   // Track drawing state with refs to avoid stale closures
@@ -375,12 +376,20 @@ const CTSSurveyApp = () => {
   // SCORING & RESULTS
   // ============================================
   const calculateCTSScores = () => {
-    const scores = {
+    const kamathScore = calculateKamathScore(diagnosticAnswers, hasNumbnessOrTingling); 
+    const katzScores = {
       left: analyzeSingleHand('Left'),
       right: analyzeSingleHand('Right')
     };
-    setCtsScores(scores);
-    return scores;
+
+    const results = {
+      kamath: kamathScore,
+      katz: katzScores
+    }
+
+    setAssessmentResults(results);
+
+    return results;
   };
 
   const analyzeSingleHand = (hand) => {
@@ -497,7 +506,7 @@ const CTSSurveyApp = () => {
       handDiagramData,
       diagramEase,
       diagramComments,
-      ctsScores
+      assessmentResults
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -853,150 +862,251 @@ const CTSSurveyApp = () => {
               </div>
             </div>
 
-            {ctsScores && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {['left', 'right'].map((hand) => (
-                  <div key={hand} className="bg-gray-50 rounded-xl p-6">
-                    <h3 className="text-xl font-bold text-gray-800 mb-4 capitalize">{hand} Hand</h3>
-                    
-                    {/* Katz Score */}
-                    <div className={`rounded-lg p-4 mb-4 ${
-                      ctsScores[hand].KatzScore.score === 3 ? 'bg-red-50 border border-red-200' :
-                      ctsScores[hand].KatzScore.score === 2 ? 'bg-orange-50 border border-orange-200' :
-                      ctsScores[hand].KatzScore.score === 1 ? 'bg-yellow-50 border border-yellow-200' :
-                      'bg-green-50 border border-green-200'
-                    }`}>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-lg font-semibold">Katz Classification:</span>
-                        <span className={`text-xl font-bold ${
-                          ctsScores[hand].KatzScore.score === 3 ? 'text-red-600' :
-                          ctsScores[hand].KatzScore.score === 2 ? 'text-orange-600' :
-                          ctsScores[hand].KatzScore.score === 1 ? 'text-yellow-600' :
-                          'text-green-600'
+            {/* ================================================================= */}
+            {/* KAMATH SCORE - Questionnaire-Based Assessment                     */}
+            {/* ================================================================= */}
+            {assessmentResults?.kamath && (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div className="bg-gray-100 px-6 py-4 border-b border-gray-200">
+                  <h3 className="text-xl font-bold text-gray-800">Kamath Score</h3>
+                  <p className="text-sm text-gray-600 mt-1">Questionnaire-based assessment (Kamath & Stothard, 2003)</p>
+                </div>
+                
+                <div className={`p-6 ${KAMATH_COLORS(assessmentResults.kamath.colorClass).bg}`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <div className={`text-2xl font-bold ${KAMATH_COLORS(assessmentResults.kamath.colorClass).textDark}`}>
+                        {assessmentResults.kamath.classification}
+                      </div>
+                      <p className="text-gray-600 mt-1">{assessmentResults.kamath.description}</p>
+                    </div>
+                    <div className="text-right">
+                      <span className={`text-4xl font-bold ${KAMATH_COLORS(assessmentResults.kamath.colorClass).text}`}>
+                        {assessmentResults.kamath.totalScore}
+                      </span>
+                      <span className="text-gray-500 text-lg ml-1">pts</span>
+                    </div>
+                  </div>
+                  
+                  {/* Score interpretation guide */}
+                  <div className="flex gap-4 text-sm py-3 border-t border-gray-200">
+                    <span className="text-green-700 font-medium">● &lt;3: Unlikely CTS</span>
+                    <span className="text-yellow-700 font-medium">● 3-4: Unclear</span>
+                    <span className="text-red-700 font-medium">● ≥5: Likely CTS</span>
+                  </div>
+                  
+                  {/* Expandable score breakdown */}
+                  <details className="mt-4">
+                    <summary className="cursor-pointer text-lg font-medium text-purple-600 hover:text-purple-800">
+                      View score breakdown
+                    </summary>
+                    <div className="mt-3 bg-white rounded-lg p-4 border border-gray-200">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="text-left py-2 text-gray-600">Question</th>
+                            <th className="text-left py-2 text-gray-600">Answer</th>
+                            <th className="text-right py-2 text-gray-600">Points</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {assessmentResults.kamath.scoredQuestions.map((q) => {
+                            // Map question ID to display number
+                            const getQuestionNumber = (id) => {
+                              if (id === 0) return '1';
+                              if (id >= 1 && id <= 7) return `1${'abcdefg'[id - 1]}`;
+                              if (id === 8) return '2';
+                              if (id === 9) return '3';
+                              if (id === 10) return '4';
+                              if (id === 11) return '5';
+                              if (id === 12) return '6';
+                              return id;
+                            };
+                            
+                            return (
+                              <tr key={q.id} className="border-b border-gray-100">
+                                <td className="py-2 text-gray-700">Q{getQuestionNumber(q.id)}</td>
+                                <td className="py-2 text-gray-700">{q.answer}</td>
+                                <td className={`py-2 text-right font-medium ${
+                                  q.score > 0 ? 'text-green-600' : q.score < 0 ? 'text-red-600' : 'text-gray-400'
+                                }`}>
+                                  {q.score > 0 ? '+' : ''}{q.score}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                        <tfoot>
+                          <tr className="font-bold">
+                            <td className="py-2" colSpan={2}>Total</td>
+                            <td className={`py-2 text-right ${KAMATH_COLORS(assessmentResults.kamath.colorClass).text}`}>
+                              {assessmentResults.kamath.totalScore}
+                            </td>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                  </details>
+                </div>
+              </div>
+            )}
+
+            {/* ================================================================= */}
+            {/* KATZ SCORE - Hand Diagram-Based Assessment                        */}
+            {/* ================================================================= */}
+            {assessmentResults?.katz && (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div className="bg-gray-100 px-6 py-4 border-b border-gray-200">
+                  <h3 className="text-xl font-bold text-gray-800">Katz Hand Diagram Score</h3>
+                  <p className="text-sm text-gray-600 mt-1">Symptom distribution assessment (Katz et al.)</p>
+                </div>
+                
+                <div className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {['left', 'right'].map((hand) => (
+                      <div key={hand} className="bg-gray-50 rounded-xl p-6">
+                        <h4 className="text-lg font-bold text-gray-800 mb-4 capitalize">{hand} Hand</h4>
+                        
+                        {/* Katz Classification */}
+                        <div className={`rounded-lg p-4 mb-4 ${
+                          assessmentResults.katz[hand].KatzScore.score === 3 ? 'bg-red-50 border border-red-200' :
+                          assessmentResults.katz[hand].KatzScore.score === 2 ? 'bg-orange-50 border border-orange-200' :
+                          assessmentResults.katz[hand].KatzScore.score === 1 ? 'bg-yellow-50 border border-yellow-200' :
+                          'bg-green-50 border border-green-200'
                         }`}>
-                          {ctsScores[hand].KatzScore.classification}
-                        </span>
-                      </div>
-                      <p className="text-gray-600">{ctsScores[hand].KatzScore.description}</p>
-                    </div>
-
-                    {/* Hand Diagrams */}
-                    <div className="flex gap-4 justify-center mb-4">
-                      <div className="text-center">
-                        <p className="text-sm text-gray-600 mb-1">Palm</p>
-                        <canvas
-                          ref={hand === 'left' ? resultsCanvasRefs.combinedLeftVolar : resultsCanvasRefs.combinedRightVolar}
-                          width={CANVAS_WIDTH}
-                          height={CANVAS_HEIGHT}
-                          className="border border-gray-300 rounded-lg bg-white"
-                          style={{width: '120px', height: '160px'}}
-                        />
-                      </div>
-                      <div className="text-center">
-                        <p className="text-sm text-gray-600 mb-1">Back</p>
-                        <canvas
-                          ref={hand === 'left' ? resultsCanvasRefs.combinedLeftDorsal : resultsCanvasRefs.combinedRightDorsal}
-                          width={CANVAS_WIDTH}
-                          height={CANVAS_HEIGHT}
-                          className="border border-gray-300 rounded-lg bg-white"
-                          style={{width: '120px', height: '160px'}}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Summary Stats */}
-                    <div className="text-base space-y-1">
-                      <p>
-                        <span className="font-medium">Median digits affected:</span>{' '}
-                        {ctsScores[hand].KatzScore.coverageBySymptom ? 
-                          [
-                            ctsScores[hand].detailedCoverage?.thumb_distal > 5 && 'Thumb',
-                            ctsScores[hand].detailedCoverage?.index_distal > 5 && 'Index',
-                            ctsScores[hand].detailedCoverage?.middle_distal > 5 && 'Middle'
-                          ].filter(Boolean).join(', ') || 'None'
-                          : 'None'}
-                      </p>
-                      <p>
-                        <span className="font-medium">Palm involvement:</span>{' '}
-                        {ctsScores[hand].detailedCoverage?.palm_radial > 5 || ctsScores[hand].detailedCoverage?.palm_ulnar > 5 
-                          ? (ctsScores[hand].detailedCoverage?.palm_ulnar > 5 && !(ctsScores[hand].detailedCoverage?.palm_radial > 5)
-                              ? 'Ulnar only' 
-                              : 'Yes') 
-                          : 'No'}
-                      </p>
-                      <p>
-                        <span className="font-medium">Dorsum:</span>{' '}
-                        {ctsScores[hand].detailedCoverage?.dorsum > 5 ? 'Yes' : 'No'}
-                      </p>
-                    </div>
-
-                    {/* Detailed Coverage */}
-                    <details className="mt-4">
-                      <summary className="cursor-pointer text-lg font-medium text-purple-600 hover:text-purple-800">
-                        View detailed coverage breakdown
-                      </summary>
-                      <div className="mt-3 bg-white rounded-lg p-4 border border-gray-200">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-base">
-                          <div>
-                            <p className="font-medium text-gray-700 mb-1">Thumb (Distal)</p>
-                            {['tingling', 'numbness', 'pain'].map(symptom => {
-                              const coverage = ctsScores[hand].KatzScore.coverageBySymptom?.[symptom]?.['thumb_distal'] || 0;
-                              return (
-                                <div key={symptom} className="flex justify-between text-gray-600">
-                                  <span className="capitalize">{symptom}:</span>
-                                  <span>{coverage.toFixed(1)}%</span>
-                                </div>
-                              );
-                            })}
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-lg font-semibold">Classification:</span>
+                            <span className={`text-xl font-bold ${
+                              assessmentResults.katz[hand].KatzScore.score === 3 ? 'text-red-600' :
+                              assessmentResults.katz[hand].KatzScore.score === 2 ? 'text-orange-600' :
+                              assessmentResults.katz[hand].KatzScore.score === 1 ? 'text-yellow-600' :
+                              'text-green-600'
+                            }`}>
+                              {assessmentResults.katz[hand].KatzScore.classification}
+                            </span>
                           </div>
-                          <div>
-                            <p className="font-medium text-gray-700 mb-1">Index (Distal/Middle)</p>
-                            {['tingling', 'numbness', 'pain'].map(symptom => {
-                              const distal = ctsScores[hand].KatzScore.coverageBySymptom?.[symptom]?.['index_distal'] || 0;
-                              const middle = ctsScores[hand].KatzScore.coverageBySymptom?.[symptom]?.['index_middle'] || 0;
-                              return (
-                                <div key={symptom} className="flex justify-between text-gray-600">
-                                  <span className="capitalize">{symptom}:</span>
-                                  <span>{distal.toFixed(1)}% / {middle.toFixed(1)}%</span>
-                                </div>
-                              );
-                            })}
+                          <p className="text-gray-600">{assessmentResults.katz[hand].KatzScore.description}</p>
+                        </div>
+
+                        {/* Hand Diagrams */}
+                        <div className="flex gap-4 justify-center mb-4">
+                          <div className="text-center">
+                            <p className="text-sm text-gray-600 mb-1">Palm</p>
+                            <canvas
+                              ref={hand === 'left' ? resultsCanvasRefs.combinedLeftVolar : resultsCanvasRefs.combinedRightVolar}
+                              width={CANVAS_WIDTH}
+                              height={CANVAS_HEIGHT}
+                              className="border border-gray-300 rounded-lg bg-white"
+                              style={{width: '120px', height: '160px'}}
+                            />
                           </div>
-                          <div>
-                            <p className="font-medium text-gray-700 mb-1">Middle (Distal/Middle)</p>
-                            {['tingling', 'numbness', 'pain'].map(symptom => {
-                              const distal = ctsScores[hand].KatzScore.coverageBySymptom?.[symptom]?.['middle_distal'] || 0;
-                              const middle = ctsScores[hand].KatzScore.coverageBySymptom?.[symptom]?.['middle_middle'] || 0;
-                              return (
-                                <div key={symptom} className="flex justify-between text-gray-600">
-                                  <span className="capitalize">{symptom}:</span>
-                                  <span>{distal.toFixed(1)}% / {middle.toFixed(1)}%</span>
-                                </div>
-                              );
-                            })}
+                          <div className="text-center">
+                            <p className="text-sm text-gray-600 mb-1">Back</p>
+                            <canvas
+                              ref={hand === 'left' ? resultsCanvasRefs.combinedLeftDorsal : resultsCanvasRefs.combinedRightDorsal}
+                              width={CANVAS_WIDTH}
+                              height={CANVAS_HEIGHT}
+                              className="border border-gray-300 rounded-lg bg-white"
+                              style={{width: '120px', height: '160px'}}
+                            />
                           </div>
-                          <div>
-                            <p className="font-medium text-gray-700 mb-1">Palm & Dorsum</p>
-                            <div className="text-gray-600 space-y-0.5">
-                              <div className="flex justify-between">
-                                <span>Palm (Radial):</span>
-                                <span>{(ctsScores[hand].detailedCoverage?.palm_radial || 0).toFixed(1)}%</span>
+                        </div>
+
+                        {/* Summary Stats */}
+                        <div className="text-base space-y-1">
+                          <p>
+                            <span className="font-medium">Median digits affected:</span>{' '}
+                            {assessmentResults.katz[hand].KatzScore.coverageBySymptom ? 
+                              [
+                                assessmentResults.katz[hand].detailedCoverage?.thumb_distal > 5 && 'Thumb',
+                                assessmentResults.katz[hand].detailedCoverage?.index_distal > 5 && 'Index',
+                                assessmentResults.katz[hand].detailedCoverage?.middle_distal > 5 && 'Middle'
+                              ].filter(Boolean).join(', ') || 'None'
+                              : 'None'}
+                          </p>
+                          <p>
+                            <span className="font-medium">Palm involvement:</span>{' '}
+                            {assessmentResults.katz[hand].detailedCoverage?.palm_radial > 5 || assessmentResults.katz[hand].detailedCoverage?.palm_ulnar > 5 
+                              ? (assessmentResults.katz[hand].detailedCoverage?.palm_ulnar > 5 && !(assessmentResults.katz[hand].detailedCoverage?.palm_radial > 5)
+                                  ? 'Ulnar only' 
+                                  : 'Yes') 
+                              : 'No'}
+                          </p>
+                          <p>
+                            <span className="font-medium">Dorsum:</span>{' '}
+                            {assessmentResults.katz[hand].detailedCoverage?.dorsum > 5 ? 'Yes' : 'No'}
+                          </p>
+                        </div>
+
+                        {/* Detailed Coverage */}
+                        <details className="mt-4">
+                          <summary className="cursor-pointer text-lg font-medium text-purple-600 hover:text-purple-800">
+                            View detailed coverage breakdown
+                          </summary>
+                          <div className="mt-3 bg-white rounded-lg p-4 border border-gray-200">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-base">
+                              <div>
+                                <p className="font-medium text-gray-700 mb-1">Thumb (Distal)</p>
+                                {['tingling', 'numbness', 'pain'].map(symptom => {
+                                  const coverage = assessmentResults.katz[hand].KatzScore.coverageBySymptom?.[symptom]?.['thumb_distal'] || 0;
+                                  return (
+                                    <div key={symptom} className="flex justify-between text-gray-600">
+                                      <span className="capitalize">{symptom}:</span>
+                                      <span>{coverage.toFixed(1)}%</span>
+                                    </div>
+                                  );
+                                })}
                               </div>
-                              <div className="flex justify-between">
-                                <span>Palm (Ulnar):</span>
-                                <span>{(ctsScores[hand].detailedCoverage?.palm_ulnar || 0).toFixed(1)}%</span>
+                              <div>
+                                <p className="font-medium text-gray-700 mb-1">Index (Distal/Middle)</p>
+                                {['tingling', 'numbness', 'pain'].map(symptom => {
+                                  const distal = assessmentResults.katz[hand].KatzScore.coverageBySymptom?.[symptom]?.['index_distal'] || 0;
+                                  const middle = assessmentResults.katz[hand].KatzScore.coverageBySymptom?.[symptom]?.['index_middle'] || 0;
+                                  return (
+                                    <div key={symptom} className="flex justify-between text-gray-600">
+                                      <span className="capitalize">{symptom}:</span>
+                                      <span>{distal.toFixed(1)}% / {middle.toFixed(1)}%</span>
+                                    </div>
+                                  );
+                                })}
                               </div>
-                              <div className="flex justify-between">
-                                <span>Dorsum:</span>
-                                <span>{(ctsScores[hand].detailedCoverage?.dorsum || 0).toFixed(1)}%</span>
+                              <div>
+                                <p className="font-medium text-gray-700 mb-1">Middle (Distal/Middle)</p>
+                                {['tingling', 'numbness', 'pain'].map(symptom => {
+                                  const distal = assessmentResults.katz[hand].KatzScore.coverageBySymptom?.[symptom]?.['middle_distal'] || 0;
+                                  const middle = assessmentResults.katz[hand].KatzScore.coverageBySymptom?.[symptom]?.['middle_middle'] || 0;
+                                  return (
+                                    <div key={symptom} className="flex justify-between text-gray-600">
+                                      <span className="capitalize">{symptom}:</span>
+                                      <span>{distal.toFixed(1)}% / {middle.toFixed(1)}%</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                              <div>
+                                <p className="font-medium text-gray-700 mb-1">Palm & Dorsum</p>
+                                <div className="text-gray-600 space-y-0.5">
+                                  <div className="flex justify-between">
+                                    <span>Palm (Radial):</span>
+                                    <span>{(assessmentResults.katz[hand].detailedCoverage?.palm_radial || 0).toFixed(1)}%</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Palm (Ulnar):</span>
+                                    <span>{(assessmentResults.katz[hand].detailedCoverage?.palm_ulnar || 0).toFixed(1)}%</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Dorsum:</span>
+                                    <span>{(assessmentResults.katz[hand].detailedCoverage?.dorsum || 0).toFixed(1)}%</span>
+                                  </div>
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
+                        </details>
                       </div>
-                    </details>
+                    ))}
                   </div>
-                ))}
+                </div>
               </div>
             )}
           </div>
