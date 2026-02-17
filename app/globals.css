@@ -33,10 +33,6 @@
   color: #6b7280 !important;
 }
 
-.driver-popover-footer .button {
-    text-shadow: none;
-}
-
 /* Next button - matches your purple theme */
 .driver-popover-next-btn {
   background-color: #9333ea !important;
@@ -47,6 +43,7 @@
   border-radius: 0.5rem !important;
   border: none !important;
   transition: background-color 0.2s ease !important;
+  text-shadow: none !important;
 }
 
 .driver-popover-next-btn:hover {
