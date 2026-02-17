@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useRef, useEffect } from 'react';
-import { questionsTourSteps, handDiagramTourSteps, driverConfig, hasTourBeenCompleted, markTourCompleted, resetTour } from '../lib/tourConfig';
+import { questionsTourSteps, handDiagramTourSteps, driverConfig, highlightConfig, hasTourBeenCompleted, markTourCompleted, resetTour } from '../lib/tourConfig';
 import { ChevronLeft, ChevronRight, Download, AlertCircle, Check, Waves, CircleSlash, Zap } from 'lucide-react';
 
 // Data imports
@@ -89,7 +89,7 @@ const CTSSurveyApp = () => {
     // Small delay to ensure DOM elements are rendered
     const timer = setTimeout(() => {
       if (currentSection === 0 && !hasTourBeenCompleted('questions')) {
-        startTour('questions');
+        startHighlight();
       } else if (currentSection === 1 && !hasTourBeenCompleted('handDiagram')) {
         startTour('handDiagram');
       }
@@ -556,6 +556,42 @@ const CTSSurveyApp = () => {
   // ============================================
   // HELP BUTTON
   // ============================================
+  const startHighlight = () => {
+    if (typeof window === 'undefined' || !window.driver) {
+      console.warn('Driver.js not loaded yet');
+      return;
+    }
+
+    const element = document.querySelector(questionsHighlightConfig.element);
+    if (!element) {
+      console.warn('Highlight element not found:', questionsHighlightConfig.element);
+      return;
+    }
+
+    const driver = window.driver.js.driver;
+
+    driverRef.current = driver({
+      ...highlightConfig,
+      onDeselected: () => {
+        markTourCompleted('questions');
+      }
+    });
+
+    // Use highlight() for spotlight without popover
+    driverRef.current.highlight({
+      element: questionsHighlightConfig.element,
+      popover: null // No popover, just highlight
+    });
+
+    // Auto-dismiss the highlight after a delay (e.g., 2 seconds)
+    setTimeout(() => {
+      if (driverRef.current) {
+        driverRef.current.destroy();
+        markTourCompleted('questions');
+      }
+    }, 2000);
+  };
+
   const startTour = (tourType) => {
     console.log('startTour called:', tourType);
     console.log('window.driver:', window.driver);
@@ -565,7 +601,7 @@ const CTSSurveyApp = () => {
       return;
     }
 
-    const steps = tourType === 'questions' ? questionsTourSteps : handDiagramTourSteps;
+    const steps = handDiagramTourSteps;
     console.log('Steps:', steps);
     
     // Check if all target elements exist
@@ -597,9 +633,13 @@ const CTSSurveyApp = () => {
   };
 
   const handleHelpClick = () => {
-    const tourType = currentSection === 0 ? 'questions' : 'handDiagram';
-    resetTour(tourType);
-    startTour(tourType);
+    if (currentSection === 0) {
+      resetTour('questions');
+      startHighlight();
+    } else if (currentSection === 1) {
+      resetTour('handDiagram');
+      startTour('handDiagram');
+    }
   };
 
   // ============================================
