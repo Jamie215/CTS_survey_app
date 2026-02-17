@@ -33,8 +33,7 @@
   color: #6b7280 !important;
 }
 
-/* Button base styles */
-.button {
+.driver-popover-footer .button {
     text-shadow: none;
 }
 
