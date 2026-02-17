@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useRef, useEffect } from 'react';
-import { questionsTourSteps, handDiagramTourSteps, driverConfig, highlightConfig, hasTourBeenCompleted, markTourCompleted, resetTour } from '../lib/tourConfig';
+import { questionsHighlightConfig, handDiagramTourSteps, driverConfig, highlightConfig, hasTourBeenCompleted, markTourCompleted, resetTour } from '../lib/tourConfig';
 import { ChevronLeft, ChevronRight, Download, AlertCircle, Check, Waves, CircleSlash, Zap } from 'lucide-react';
 
 // Data imports
