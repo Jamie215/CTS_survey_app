@@ -33,6 +33,11 @@
   color: #6b7280 !important;
 }
 
+/* Button base styles */
+.button {
+    text-shadow: none;
+}
+
 /* Next button - matches your purple theme */
 .driver-popover-next-btn {
   background-color: #9333ea !important;
