@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useRef, useEffect } from 'react';
-import { questionsHighlightConfig, handDiagramTourSteps, handDiagramTourConfig, highlightConfig, hasTourBeenCompleted, markTourCompleted, resetTour } from '../lib/tourConfig';
+import { questionsHighlightConfig, getHandDiagramTourSteps, handDiagramTourConfig, highlightConfig, hasTourBeenCompleted, markTourCompleted, resetTour } from '../lib/tourConfig';
 import { ChevronLeft, ChevronRight, Download, AlertCircle, Check, CircleQuestionMark, Waves, CircleX, Zap } from 'lucide-react';
 
 // Data imports
@@ -11,6 +11,7 @@ import { CANVAS_WIDTH, CANVAS_HEIGHT, sections, STROKE_COLORS, OVERLAY_COLORS, K
 // Scoring imports
 import  { calculateKamathScore } from '../lib/kamathScoring';
 import { calculateKatzScore, analyzeSymptomDistribution } from '../lib/katzScoring';
+import { get } from 'http';
 
 const CTSSurveyApp = () => {
   // ============================================
@@ -600,8 +601,10 @@ const CTSSurveyApp = () => {
       return;
     }
 
+    const steps = getHandDiagramTourSteps(hasNumbnessOrTingling);
+
     // Check if all target elements exist
-    const allElementsExist = handDiagramTourSteps.every(step => {
+    const allElementsExist = steps.every(step => {
       const exists = document.querySelector(step.element);
       if (!exists) {
         console.warn(`Element not found: ${step.element}`);
@@ -621,7 +624,7 @@ const CTSSurveyApp = () => {
 
     driverRef.current = driver({
       ...handDiagramTourConfig,
-      steps: handDiagramTourSteps,
+      steps: steps,
       onDestroyStarted: () => {
         // Called when tour is about to end (completed or closed)
         markTourCompleted('handDiagram');
