@@ -821,7 +821,7 @@ const CTSSurveyApp = () => {
         return (
           <div className="space-y-6">
             <div className="mb-6" id="hand-diagram-header">
-              <div className="flex gap-4">
+              <div className="flex gap-2 items-start">
                 <h2 className="text-2xl font-semibold text-gray-800 mb-3">
                   Hand Diagrams
                 </h2>
