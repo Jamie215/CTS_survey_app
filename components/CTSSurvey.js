@@ -17,7 +17,6 @@ const CTSSurveyApp = () => {
   // STATE
   // ============================================
   const [currentSection, setCurrentSection] = useState(0);
-  const [showHelpButton, setShowHelpButton] = useState(true);
   const [isTourActive, setIsTourActive] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [participantId, setParticipantId] = useState('');
@@ -75,6 +74,10 @@ const CTSSurveyApp = () => {
   useEffect(() => {
     setIsClient(true);
     setParticipantId(`CTS-${Date.now()}`);
+
+    // Clear tour history on page refresh
+    localStorage.removeItem('cts-survey-tour-completed-questions');
+    localStorage.removeItem('cts-survey-tour-completed-handDiagram');
   }, []);
   
   useEffect(() => {
