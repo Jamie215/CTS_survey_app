@@ -585,7 +585,7 @@ const CTSSurveyApp = () => {
     // Use highlight() for spotlight without popover
     driverRef.current.highlight({
       element: questionsHighlightConfig.element,
-      popover: null;
+      popover: null
     });
   };
 
