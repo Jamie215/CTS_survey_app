@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { questionsHighlightConfig, handDiagramTourSteps, handDiagramTourConfig, highlightConfig, hasTourBeenCompleted, markTourCompleted, resetTour } from '../lib/tourConfig';
-import { ChevronLeft, ChevronRight, Download, AlertCircle, Check, Waves, CircleSlash, Zap } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, AlertCircle, Check, CircleQuestionMark, Waves, CircleX, Zap } from 'lucide-react';
 
 // Data imports
 import { diagnosticQuestions } from '../data/diagnosticQuestions';
@@ -47,6 +47,10 @@ const CTSSurveyApp = () => {
   
   // Canvas refs for drawing
   const canvasRefs = {
+    painFrontLeft: useRef(null),
+    painFrontRight: useRef(null),
+    painBackLeft: useRef(null),
+    painBackRight: useRef(null),
     tinglingFrontLeft: useRef(null),
     tinglingFrontRight: useRef(null),
     tinglingBackLeft: useRef(null),
@@ -54,11 +58,7 @@ const CTSSurveyApp = () => {
     numbnessFrontLeft: useRef(null),
     numbnessFrontRight: useRef(null),
     numbnessBackLeft: useRef(null),
-    numbnessBackRight: useRef(null),
-    painFrontLeft: useRef(null),
-    painFrontRight: useRef(null),
-    painBackLeft: useRef(null),
-    painBackRight: useRef(null),
+    numbnessBackRight: useRef(null)
   };
 
   // Refs for results display
@@ -306,9 +306,9 @@ const CTSSurveyApp = () => {
   };
 
   const getSymptomType = (canvasKey) => {
+    if (canvasKey.startsWith('pain')) return 'pain';
     if (canvasKey.startsWith('tingling')) return 'tingling';
     if (canvasKey.startsWith('numbness')) return 'numbness';
-    if (canvasKey.startsWith('pain')) return 'pain';
     return 'unknown';
   };
 
@@ -446,7 +446,7 @@ const CTSSurveyApp = () => {
     drawHandOutline(canvas, isLeft, isBack);
     
     setTimeout(() => {
-      ['tingling', 'numbness', 'pain'].forEach((symptom) => {
+      ['pain', 'tingling', 'numbness'].forEach((symptom) => {
         const dataKey = isBack ? `${symptom}Back${hand}` : `${symptom}Front${hand}`;
         const data = handDiagramData[dataKey] || [];
         
@@ -802,9 +802,9 @@ const CTSSurveyApp = () => {
       
       case 1:
         const allSymptoms = [
+          { type: 'pain', label: 'Pain', color: 'orange', icon: Zap, instruction: 'Mark areas where you experience pain or discomfort. You will see orange shading' },
           { type: 'tingling', label: 'Tingling', color: 'purple', icon: Waves, instruction: 'Mark areas where you feel pins and needles or tingling sensations. You will see purple shading' },
-          { type: 'numbness', label: 'Numbness', color: 'blue', icon: CircleSlash, instruction: 'Mark areas where you have reduced or no sensation. You will see blue shading' },
-          { type: 'pain', label: 'Pain', color: 'orange', icon: Zap, instruction: 'Mark areas where you experience pain or discomfort. You will see orange shading' }
+          { type: 'numbness', label: 'Numbness', color: 'blue', icon: CircleX, instruction: 'Mark areas where you have reduced or no sensation. You will see blue shading' },
         ];
         
         const symptoms = hasNumbnessOrTingling === false
@@ -818,8 +818,7 @@ const CTSSurveyApp = () => {
                 Hand Diagrams
               </h2>
               <p className="text-lg text-gray-600">
-                Please mark the areas where you experience for each symptoms (tingling, numbness, pain) on the corresponding hand diagrams below. 
-                Use your mouse or finger to draw on the hand images. If you make a mistake, you can use the &quot;Clear&quot; button below each diagram to start over.
+                Please mark the areas where you experience for each symptoms (pain, tingling, numbness) on the corresponding hand diagrams below.
               </p>
             </div>
 
@@ -1150,7 +1149,7 @@ const CTSSurveyApp = () => {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-base">
                               <div>
                                 <p className="font-medium text-gray-700 mb-1">Thumb (Distal)</p>
-                                {['tingling', 'numbness', 'pain'].map(symptom => {
+                                {['pain', 'tingling', 'numbness'].map(symptom => {
                                   const coverage = assessmentResults.katz[hand].KatzScore.coverageBySymptom?.[symptom]?.['thumb_distal'] || 0;
                                   return (
                                     <div key={symptom} className="flex justify-between text-gray-600">
@@ -1162,7 +1161,7 @@ const CTSSurveyApp = () => {
                               </div>
                               <div>
                                 <p className="font-medium text-gray-700 mb-1">Index (Distal/Middle)</p>
-                                {['tingling', 'numbness', 'pain'].map(symptom => {
+                                {['pain', 'tingling', 'numbness'].map(symptom => {
                                   const distal = assessmentResults.katz[hand].KatzScore.coverageBySymptom?.[symptom]?.['index_distal'] || 0;
                                   const middle = assessmentResults.katz[hand].KatzScore.coverageBySymptom?.[symptom]?.['index_middle'] || 0;
                                   return (
@@ -1175,7 +1174,7 @@ const CTSSurveyApp = () => {
                               </div>
                               <div>
                                 <p className="font-medium text-gray-700 mb-1">Middle (Distal/Middle)</p>
-                                {['tingling', 'numbness', 'pain'].map(symptom => {
+                                {['pain', 'tingling', 'numbness'].map(symptom => {
                                   const distal = assessmentResults.katz[hand].KatzScore.coverageBySymptom?.[symptom]?.['middle_distal'] || 0;
                                   const middle = assessmentResults.katz[hand].KatzScore.coverageBySymptom?.[symptom]?.['middle_middle'] || 0;
                                   return (
@@ -1232,11 +1231,7 @@ const CTSSurveyApp = () => {
           </h1>
           {currentSection === 1 && (
             <button onClick={handleHelpClick} className="flex items-center gap-2 px-4 py-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors">
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-                <line x1="12" y1="17" x2="12.01" y2="17"></line>
-              </svg>
+              <CircleQuestionMark className="w-5 h-5" />
               <span className="font-medium">Help</span>
             </button>
           )}
