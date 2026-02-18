@@ -60,38 +60,6 @@
   line-height: 1.4;
 }
 
-/* Grey tint for highlighted elements (questions section) */
-.cts-highlight-grey {
-  position: relative;
-}
-
-.cts-highlight-grey::before {
-  content: '';
-  position: absolute;
-  top: -8px;
-  left: -8px;
-  right: -8px;
-  bottom: -8px;
-  background-color: rgba(107, 114, 128, 0.12);
-  border-radius: 12px;
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* Ensure content stays above the grey overlay */
-.cts-highlight-grey > * {
-  position: relative;
-  z-index: 1;
-}
-
-/* Alternative: If the above doesn't work well with driver.js overlay,
-   use this simpler approach that tints the background directly */
-.cts-highlight-grey-simple {
-  background-color: rgba(156, 163, 175, 0.1) !important;
-  border-radius: 8px;
-  transition: background-color 0.3s ease;
-}
-
 /* Canvas disabled state during tour */
 .canvas-disabled {
   pointer-events: none;

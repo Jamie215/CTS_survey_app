@@ -581,14 +581,11 @@ const CTSSurveyApp = () => {
       return;
     }
 
-    element.classList.add('cts-highlight-grey');
-
     const driver = window.driver.js.driver;
 
     driverRef.current = driver({
       ...highlightConfig,
       onDeselected: () => {
-        element.classList.remove('cts-highlight-grey');
         markTourCompleted('questions');
       }
     });
@@ -603,7 +600,6 @@ const CTSSurveyApp = () => {
     setTimeout(() => {
       if (driverRef.current) {
         driverRef.current.destroy();
-        element.classList.remove('cts-highlight-grey');
         markTourCompleted('questions');
       }
     }, 10000);
@@ -925,7 +921,7 @@ const CTSSurveyApp = () => {
 
         return (
           <div className="space-y-6">
-            <div>
+            <div className="mb-6" id="hand-diagram-header">
               <h2 className="text-2xl font-semibold text-gray-800 mb-3">
                 Hand Diagrams
               </h2>
