@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useRef, useEffect } from 'react';
-import { questionsHighlightConfig, handDiagramTourSteps, highlightConfig, hasTourBeenCompleted, markTourCompleted, resetTour, hasStepBeenShown, markStepShown } from '../lib/tourConfig';
+import { questionsHighlightConfig, handDiagramTourSteps, handDiagramTourConfig, highlightConfig, hasTourBeenCompleted, markTourCompleted, resetTour } from '../lib/tourConfig';
 import { ChevronLeft, ChevronRight, Download, AlertCircle, Check, Waves, CircleSlash, Zap } from 'lucide-react';
 
 // Data imports
@@ -32,8 +32,6 @@ const CTSSurveyApp = () => {
   const [hasNumbnessOrTingling, setHasNumbnessOrTingling] = useState(null);
   
   const driverRef = useRef(null);
-  const observersRef = useRef([]);
-  const shownStepsRef = useRef(new Set());
 
   // Track drawing state with refs to avoid stale closures
   const isDrawingRef = useRef(false);
@@ -94,7 +92,7 @@ const CTSSurveyApp = () => {
       if (currentSection === 0 && !hasTourBeenCompleted('questions')) {
         startHighlight();
       } else if (currentSection === 1 && !hasTourBeenCompleted('handDiagram')) {
-        setupScrollTriggeredTour();
+        startHandDiagramTour();
       }
     }, 500);
 
@@ -104,7 +102,6 @@ const CTSSurveyApp = () => {
       if (driverRef.current) {
         driverRef.current.destroy();
       }
-      cleanupObservers();
     };
   }, [currentSection, isClient]);
 
@@ -597,134 +594,51 @@ const CTSSurveyApp = () => {
     });
   };
 
-  const setupScrollTriggeredTour = (tourType) => {    
+  const startHandDiagramTour = (tourType) => {    
     if (typeof window === 'undefined' || !window.driver) {
       console.warn('Driver.js not loaded yet');
       return;
     }
 
+    // Check if all target elements exist
+    const allElementsExist = handDiagramTourSteps.every(step => {
+      const exists = document.querySelector(step.element);
+      if (!exists) {
+        console.warn(`Element not found: ${step.element}`);
+      }
+      return exists;
+    });
+
+    if (!allElementsExist) {
+      console.warn('Some tour elements not found, skipping tour');
+      return;
+    }
+
     const driver = window.driver.js.driver;
 
-    //Reset shown steps for the session
-    shownStepsRef.current = new Set();
-
-    // Create intersection observer for each tour step
-    handDiagramTourSteps.forEach((step, index) => {
-      const stepId = `handDiagram-${index}`;
-      
-      // Skip if this step has already been shown (persisted)
-      if (hasStepBeenShown(stepId)) {
-        shownStepsRef.current.add(index);
-        return;
-      }
-
-      const element = document.querySelector(step.element);
-      if (!element) {
-        console.warn(`Element not found for step ${index}:`, step.element);
-        return;
-      }
-
-      const observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            // Only trigger when element becomes visible and hasn't been shown yet
-            if (entry.isIntersecting && !shownStepsRef.current.has(index)) {
-              shownStepsRef.current.add(index);
-              
-              // Small delay to ensure smooth scroll completion
-              setTimeout(() => {
-                showStepHighlight(step, index, driver);
-              }, 300);
-              
-              // Stop observing this element
-              observer.unobserve(entry.target);
-            }
-          });
-        },
-        {
-          root: null, // viewport
-          rootMargin: '0px',
-          threshold: 0.5 // 50% of element must be visible
-        }
-      );
-
-      observer.observe(element);
-      observersRef.current.push(observer);
-    });
-
-    // Check if first step is already visible (for elements at top of page)
-    const firstElement = document.querySelector(handDiagramTourSteps[0]?.element);
-    if (firstElement) {
-      const rect = firstElement.getBoundingClientRect();
-      const isVisible = rect.top >= 0 && rect.top <= window.innerHeight * 0.5;
-      
-      if (isVisible && !shownStepsRef.current.has(0) && !hasStepBeenShown('handDiagram-0')) {
-        shownStepsRef.current.add(0);
-        setTimeout(() => {
-          showStepHighlight(handDiagramTourSteps[0], 0, driver);
-        }, 500);
-      }
-    }
-  };
-
-  const showStepHighlight = (step, index, driverFn) => {
-    const stepId = `handDiagram-${index}`;
-
+    // Block cnavas interaction during tour
     setIsTourActive(true);
 
-    if(driverRef.current) {
-      driverRef.current.destroy();
-    }
-
-    driverRef.current = driverFn({
-      popoverClass: 'cts-tour-popover cts-scroll-popover',
-      overlayColor: 'rgba(0, 0, 0, 0.4)',
-      stagePadding: 8,
-      stageRadius: 8,
-      allowClose: true,
-      onDeselected: () => {
-        markStepShown(stepId);
+    driverRef.current = driver({
+      ...handDiagramTourConfig,
+      steps: handDiagramTourSteps,
+      onDestroyStarted: () => {
+        // Called when tour is about to end (completed or closed)
+        markTourCompleted('handDiagram');
         setIsTourActive(false);
-        
-        // Check if all steps have been shown
-        const allShown = handDiagramTourSteps.every((_, i) => 
-          hasStepBeenShown(`handDiagram-${i}`) || shownStepsRef.current.has(i)
-        );
-        if (allShown) {
-          markTourCompleted('handDiagram');
+        if (driverRef.current) {
+          driverRef.current.destroy();
         }
-      },
-      onPopoverRender: (popover) => {
-        // Add a "Got it" button to the popover
-        const gotItBtn = document.createElement('button');
-        gotItBtn.textContent = 'Got it';
-        gotItBtn.className = 'driver-popover-next-btn';
-        gotItBtn.style.marginTop = '12px';
-        gotItBtn.style.width = '100%';
-        gotItBtn.onclick = () => {
-          if (driverRef.current) {
-            driverRef.current.destroy();
-          }
-        };
-        popover.description.appendChild(gotItBtn);
       }
     });
 
-    driverRef.current.highlight({
-      element: step.element,
-      popover: step.popover
-    });
+    driverRef.current.drive();
   };
 
   const handleHelpClick = () => {
-    if (currentSection === 0) {
-      resetTour('questions');
-      startHighlight();
-    } else if (currentSection === 1) {
+    if (currentSection === 1) {
       resetTour('handDiagram');
-      shownStepsRef.current = new Set(); // Reset session tracking
-      cleanupObservers();
-      setupScrollTriggeredTour();
+      startHandDiagramTour();
     }
   };
 
@@ -910,7 +824,7 @@ const CTSSurveyApp = () => {
               </h2>
               <p className="text-lg text-gray-600">
                 Please mark the areas where you experience for each symptoms (tingling, numbness, pain) on the corresponding hand diagrams below. 
-                Use your mouse or finger to draw on the hand images.
+                Use your mouse or finger to draw on the hand images. If you make a mistake, you can use the "Clear" button below each diagram to start over.
               </p>
             </div>
 
@@ -1321,11 +1235,8 @@ const CTSSurveyApp = () => {
           <h1 className="text-3xl font-normal text-gray-800">
             Carpal Tunnel Syndrome Diagnostic Tool
           </h1>
-          {currentSection !== 2 && (
-            <button
-              onClick={handleHelpClick}
-              className="flex items-center gap-2 px-4 py-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-            >
+          {currentSection === 1 && (
+            <button onClick={handleHelpClick} className="flex items-center gap-2 px-4 py-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors">
               <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10"></circle>
                 <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
