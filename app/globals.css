@@ -23,6 +23,10 @@
   line-height: 1.5;
 }
 
+.cts-highlight-popover-minimal .driver-popover-description {
+  display: none;
+}
+
 .cts-tour-popover .driver-popover-progress-text {
   font-size: 0.875rem;
   color: #6b7280;

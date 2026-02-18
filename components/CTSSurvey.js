@@ -585,7 +585,7 @@ const CTSSurveyApp = () => {
     // Use highlight() for spotlight without popover
     driverRef.current.highlight({
       element: questionsHighlightConfig.element,
-      popover: null // No popover, just highlight
+      popover: questionsHighlightConfig.popover
     });
   };
 
@@ -623,6 +623,12 @@ const CTSSurveyApp = () => {
         setIsTourActive(false);
         if (driverRef.current) {
           driverRef.current.destroy();
+        }
+
+        // Scroll back to hand diagram section
+        const headerElement = document.querySelector('#hand-diagram-header');
+        if (headerElement) {
+          headerElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
       }
     });
