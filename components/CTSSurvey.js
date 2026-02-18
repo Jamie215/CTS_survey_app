@@ -595,14 +595,6 @@ const CTSSurveyApp = () => {
       element: questionsHighlightConfig.element,
       popover: null // No popover, just highlight
     });
-
-    // Auto-dismiss the highlight after a delay (e.g.,10 seconds)
-    setTimeout(() => {
-      if (driverRef.current) {
-        driverRef.current.destroy();
-        markTourCompleted('questions');
-      }
-    }, 10000);
   };
 
   const setupScrollTriggeredTour = (tourType) => {    
@@ -722,15 +714,6 @@ const CTSSurveyApp = () => {
       element: step.element,
       popover: step.popover
     });
-
-    // Auto-dismiss after 8 seconds if user doesn't interact
-    setTimeout(() => {
-      if (driverRef.current && shownStepsRef.current.has(index)) {
-        driverRef.current.destroy();
-        markStepShown(stepId);
-        setIsTourActive(false);
-      }
-    }, 8000);
   };
 
   const handleHelpClick = () => {
