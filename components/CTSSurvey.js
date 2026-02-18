@@ -837,7 +837,7 @@ const CTSSurveyApp = () => {
                 </button>
               </div>
               <p className="text-lg text-gray-600">
-                Please mark the areas where you experience for each symptoms (pain, tingling, numbness) on the corresponding hand diagrams below.
+                {hasNumbnessOrTingling === false ? 'Please mark the areas where you experience pain on the corresponding hand diagrams below.' : 'Please mark the areas where you experience each symptom (pain, tingling, numbness) on the corresponding hand diagrams below.'}
               </p>
             </div>
 
