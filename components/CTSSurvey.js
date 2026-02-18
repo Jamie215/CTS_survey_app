@@ -518,6 +518,7 @@ const CTSSurveyApp = () => {
     }
     
     setCurrentSection(currentSection + 1);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handlePreviousSection = () => {
