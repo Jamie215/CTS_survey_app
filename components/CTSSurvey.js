@@ -823,6 +823,9 @@ const CTSSurveyApp = () => {
               <h2 className="text-2xl font-semibold text-gray-800 mb-3">
                 Hand Diagrams
               </h2>
+              <button onClick={handleHelpClick} className="flex items-center gap-2 px-4 py-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors">
+                <CircleQuestionMark className="w-5 h-5" />
+              </button>
               <p className="text-lg text-gray-600">
                 Please mark the areas where you experience for each symptoms (pain, tingling, numbness) on the corresponding hand diagrams below.
               </p>
@@ -1235,12 +1238,6 @@ const CTSSurveyApp = () => {
           <h1 className="text-3xl font-normal text-gray-800">
             Carpal Tunnel Syndrome Diagnostic Tool
           </h1>
-          {currentSection === 1 && (
-            <button onClick={handleHelpClick} className="flex items-center gap-2 px-4 py-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors">
-              <CircleQuestionMark className="w-5 h-5" />
-              <span className="font-medium">Help</span>
-            </button>
-          )}
         </div>
       </header>
 
