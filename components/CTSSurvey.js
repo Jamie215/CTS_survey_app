@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useRef, useEffect } from 'react';
-import { questionsHighlightConfig, handDiagramTourSteps, driverConfig, highlightConfig, hasTourBeenCompleted, markTourCompleted, resetTour, hasStepBeenShown, markStepShown } from '../lib/tourConfig';
+import { questionsHighlightConfig, handDiagramTourSteps, highlightConfig, hasTourBeenCompleted, markTourCompleted, resetTour, hasStepBeenShown, markStepShown } from '../lib/tourConfig';
 import { ChevronLeft, ChevronRight, Download, AlertCircle, Check, Waves, CircleSlash, Zap } from 'lucide-react';
 
 // Data imports
@@ -32,7 +32,7 @@ const CTSSurveyApp = () => {
   const [hasNumbnessOrTingling, setHasNumbnessOrTingling] = useState(null);
   
   const driverRef = useRef(null);
-  const observersRef = useRef(null);
+  const observersRef = useRef([]);
   const shownStepsRef = useRef(new Set());
 
   // Track drawing state with refs to avoid stale closures
@@ -346,7 +346,7 @@ const CTSSurveyApp = () => {
 
   const handleCanvasMouseMove = (e, canvasKey) => {
     if (isTourActive) return;
-    
+
     if (!isDrawingRef.current || currentCanvasKeyRef.current !== canvasKey) return;
     
     e.preventDefault();
