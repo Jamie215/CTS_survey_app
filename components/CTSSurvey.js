@@ -561,11 +561,6 @@ const CTSSurveyApp = () => {
   // ============================================
   // Driver.js Tours related
   // ============================================
-  const cleanupObservers = () => {
-    observersRef.current.forEach(observer => observer.disconnect());
-    observersRef.current = [];
-  };
-
   const startHighlight = () => {
     if (typeof window === 'undefined' || !window.driver) {
       console.warn('Driver.js not loaded yet');
@@ -824,7 +819,7 @@ const CTSSurveyApp = () => {
               </h2>
               <p className="text-lg text-gray-600">
                 Please mark the areas where you experience for each symptoms (tingling, numbness, pain) on the corresponding hand diagrams below. 
-                Use your mouse or finger to draw on the hand images. If you make a mistake, you can use the "Clear" button below each diagram to start over.
+                Use your mouse or finger to draw on the hand images. If you make a mistake, you can use the &quot;Clear&quot; button below each diagram to start over.
               </p>
             </div>
 
