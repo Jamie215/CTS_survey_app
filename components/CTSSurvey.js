@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useRef, useEffect } from 'react';
-import { questionsHighlightConfig, handDiagramTourSteps, driverConfig, highlightConfig, hasTourBeenCompleted, markTourCompleted, resetTour } from '../lib/tourConfig';
+import { questionsHighlightConfig, handDiagramTourSteps, driverConfig, highlightConfig, hasTourBeenCompleted, markTourCompleted, resetTour, hasStepBeenShown, markStepShown } from '../lib/tourConfig';
 import { ChevronLeft, ChevronRight, Download, AlertCircle, Check, Waves, CircleSlash, Zap } from 'lucide-react';
 
 // Data imports
@@ -18,6 +18,7 @@ const CTSSurveyApp = () => {
   // ============================================
   const [currentSection, setCurrentSection] = useState(0);
   const [showHelpButton, setShowHelpButton] = useState(true);
+  const [isTourActive, setIsTourActive] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [participantId, setParticipantId] = useState('');
   const [diagnosticAnswers, setDiagnosticAnswers] = useState({});
@@ -31,6 +32,8 @@ const CTSSurveyApp = () => {
   const [hasNumbnessOrTingling, setHasNumbnessOrTingling] = useState(null);
   
   const driverRef = useRef(null);
+  const observersRef = useRef(null);
+  const shownStepsRef = useRef(new Set());
 
   // Track drawing state with refs to avoid stale closures
   const isDrawingRef = useRef(false);
@@ -91,7 +94,7 @@ const CTSSurveyApp = () => {
       if (currentSection === 0 && !hasTourBeenCompleted('questions')) {
         startHighlight();
       } else if (currentSection === 1 && !hasTourBeenCompleted('handDiagram')) {
-        startTour('handDiagram');
+        setupScrollTriggeredTour();
       }
     }, 500);
 
@@ -101,6 +104,7 @@ const CTSSurveyApp = () => {
       if (driverRef.current) {
         driverRef.current.destroy();
       }
+      cleanupObservers();
     };
   }, [currentSection, isClient]);
 
@@ -315,6 +319,8 @@ const CTSSurveyApp = () => {
   // CANVAS EVENT HANDLERS
   // ============================================
   const handleCanvasMouseDown = (e, canvasKey) => {
+    if (isTourActive) return;
+    
     e.preventDefault();
     const ref = canvasRefs[canvasKey];
     const canvas = ref?.current;
@@ -339,6 +345,8 @@ const CTSSurveyApp = () => {
   };
 
   const handleCanvasMouseMove = (e, canvasKey) => {
+    if (isTourActive) return;
+    
     if (!isDrawingRef.current || currentCanvasKeyRef.current !== canvasKey) return;
     
     e.preventDefault();
@@ -554,8 +562,13 @@ const CTSSurveyApp = () => {
   }
 
   // ============================================
-  // HELP BUTTON
+  // Driver.js Tours related
   // ============================================
+  const cleanupObservers = () => {
+    observersRef.current.forEach(observer => observer.disconnect());
+    observersRef.current = [];
+  };
+
   const startHighlight = () => {
     if (typeof window === 'undefined' || !window.driver) {
       console.warn('Driver.js not loaded yet');
@@ -568,11 +581,14 @@ const CTSSurveyApp = () => {
       return;
     }
 
+    element.classList.add('cts-highlight-grey');
+
     const driver = window.driver.js.driver;
 
     driverRef.current = driver({
       ...highlightConfig,
       onDeselected: () => {
+        element.classList.remove('cts-highlight-grey');
         markTourCompleted('questions');
       }
     });
@@ -583,53 +599,142 @@ const CTSSurveyApp = () => {
       popover: null // No popover, just highlight
     });
 
-    // Auto-dismiss the highlight after a delay (e.g., 2 seconds)
+    // Auto-dismiss the highlight after a delay (e.g.,10 seconds)
     setTimeout(() => {
       if (driverRef.current) {
         driverRef.current.destroy();
+        element.classList.remove('cts-highlight-grey');
         markTourCompleted('questions');
       }
-    }, 2000);
+    }, 10000);
   };
 
-  const startTour = (tourType) => {
-    console.log('startTour called:', tourType);
-    console.log('window.driver:', window.driver);
-    
+  const setupScrollTriggeredTour = (tourType) => {    
     if (typeof window === 'undefined' || !window.driver) {
       console.warn('Driver.js not loaded yet');
       return;
     }
 
-    const steps = handDiagramTourSteps;
-    console.log('Steps:', steps);
-    
-    // Check if all target elements exist
-    const allElementsExist = steps.every(step => {
-      const exists = document.querySelector(step.element);
-      console.log(`Element ${step.element}:`, exists ? 'found' : 'NOT FOUND');
-      return exists;
-    });
-    
-    if (!allElementsExist) {
-      console.warn(`Some tour elements not found for ${tourType} tour`);
-      return;
-    }
-
     const driver = window.driver.js.driver;
 
-    driverRef.current = driver({
-      ...driverConfig,
-      steps: steps,
-      onDestroyStarted: () => {
-        markTourCompleted(tourType);
-        if (driverRef.current) {
-          driverRef.current.destroy();
+    //Reset shown steps for the session
+    shownStepsRef.current = new Set();
+
+    // Create intersection observer for each tour step
+    handDiagramTourSteps.forEach((step, index) => {
+      const stepId = `handDiagram-${index}`;
+      
+      // Skip if this step has already been shown (persisted)
+      if (hasStepBeenShown(stepId)) {
+        shownStepsRef.current.add(index);
+        return;
+      }
+
+      const element = document.querySelector(step.element);
+      if (!element) {
+        console.warn(`Element not found for step ${index}:`, step.element);
+        return;
+      }
+
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            // Only trigger when element becomes visible and hasn't been shown yet
+            if (entry.isIntersecting && !shownStepsRef.current.has(index)) {
+              shownStepsRef.current.add(index);
+              
+              // Small delay to ensure smooth scroll completion
+              setTimeout(() => {
+                showStepHighlight(step, index, driver);
+              }, 300);
+              
+              // Stop observing this element
+              observer.unobserve(entry.target);
+            }
+          });
+        },
+        {
+          root: null, // viewport
+          rootMargin: '0px',
+          threshold: 0.5 // 50% of element must be visible
         }
+      );
+
+      observer.observe(element);
+      observersRef.current.push(observer);
+    });
+
+    // Check if first step is already visible (for elements at top of page)
+    const firstElement = document.querySelector(handDiagramTourSteps[0]?.element);
+    if (firstElement) {
+      const rect = firstElement.getBoundingClientRect();
+      const isVisible = rect.top >= 0 && rect.top <= window.innerHeight * 0.5;
+      
+      if (isVisible && !shownStepsRef.current.has(0) && !hasStepBeenShown('handDiagram-0')) {
+        shownStepsRef.current.add(0);
+        setTimeout(() => {
+          showStepHighlight(handDiagramTourSteps[0], 0, driver);
+        }, 500);
+      }
+    }
+  };
+
+  const showStepHighlight = (step, index, driverFn) => {
+    const stepId = `handDiagram-${index}`;
+
+    setIsTourActive(true);
+
+    if(driverRef.current) {
+      driverRef.current.destroy();
+    }
+
+    driverRef.current = driverFn({
+      popoverClass: 'cts-tour-popover cts-scroll-popover',
+      overlayColor: 'rgba(0, 0, 0, 0.4)',
+      stagePadding: 8,
+      stageRadius: 8,
+      allowClose: true,
+      onDeselected: () => {
+        markStepShown(stepId);
+        setIsTourActive(false);
+        
+        // Check if all steps have been shown
+        const allShown = handDiagramTourSteps.every((_, i) => 
+          hasStepBeenShown(`handDiagram-${i}`) || shownStepsRef.current.has(i)
+        );
+        if (allShown) {
+          markTourCompleted('handDiagram');
+        }
+      },
+      onPopoverRender: (popover) => {
+        // Add a "Got it" button to the popover
+        const gotItBtn = document.createElement('button');
+        gotItBtn.textContent = 'Got it';
+        gotItBtn.className = 'driver-popover-next-btn';
+        gotItBtn.style.marginTop = '12px';
+        gotItBtn.style.width = '100%';
+        gotItBtn.onclick = () => {
+          if (driverRef.current) {
+            driverRef.current.destroy();
+          }
+        };
+        popover.description.appendChild(gotItBtn);
       }
     });
 
-    driverRef.current.drive();
+    driverRef.current.highlight({
+      element: step.element,
+      popover: step.popover
+    });
+
+    // Auto-dismiss after 8 seconds if user doesn't interact
+    setTimeout(() => {
+      if (driverRef.current && shownStepsRef.current.has(index)) {
+        driverRef.current.destroy();
+        markStepShown(stepId);
+        setIsTourActive(false);
+      }
+    }, 8000);
   };
 
   const handleHelpClick = () => {
@@ -638,7 +743,9 @@ const CTSSurveyApp = () => {
       startHighlight();
     } else if (currentSection === 1) {
       resetTour('handDiagram');
-      startTour('handDiagram');
+      shownStepsRef.current = new Set(); // Reset session tracking
+      cleanupObservers();
+      setupScrollTriggeredTour();
     }
   };
 

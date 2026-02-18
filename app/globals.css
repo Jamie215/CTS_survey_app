@@ -6,87 +6,99 @@
    Driver.js Tour Styles for CTS Survey App
    ============================================================================= */
 
-/* Popover base styles */
-.driver-popover {
+/* Base tour popover styling */
+.cts-tour-popover {
   font-family: inherit;
-  max-width: 360px;
 }
 
-/* Title styling */
-.driver-popover-title {
-  font-size: 1.125rem !important;
-  font-weight: 600 !important;
-  color: #1f2937 !important;
-  margin-bottom: 0.5rem !important;
+.cts-tour-popover .driver-popover-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1f2937;
 }
 
-/* Description styling */
-.driver-popover-description {
-  font-size: 1rem !important;
-  color: #4b5563 !important;
-  line-height: 1.6 !important;
+.cts-tour-popover .driver-popover-description {
+  font-size: 1rem;
+  color: #4b5563;
+  line-height: 1.5;
 }
 
-/* Progress text */
-.driver-popover-progress-text {
-  font-size: 0.875rem !important;
-  color: #6b7280 !important;
+.cts-tour-popover .driver-popover-progress-text {
+  font-size: 0.875rem;
+  color: #6b7280;
 }
 
-/* Next button for popover */
-.driver-popover-next-btn {
-  background-color: #9333ea !important;
-  color: white !important;
-  font-size: 0.938rem !important;
-  font-weight: 500 !important;
-  padding: 0.5rem 1rem !important;
-  border-radius: 0.5rem !important;
-  border: none !important;
-  transition: background-color 0.2s ease !important;
-  text-shadow: none !important;
+.cts-tour-popover .driver-popover-next-btn,
+.cts-tour-popover .driver-popover-prev-btn {
+  font-size: 0.938rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
 }
 
-.driver-popover-next-btn:hover {
-  background-color: #7e22ce !important;
+.cts-tour-popover .driver-popover-next-btn {
+  background-color: #9333ea;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
-/* Previous button */
-.driver-popover-prev-btn {
-  font-size: 0.938rem !important;
-  font-weight: 500 !important;
-  padding: 0.5rem 1rem !important;
-  border-radius: 0.5rem !important;
-  color: #6b7280 !important;
-  border: 1px solid #d1d5db !important;
-  transition: all 0.2s ease !important;
+.cts-tour-popover .driver-popover-next-btn:hover {
+  background-color: #7e22ce;
 }
 
-.driver-popover-prev-btn:hover {
-  background-color: #f3f4f6 !important;
-  color: #374151 !important;
+/* Scroll-triggered popover styling */
+.cts-scroll-popover .driver-popover-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1f2937;
 }
 
-/* Close button */
-.driver-popover-close-btn {
-  color: #9ca3af !important;
-  transition: color 0.2s ease !important;
+.cts-scroll-popover .driver-popover-description {
+  font-size: 0.938rem;
+  color: #4b5563;
+  line-height: 1.4;
 }
 
-.driver-popover-close-btn:hover {
-  color: #4b5563 !important;
+/* Grey tint for highlighted elements (questions section) */
+.cts-highlight-grey {
+  position: relative;
 }
 
-/* Arrow styling */
-.driver-popover-arrow {
-  border: none !important;
+.cts-highlight-grey::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  right: -8px;
+  bottom: -8px;
+  background-color: rgba(107, 114, 128, 0.12);
+  border-radius: 12px;
+  pointer-events: none;
+  z-index: 0;
 }
 
-/* Overlay */
-.driver-overlay {
-  background-color: rgba(0, 0, 0, 0.5) !important;
+/* Ensure content stays above the grey overlay */
+.cts-highlight-grey > * {
+  position: relative;
+  z-index: 1;
 }
 
-/* Highlighted element */
+/* Alternative: If the above doesn't work well with driver.js overlay,
+   use this simpler approach that tints the background directly */
+.cts-highlight-grey-simple {
+  background-color: rgba(156, 163, 175, 0.1) !important;
+  border-radius: 8px;
+  transition: background-color 0.3s ease;
+}
+
+/* Canvas disabled state during tour */
+.canvas-disabled {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+/* Smooth transitions for tour elements */
 .driver-active-element {
-  border-radius: 8px !important;
+  transition: all 0.3s ease;
 }
