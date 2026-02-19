@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { questionsHighlightConfig, getHandDiagramTourSteps, handDiagramTourConfig, highlightConfig, hasTourBeenCompleted, markTourCompleted, resetTour } from '../lib/tourConfig';
-import { ChevronLeft, ChevronRight, Download, AlertCircle, Check, CircleQuestionMark, Waves, CircleX, Zap } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, AlertCircle, Check, CircleQuestionMark, Waves, CircleX, Zap, Printer } from 'lucide-react';
 
 // Data imports
 import { diagnosticQuestions } from '../data/diagnosticQuestions';
@@ -631,6 +631,10 @@ const CTSSurveyApp = () => {
     ).join('\n');
 
     downloadFile(csvContent, `${participantId}_results.csv`, 'text/csv');
+
+    const handlePrint = () => {
+      window.print();
+    };
   };
 
   // ============================================
@@ -1400,33 +1404,42 @@ const CTSSurveyApp = () => {
             )}
 
             {currentSection === 2 && (
-              <div className="relative">
+              <div className="flex items-center gap-3">
                 <button
-                  onClick={() => setShowDownloadMenu(!showDownloadMenu)}
-                  className="flex items-center gap-2 px-6 py-3 rounded-lg text-lg font-semibold bg-purple-600 text-white hover:bg-purple-700 transition-colors"
+                  onClick={handlePrint}
+                  className="print-hide flex items-center gap-2 px-6 py-3 rounded-lg text-lg font-semibold bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors"
                 >
-                  <Download className="w-5 h-5" />
-                  Download Results
-                  <ChevronRight className={`w-4 h-4 transition-transform ${showDownloadMenu ? 'rotate-90' : ''}`} />
+                  <Printer className="w-5 h-5" />
+                  Print Results
                 </button>
-                {showDownloadMenu && (
-                  <div className="absolute bottom-full mb-2 left-0 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden min-w-[200px]">
-                    <button
-                      onClick={exportJSON}
-                      className="w-full px-4 py-3 text-left text-gray-700 hover:bg-purple-50 hover:text-purple-700 transition-colors flex items-center gap-2"
-                    >
-                      <span className="font-medium">JSON</span>
-                      <span className="text-sm text-gray-500">(.json)</span>
-                    </button>
-                    <button
-                      onClick={exportCSV}
-                      className="w-full px-4 py-3 text-left text-gray-700 hover:bg-purple-50 hover:text-purple-700 transition-colors flex items-center gap-2 border-t border-gray-100"
-                    >
-                      <span className="font-medium">CSV</span>
-                      <span className="text-sm text-gray-500">(.csv)</span>
-                    </button>
-                  </div>
-                )}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowDownloadMenu(!showDownloadMenu)}
+                    className="flex items-center gap-2 px-6 py-3 rounded-lg text-lg font-semibold bg-purple-600 text-white hover:bg-purple-700 transition-colors"
+                  >
+                    <Download className="w-5 h-5" />
+                    Download Results
+                    <ChevronRight className={`w-4 h-4 transition-transform ${showDownloadMenu ? 'rotate-90' : ''}`} />
+                  </button>
+                  {showDownloadMenu && (
+                    <div className="absolute bottom-full mb-2 left-0 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden min-w-[200px]">
+                      <button
+                        onClick={exportJSON}
+                        className="w-full px-4 py-3 text-left text-gray-700 hover:bg-purple-50 hover:text-purple-700 transition-colors flex items-center gap-2"
+                      >
+                        <span className="font-medium">JSON</span>
+                        <span className="text-sm text-gray-500">(.json)</span>
+                      </button>
+                      <button
+                        onClick={exportCSV}
+                        className="w-full px-4 py-3 text-left text-gray-700 hover:bg-purple-50 hover:text-purple-700 transition-colors flex items-center gap-2 border-t border-gray-100"
+                      >
+                        <span className="font-medium">CSV</span>
+                        <span className="text-sm text-gray-500">(.csv)</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>

@@ -71,3 +71,38 @@
 .driver-active-element {
   transition: all 0.3s ease;
 }
+
+@media print {
+  /* Hide navigation, buttons, and header stepper */
+  .print-hide,
+  header,
+  button,
+  .mb-8 /* progress stepper wrapper */ {
+    display: none !important;
+  }
+
+  /* Remove shadows and backgrounds for clean printing */
+  body {
+    background: white !important;
+  }
+
+  .bg-gray-50 {
+    background: white !important;
+  }
+
+  .shadow-lg {
+    box-shadow: none !important;
+  }
+
+  /* Ensure results content fills the page */
+  .rounded-2xl {
+    border-radius: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Ensure canvases print properly */
+  canvas {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+}
