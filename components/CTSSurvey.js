@@ -30,6 +30,7 @@ const CTSSurveyApp = () => {
   const [highlightIncomplete, setHighlightIncomplete] = useState(false);
   const [assessmentResults, setAssessmentResults] = useState(null);
   const [hasNumbnessOrTingling, setHasNumbnessOrTingling] = useState(null);
+  const [showDownloadMenu, setShowDownloadMenu] = useState(false);
   
   const driverRef = useRef(null);
 
@@ -533,24 +534,103 @@ const CTSSurveyApp = () => {
   // ============================================
   // EXPORT
   // ============================================
-  const exportData = () => {
-    const data = {
-      participantId,
-      timestamp: new Date().toISOString(),
-      diagnosticAnswers,
-      diagnosticEase,
-      diagnosticComments,
-      handDiagramData,
-      diagramEase,
-      diagramComments,
-      assessmentResults
-    };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const buildExportData = () => ({
+    participantId,
+    timestamp: new Date().toISOString(),
+    diagnosticAnswers,
+    diagnosticEase,
+    diagnosticComments,
+    handDiagramData,
+    diagramEase,
+    diagramComments,
+    assessmentResults
+  });
+
+  const downloadFile = (content, filename, mimeType) => {
+    const blob = new Blob([content], { type: mimeType });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${participantId}_results.json`;
+    a.download = filename;
     a.click();
+    URL.revokeObjectURL(url);
+    setShowDownloadMenu(false);
+  };
+
+  const exportJSON = () => {
+    const data = buildExportData();
+    downloadFile(JSON.stringify(data, null, 2), `${participantId}_results.json`, 'application/json');
+  };
+
+  const exportCSV = () => {
+    const data = buildExportData();
+    const rows = [];
+
+    // Header info
+    rows.push(['Participant ID', data.participantId]);
+    rows.push(['Timestamp', data.timestamp]);
+    rows.push([]);
+
+    // Diagnostic answers
+    rows.push(['--- Diagnostic Answers ---']);
+    Object.entries(data.diagnosticAnswers).forEach(([qId, answer]) => {
+      const question = diagnosticQuestions.find(q => q.id === qId);
+      const label = question ? question.question : qId;
+      rows.push([label, Array.isArray(answer) ? answer.join('; ') : answer]);
+    });
+    rows.push([]);
+
+    // Ease & comments
+    rows.push(['Diagnostic Ease', data.diagnosticEase]);
+    rows.push(['Diagnostic Comments', data.diagnosticComments]);
+    rows.push(['Diagram Ease', data.diagramEase]);
+    rows.push(['Diagram Comments', data.diagramComments]);
+    rows.push([]);
+
+    // Assessment results - Kamath
+    if (data.assessmentResults?.kamath) {
+      rows.push(['--- Kamath Score ---']);
+      rows.push(['Total Score', data.assessmentResults.kamath.totalScore]);
+      rows.push(['Max Possible', data.assessmentResults.kamath.maxPossible]);
+      rows.push(['Percentage', data.assessmentResults.kamath.percentage]);
+      rows.push(['Classification', data.assessmentResults.kamath.classification]);
+      rows.push([]);
+    }
+
+    // Assessment results - Katz (per hand)
+    if (data.assessmentResults?.katz) {
+      rows.push(['--- Katz Scores ---']);
+      Object.entries(data.assessmentResults.katz).forEach(([hand, result]) => {
+        rows.push([`Hand: ${hand}`]);
+        rows.push(['Classification', result.KatzScore?.classification]);
+        rows.push(['Classic Pattern Score', result.KatzScore?.classicPatternScore]);
+        if (result.detailedCoverage) {
+          Object.entries(result.detailedCoverage).forEach(([region, value]) => {
+            rows.push([`Coverage - ${region}`, typeof value === 'number' ? value.toFixed(2) : value]);
+          });
+        }
+        rows.push([]);
+      });
+    }
+
+    // Hand diagram drawing data summary
+    rows.push(['--- Hand Diagram Data ---']);
+    Object.entries(data.handDiagramData).forEach(([canvasKey, points]) => {
+      rows.push([canvasKey, `${(points || []).length} data points`]);
+    });
+
+    // Convert to CSV string
+    const csvContent = rows.map(row =>
+      row.map(cell => {
+        const str = String(cell ?? '');
+        // Escape quotes and wrap in quotes if contains comma, quote, or newline
+        return str.includes(',') || str.includes('"') || str.includes('\n')
+          ? `"${str.replace(/"/g, '""')}"`
+          : str;
+      }).join(',')
+    ).join('\n');
+
+    downloadFile(csvContent, `${participantId}_results.csv`, 'text/csv');
   };
 
   // ============================================
@@ -1320,13 +1400,34 @@ const CTSSurveyApp = () => {
             )}
 
             {currentSection === 2 && (
-              <button
-                onClick={exportData}
-                className="flex items-center gap-2 px-6 py-3 rounded-lg text-lg font-semibold bg-purple-600 text-white hover:bg-purple-700 transition-colors"
-              >
-                <Download className="w-5 h-5" />
-                Download Results
-              </button>
+              <div className="relative">
+                <button
+                  onClick={() => setShowDownloadMenu(!showDownloadMenu)}
+                  className="flex items-center gap-2 px-6 py-3 rounded-lg text-lg font-semibold bg-purple-600 text-white hover:bg-purple-700 transition-colors"
+                >
+                  <Download className="w-5 h-5" />
+                  Download Results
+                  <ChevronRight className={`w-4 h-4 transition-transform ${showDownloadMenu ? 'rotate-90' : ''}`} />
+                </button>
+                {showDownloadMenu && (
+                  <div className="absolute bottom-full mb-2 left-0 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden min-w-[200px]">
+                    <button
+                      onClick={exportJSON}
+                      className="w-full px-4 py-3 text-left text-gray-700 hover:bg-purple-50 hover:text-purple-700 transition-colors flex items-center gap-2"
+                    >
+                      <span className="font-medium">JSON</span>
+                      <span className="text-sm text-gray-500">(.json)</span>
+                    </button>
+                    <button
+                      onClick={exportCSV}
+                      className="w-full px-4 py-3 text-left text-gray-700 hover:bg-purple-50 hover:text-purple-700 transition-colors flex items-center gap-2 border-t border-gray-100"
+                    >
+                      <span className="font-medium">CSV</span>
+                      <span className="text-sm text-gray-500">(.csv)</span>
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>
