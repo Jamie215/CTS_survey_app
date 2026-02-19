@@ -631,10 +631,10 @@ const CTSSurveyApp = () => {
     ).join('\n');
 
     downloadFile(csvContent, `${participantId}_results.csv`, 'text/csv');
+  };
 
-    const handlePrint = () => {
-      window.print();
-    };
+  const handlePrint = () => {
+    window.print();
   };
 
   // ============================================
