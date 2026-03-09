@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { questionsHighlightConfig, getHandDiagramTourSteps, handDiagramTourConfig, highlightConfig, hasTourBeenCompleted, markTourCompleted, resetTour } from '../lib/tourConfig';
 import { ChevronLeft, ChevronRight, ChevronsUp, Download, AlertCircle, Check, CircleQuestionMark, Waves, CircleX, Zap, Printer } from 'lucide-react';
+import { get } from 'http';
 
 // Data imports
 import { diagnosticQuestions } from '../data/diagnosticQuestions';
