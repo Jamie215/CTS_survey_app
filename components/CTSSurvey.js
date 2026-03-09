@@ -11,7 +11,6 @@ import { CANVAS_WIDTH, CANVAS_HEIGHT, sections, STROKE_COLORS, OVERLAY_COLORS, K
 // Scoring imports
 import  { calculateKamathScore } from '../lib/kamathScoring';
 import { calculateKatzScore, analyzeSymptomDistribution } from '../lib/katzScoring';
-import { get } from 'http';
 
 const CTSSurveyApp = () => {
   // ============================================
@@ -1458,7 +1457,7 @@ const CTSSurveyApp = () => {
                 </div>
                   <button
                     onClick={scrollToTop}
-                    className="flex items-center gap-2 px-4 py-3 rounded-lg text-lg font-semibold bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors print-hide"
+                    className="flex items-center gap-2 px-6 py-3 rounded-lg text-lg font-semibold bg-purple-400 text-white hover:bg-purple-500 transition-colors print-hide"
                   >
                     <ChevronsUp className="w-5 h-5" />
                     <span className="font-medium">Back to top</span>
