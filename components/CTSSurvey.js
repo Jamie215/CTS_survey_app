@@ -1409,6 +1409,18 @@ const CTSSurveyApp = () => {
 
             {currentSection === 2 && (
               <div className="flex items-center gap-3">
+                <div id="results-modal" class="flex items-center gap-3">
+                  <div class="bg-white rounded-full p-2 border border-gray-300">
+                    <h2 class="text-2xl font-bold text-gray-800">Are you a clinician?</h2>
+                    <div class="flex gap-4 mt-3">
+                      <button id="clinician-yes-btn" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                        Yes
+                      </button>
+                      <button id="clinician-no-btn" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+                        No
+                      </button>
+                    </div>
+                </div>
                 <button
                   onClick={handlePrint}
                   className="print-hide flex items-center gap-2 px-6 py-3 rounded-lg text-lg font-semibold bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors"
