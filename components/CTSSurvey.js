@@ -637,6 +637,10 @@ const CTSSurveyApp = () => {
     window.print();
   };
 
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   // ============================================
   // LOADING STATE
   // ============================================
@@ -1412,7 +1416,7 @@ const CTSSurveyApp = () => {
                   <Printer className="w-5 h-5" />
                   Print Results
                 </button>
-                <div className="relative">
+                <div className="relative print-hide">
                   <button
                     onClick={() => setShowDownloadMenu(!showDownloadMenu)}
                     className="flex items-center gap-2 px-6 py-3 rounded-lg text-lg font-semibold bg-purple-600 text-white hover:bg-purple-700 transition-colors"
@@ -1432,13 +1436,20 @@ const CTSSurveyApp = () => {
                       </button>
                       <button
                         onClick={exportCSV}
-                        className="w-full px-4 py-3 text-left text-gray-700 hover:bg-purple-50 hover:text-purple-700 transition-colors flex items-center gap-2 border-t border-gray-100"
+                        className="w-full px-4 py-3 text-left text-gray-700 hover:bg-purple-50 hover:text-purple-700 transition-colors flex items-center gap-2 border-t border-gray-100 print-hide"
                       >
                         <span className="font-medium">CSV</span>
                         <span className="text-sm text-gray-500">(.csv)</span>
                       </button>
                     </div>
                   )}
+                  <button
+                    onClick={scrollToTop}
+                    className="flex items-center gap-2 px-4 py-3 rounded-lg text-lg font-semibold bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors print-hide"
+                  >
+                    <ChevronUp className="w-5 h-5" />
+                    <span className="font-medium">Back to top</span>
+                  </button>
                 </div>
               </div>
             )}
