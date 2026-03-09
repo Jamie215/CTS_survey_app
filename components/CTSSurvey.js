@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { questionsHighlightConfig, getHandDiagramTourSteps, handDiagramTourConfig, highlightConfig, hasTourBeenCompleted, markTourCompleted, resetTour } from '../lib/tourConfig';
-import { ChevronLeft, ChevronRight, ChevronUp, Download, AlertCircle, Check, CircleQuestionMark, Waves, CircleX, Zap, Printer } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronsUp, Download, AlertCircle, Check, CircleQuestionMark, Waves, CircleX, Zap, Printer } from 'lucide-react';
 
 // Data imports
 import { diagnosticQuestions } from '../data/diagnosticQuestions';
@@ -1443,14 +1443,14 @@ const CTSSurveyApp = () => {
                       </button>
                     </div>
                   )}
+                </div>
                   <button
                     onClick={scrollToTop}
                     className="flex items-center gap-2 px-4 py-3 rounded-lg text-lg font-semibold bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors print-hide"
                   >
-                    <ChevronUp className="w-5 h-5" />
+                    <ChevronsUp className="w-5 h-5" />
                     <span className="font-medium">Back to top</span>
                   </button>
-                </div>
               </div>
             )}
           </div>
