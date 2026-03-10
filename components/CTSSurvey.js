@@ -30,6 +30,8 @@ const CTSSurveyApp = () => {
   const [highlightIncomplete, setHighlightIncomplete] = useState(false);
   const [assessmentResults, setAssessmentResults] = useState(null);
   const [hasNumbnessOrTingling, setHasNumbnessOrTingling] = useState(null);
+  const [showResultsDetailsModal, setShowResultsDetailsModal] = useState(true);
+  const [isResultsDetailShown, setIsResultsDetailShown] = useState(null);
   const [showDownloadMenu, setShowDownloadMenu] = useState(false);
   
   const driverRef = useRef(null);
@@ -1114,48 +1116,50 @@ const CTSSurveyApp = () => {
                     <span className="text-yellow-700 font-medium">● 3-4: Unclear</span>
                     <span className="text-red-700 font-medium">● ≥5: Likely CTS</span>
                   </div>
-                  
+     
                   {/* Expandable score breakdown */}
-                  <details className="mt-4">
-                    <summary className="cursor-pointer text-lg font-medium text-purple-600 hover:text-purple-800">
-                      View score breakdown
-                    </summary>
-                    <div className="mt-3 bg-white rounded-lg p-4 border border-gray-200">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b">
-                            <th className="text-left py-2 text-gray-600">Question</th>
-                            <th className="text-center py-2 text-gray-600 w-28">Answer</th>
-                            <th className="text-center py-2 text-gray-600">Points</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {assessmentResults.kamath.scoredQuestions.map((q) => {
-                            const question = diagnosticQuestions.find(dq => dq.id === q.id);
-                            return (
-                              <tr key={q.id} className="border-b border-gray-100">
-                                <td className="py-2 text-gray-700">{question?.text}</td>
-                                <td className="py-2 text-center text-gray-700 w-28">{q.answer}</td>
-                                <td className={`py-2 text-center font-medium ${
-                                  q.score > 0 ? 'text-green-600' : q.score < 0 ? 'text-red-600' : 'text-gray-400'
-                                }`}>
-                                  {q.score > 0 ? '+' : ''}{q.score}
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                        <tfoot>
-                          <tr className="font-bold">
-                            <td className="py-2" colSpan={2}>Total</td>
-                            <td className={`py-2 text-right ${KAMATH_COLORS[assessmentResults.kamath.colorClass].text}`}>
-                              {assessmentResults.kamath.totalScore}
-                            </td>
-                          </tr>
-                        </tfoot>
-                      </table>
-                    </div>
-                  </details>
+                  {isResultsDetailShown && (
+                    <details className="mt-4">
+                      <summary className="cursor-pointer text-lg font-medium text-purple-600 hover:text-purple-800">
+                        View score breakdown
+                      </summary>
+                      <div className="mt-3 bg-white rounded-lg p-4 border border-gray-200">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b">
+                              <th className="text-left py-2 text-gray-600">Question</th>
+                              <th className="text-center py-2 text-gray-600 w-28">Answer</th>
+                              <th className="text-center py-2 text-gray-600">Points</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {assessmentResults.kamath.scoredQuestions.map((q) => {
+                              const question = diagnosticQuestions.find(dq => dq.id === q.id);
+                              return (
+                                <tr key={q.id} className="border-b border-gray-100">
+                                  <td className="py-2 text-gray-700">{question?.text}</td>
+                                  <td className="py-2 text-center text-gray-700 w-28">{q.answer}</td>
+                                  <td className={`py-2 text-center font-medium ${
+                                    q.score > 0 ? 'text-green-600' : q.score < 0 ? 'text-red-600' : 'text-gray-400'
+                                  }`}>
+                                    {q.score > 0 ? '+' : ''}{q.score}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                          <tfoot>
+                            <tr className="font-bold">
+                              <td className="py-2" colSpan={2}>Total</td>
+                              <td className={`py-2 text-right ${KAMATH_COLORS[assessmentResults.kamath.colorClass].text}`}>
+                                {assessmentResults.kamath.totalScore}
+                              </td>
+                            </tr>
+                          </tfoot>
+                        </table>
+                      </div>
+                    </details>
+                  )}
                 </div>
               </div>
             )}
@@ -1222,96 +1226,99 @@ const CTSSurveyApp = () => {
                         </div>
 
                         {/* Summary Stats */}
-                        <div className="text-base space-y-1">
-                          <p>
-                            <span className="font-medium">Median digits affected:</span>{' '}
-                            {assessmentResults.katz[hand].KatzScore.coverageBySymptom ? 
-                              [
-                                assessmentResults.katz[hand].detailedCoverage?.thumb_distal > 5 && 'Thumb',
-                                assessmentResults.katz[hand].detailedCoverage?.index_distal > 5 && 'Index',
-                                assessmentResults.katz[hand].detailedCoverage?.middle_distal > 5 && 'Middle'
-                              ].filter(Boolean).join(', ') || 'None'
-                              : 'None'}
-                          </p>
-                          <p>
-                            <span className="font-medium">Palm involvement:</span>{' '}
-                            {assessmentResults.katz[hand].detailedCoverage?.palm_radial > 5 || assessmentResults.katz[hand].detailedCoverage?.palm_ulnar > 5 
-                              ? (assessmentResults.katz[hand].detailedCoverage?.palm_ulnar > 5 && !(assessmentResults.katz[hand].detailedCoverage?.palm_radial > 5)
-                                  ? 'Ulnar only' 
-                                  : 'Yes') 
-                              : 'No'}
-                          </p>
-                          <p>
-                            <span className="font-medium">Dorsum:</span>{' '}
-                            {assessmentResults.katz[hand].detailedCoverage?.dorsum > 5 ? 'Yes' : 'No'}
-                          </p>
-                        </div>
-
+                        {isResultsDetailShown && (
+                          <div className="text-base space-y-1">
+                            <p>
+                              <span className="font-medium">Median digits affected:</span>{' '}
+                              {assessmentResults.katz[hand].KatzScore.coverageBySymptom ? 
+                                [
+                                  assessmentResults.katz[hand].detailedCoverage?.thumb_distal > 5 && 'Thumb',
+                                  assessmentResults.katz[hand].detailedCoverage?.index_distal > 5 && 'Index',
+                                  assessmentResults.katz[hand].detailedCoverage?.middle_distal > 5 && 'Middle'
+                                ].filter(Boolean).join(', ') || 'None'
+                                : 'None'}
+                            </p>
+                            <p>
+                              <span className="font-medium">Palm involvement:</span>{' '}
+                              {assessmentResults.katz[hand].detailedCoverage?.palm_radial > 5 || assessmentResults.katz[hand].detailedCoverage?.palm_ulnar > 5 
+                                ? (assessmentResults.katz[hand].detailedCoverage?.palm_ulnar > 5 && !(assessmentResults.katz[hand].detailedCoverage?.palm_radial > 5)
+                                    ? 'Ulnar only' 
+                                    : 'Yes') 
+                                : 'No'}
+                            </p>
+                            <p>
+                              <span className="font-medium">Dorsum:</span>{' '}
+                              {assessmentResults.katz[hand].detailedCoverage?.dorsum > 5 ? 'Yes' : 'No'}
+                            </p>
+                          </div>
+                        )}
                         {/* Detailed Coverage */}
-                        <details className="mt-4">
-                          <summary className="cursor-pointer text-lg font-medium text-purple-600 hover:text-purple-800">
-                            View detailed coverage breakdown
-                          </summary>
-                          <div className="mt-3 bg-white rounded-lg p-4 border border-gray-200">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-base">
-                              <div>
-                                <p className="font-medium text-gray-700 mb-1">Thumb (Distal)</p>
-                                {['pain', 'tingling', 'numbness'].map(symptom => {
-                                  const coverage = assessmentResults.katz[hand].KatzScore.coverageBySymptom?.[symptom]?.['thumb_distal'] || 0;
-                                  return (
-                                    <div key={symptom} className="flex justify-between text-gray-600">
-                                      <span className="capitalize">{symptom}:</span>
-                                      <span>{coverage.toFixed(1)}%</span>
+                        {isResultsDetailShown && (
+                          <details className="mt-4">
+                            <summary className="cursor-pointer text-lg font-medium text-purple-600 hover:text-purple-800">
+                              View detailed coverage breakdown
+                            </summary>
+                            <div className="mt-3 bg-white rounded-lg p-4 border border-gray-200">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-base">
+                                <div>
+                                  <p className="font-medium text-gray-700 mb-1">Thumb (Distal)</p>
+                                  {['pain', 'tingling', 'numbness'].map(symptom => {
+                                    const coverage = assessmentResults.katz[hand].KatzScore.coverageBySymptom?.[symptom]?.['thumb_distal'] || 0;
+                                    return (
+                                      <div key={symptom} className="flex justify-between text-gray-600">
+                                        <span className="capitalize">{symptom}:</span>
+                                        <span>{coverage.toFixed(1)}%</span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                                <div>
+                                  <p className="font-medium text-gray-700 mb-1">Index (Distal/Middle)</p>
+                                  {['pain', 'tingling', 'numbness'].map(symptom => {
+                                    const distal = assessmentResults.katz[hand].KatzScore.coverageBySymptom?.[symptom]?.['index_distal'] || 0;
+                                    const middle = assessmentResults.katz[hand].KatzScore.coverageBySymptom?.[symptom]?.['index_middle'] || 0;
+                                    return (
+                                      <div key={symptom} className="flex justify-between text-gray-600">
+                                        <span className="capitalize">{symptom}:</span>
+                                        <span>{distal.toFixed(1)}% / {middle.toFixed(1)}%</span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                                <div>
+                                  <p className="font-medium text-gray-700 mb-1">Middle (Distal/Middle)</p>
+                                  {['pain', 'tingling', 'numbness'].map(symptom => {
+                                    const distal = assessmentResults.katz[hand].KatzScore.coverageBySymptom?.[symptom]?.['middle_distal'] || 0;
+                                    const middle = assessmentResults.katz[hand].KatzScore.coverageBySymptom?.[symptom]?.['middle_middle'] || 0;
+                                    return (
+                                      <div key={symptom} className="flex justify-between text-gray-600">
+                                        <span className="capitalize">{symptom}:</span>
+                                        <span>{distal.toFixed(1)}% / {middle.toFixed(1)}%</span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                                <div>
+                                  <p className="font-medium text-gray-700 mb-1">Palm & Dorsum</p>
+                                  <div className="text-gray-600 space-y-0.5">
+                                    <div className="flex justify-between">
+                                      <span>Palm (Radial):</span>
+                                      <span>{(assessmentResults.katz[hand].detailedCoverage?.palm_radial || 0).toFixed(1)}%</span>
                                     </div>
-                                  );
-                                })}
-                              </div>
-                              <div>
-                                <p className="font-medium text-gray-700 mb-1">Index (Distal/Middle)</p>
-                                {['pain', 'tingling', 'numbness'].map(symptom => {
-                                  const distal = assessmentResults.katz[hand].KatzScore.coverageBySymptom?.[symptom]?.['index_distal'] || 0;
-                                  const middle = assessmentResults.katz[hand].KatzScore.coverageBySymptom?.[symptom]?.['index_middle'] || 0;
-                                  return (
-                                    <div key={symptom} className="flex justify-between text-gray-600">
-                                      <span className="capitalize">{symptom}:</span>
-                                      <span>{distal.toFixed(1)}% / {middle.toFixed(1)}%</span>
+                                    <div className="flex justify-between">
+                                      <span>Palm (Ulnar):</span>
+                                      <span>{(assessmentResults.katz[hand].detailedCoverage?.palm_ulnar || 0).toFixed(1)}%</span>
                                     </div>
-                                  );
-                                })}
-                              </div>
-                              <div>
-                                <p className="font-medium text-gray-700 mb-1">Middle (Distal/Middle)</p>
-                                {['pain', 'tingling', 'numbness'].map(symptom => {
-                                  const distal = assessmentResults.katz[hand].KatzScore.coverageBySymptom?.[symptom]?.['middle_distal'] || 0;
-                                  const middle = assessmentResults.katz[hand].KatzScore.coverageBySymptom?.[symptom]?.['middle_middle'] || 0;
-                                  return (
-                                    <div key={symptom} className="flex justify-between text-gray-600">
-                                      <span className="capitalize">{symptom}:</span>
-                                      <span>{distal.toFixed(1)}% / {middle.toFixed(1)}%</span>
+                                    <div className="flex justify-between">
+                                      <span>Dorsum:</span>
+                                      <span>{(assessmentResults.katz[hand].detailedCoverage?.dorsum || 0).toFixed(1)}%</span>
                                     </div>
-                                  );
-                                })}
-                              </div>
-                              <div>
-                                <p className="font-medium text-gray-700 mb-1">Palm & Dorsum</p>
-                                <div className="text-gray-600 space-y-0.5">
-                                  <div className="flex justify-between">
-                                    <span>Palm (Radial):</span>
-                                    <span>{(assessmentResults.katz[hand].detailedCoverage?.palm_radial || 0).toFixed(1)}%</span>
-                                  </div>
-                                  <div className="flex justify-between">
-                                    <span>Palm (Ulnar):</span>
-                                    <span>{(assessmentResults.katz[hand].detailedCoverage?.palm_ulnar || 0).toFixed(1)}%</span>
-                                  </div>
-                                  <div className="flex justify-between">
-                                    <span>Dorsum:</span>
-                                    <span>{(assessmentResults.katz[hand].detailedCoverage?.dorsum || 0).toFixed(1)}%</span>
                                   </div>
                                 </div>
                               </div>
                             </div>
-                          </div>
-                        </details>
+                          </details>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -1407,7 +1414,32 @@ const CTSSurveyApp = () => {
               </button>
             )}
 
-            {currentSection === 2 && (
+            {currentSection === 2 && (<>
+              {showResultsDetailsModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 print-hide">
+                  <div className="bg-white rounded-xl shadow-xl p-8 max-w-md mx-4 text-center">
+                    <h2 className="text-2xl font-bold text-gray-800 mb-4">Which option describes you the best?</h2>
+                    <div className="flex gap-4 justify-center">
+                      <button
+                        onClick={() => {
+                          setIsResultsDetailShown(false);
+                          setShowResultsDetailsModal(false);
+                        }}
+                        className="px-8 py-3 bg-purple-600 text-white rounded-lg text-lg font-semibold hover:bg-purple-700 transition-colors"
+                        >I'm a Patient
+                      </button>
+                      <button
+                        onClick={() => {
+                          setIsResultsDetailShown(true);
+                          setShowResultsDetailsModal(false);
+                        }}
+                        className="px-8 py-3 bg-purple-600 text-white rounded-lg text-lg font-semibold hover:bg-purple-700 transition-colors"
+                        >I'm a Healthcare Professional
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
               <div className="flex items-center gap-3">
                 <button
                   onClick={handlePrint}
@@ -1452,7 +1484,7 @@ const CTSSurveyApp = () => {
                   <span className="font-medium">Back to top</span>
                 </button>
               </div>
-            )}
+            </>)}
           </div>
         </div>
       </div>
