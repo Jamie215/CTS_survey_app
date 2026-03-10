@@ -1090,32 +1090,36 @@ const CTSSurveyApp = () => {
             {assessmentResults?.kamath && (
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 <div className="bg-gray-100 px-6 py-4 border-b border-gray-200">
-                  <h3 className="text-xl font-bold text-gray-800">Kamath Score</h3>
+                  <h3 className="text-xl font-bold text-gray-800">Likelihood of CTS based on the Questionnaire</h3>
                   <p className="text-sm text-gray-600 mt-1">Questionnaire-based assessment (Kamath & Stothard, 2003)</p>
                 </div>
                 
                 <div className={`p-6 ${KAMATH_COLORS[assessmentResults.kamath.colorClass].bg}`}>
                   <div className="flex items-center justify-between mb-4">
                     <div>
-                      <div className={`text-2xl font-bold ${KAMATH_COLORS[assessmentResults.kamath.colorClass].textDark}`}>
+                      <div className={`text-2xl font-bold ${KAMATH_COLORS[assessmentResults.kamath.colorClass].text}`}>
                         {assessmentResults.kamath.classification}
                       </div>
                       <p className="text-gray-600 mt-1">{assessmentResults.kamath.description}</p>
                     </div>
-                    <div className="text-right">
-                      <span className={`text-4xl font-bold ${KAMATH_COLORS[assessmentResults.kamath.colorClass].text}`}>
-                        {assessmentResults.kamath.totalScore}
-                      </span>
-                      <span className="text-gray-500 text-lg ml-1">pts</span>
-                    </div>
+                    {isResultsDetailShown && (
+                      <div className="text-right">
+                        <span className={`text-4xl font-bold ${KAMATH_COLORS[assessmentResults.kamath.colorClass].text}`}>
+                          {assessmentResults.kamath.totalScore}
+                        </span>
+                        <span className="text-gray-500 text-lg ml-1">pts</span>
+                      </div>
+                    )}
                   </div>
                   
                   {/* Score interpretation guide */}
-                  <div className="flex gap-4 text-sm py-3 border-t border-gray-200">
-                    <span className="text-green-700 font-medium">● &lt;3: Unlikely CTS</span>
-                    <span className="text-yellow-700 font-medium">● 3-4: Unclear</span>
-                    <span className="text-red-700 font-medium">● ≥5: Likely CTS</span>
-                  </div>
+                  {isResultsDetailShown && (
+                    <div className="flex gap-4 text-sm py-3 border-t border-gray-200">
+                      <span className="text-green-700 font-medium">● &lt;3: Unlikely CTS</span>
+                      <span className="text-yellow-700 font-medium">● 3-4: Unclear</span>
+                      <span className="text-red-700 font-medium">● ≥5: Likely CTS</span>
+                    </div>
+                  )}
      
                   {/* Expandable score breakdown */}
                   {isResultsDetailShown && (
@@ -1170,7 +1174,7 @@ const CTSSurveyApp = () => {
             {assessmentResults?.katz && (
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 <div className="bg-gray-100 px-6 py-4 border-b border-gray-200">
-                  <h3 className="text-xl font-bold text-gray-800">Katz Hand Diagram Score</h3>
+                  <h3 className="text-xl font-bold text-gray-800">Likelihood of CTS based on the Drawings</h3>
                   <p className="text-sm text-gray-600 mt-1">Symptom distribution assessment (Katz et al.)</p>
                 </div>
                 
@@ -1188,7 +1192,6 @@ const CTSSurveyApp = () => {
                           'bg-green-50 border border-green-200'
                         }`}>
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-lg font-semibold">Classification:</span>
                             <span className={`text-xl font-bold ${
                               assessmentResults.katz[hand].KatzScore.score === 3 ? 'text-red-600' :
                               assessmentResults.katz[hand].KatzScore.score === 2 ? 'text-orange-600' :
