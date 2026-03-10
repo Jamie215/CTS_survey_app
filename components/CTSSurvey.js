@@ -1421,7 +1421,7 @@ const CTSSurveyApp = () => {
 
             {currentSection === 2 && (<>
               {showResultsDetailsModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 print-hide">
+                <div className="fixed inset-0 bg-black bg-opacity-5 flex items-center justify-center z-50 print-hide">
                   <div className="bg-white rounded-xl shadow-xl p-8 max-w-md mx-4 text-center">
                     <h2 className="text-2xl font-bold text-gray-800 mb-4">Which option describes you the best?</h2>
                     <div className="flex gap-4 justify-center">
