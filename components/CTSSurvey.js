@@ -1426,7 +1426,7 @@ const CTSSurveyApp = () => {
                     <div className="w-14 h-14 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-5">
                       <ChartBarBig className="w-7 h-7 text-purple-600" />
                     </div>
-                    <p className="text-gray-500 mb-8">Please select the option that best describes you.</p>
+                    <p className="text-gray-500 text-lg mb-8">Please select the option that best describes you.</p>
                     <div className="flex gap-4 justify-center">
                       <button
                         onClick={() => {
