@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { questionsHighlightConfig, getHandDiagramTourSteps, handDiagramTourConfig, highlightConfig, hasTourBeenCompleted, markTourCompleted, resetTour } from '../lib/tourConfig';
-import { ChevronLeft, ChevronRight, ChevronsUp, Download, AlertCircle, Check, CircleQuestionMark, Waves, CircleX, Zap, Printer } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronsUp, Download, AlertCircle, Check, CircleQuestionMark, Waves, CircleX, Zap, ChartBarBig, Printer } from 'lucide-react';
 import { get } from 'http';
 
 // Data imports
@@ -1421,25 +1421,30 @@ const CTSSurveyApp = () => {
 
             {currentSection === 2 && (<>
               {showResultsDetailsModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-5 flex items-center justify-center z-50 print-hide">
-                  <div className="bg-white rounded-xl shadow-xl p-8 max-w-md mx-4 text-center">
-                    <h2 className="text-2xl font-bold text-gray-800 mb-4">Which option describes you the best?</h2>
+                <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 print-hide" style={{ backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}>
+                  <div className="bg-white rounded-2xl shadow-2xl p-10 max-w-lg mx-4 text-center">
+                    <div className="w-14 h-14 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-5">
+                      <ChartBarBig className="w-7 h-7 text-purple-600" />
+                    </div>
+                    <p className="text-gray-500 mb-8">Please select the option that best describes you.</p>
                     <div className="flex gap-4 justify-center">
                       <button
                         onClick={() => {
                           setIsResultsDetailShown(false);
                           setShowResultsDetailsModal(false);
                         }}
-                        className="px-8 py-3 bg-purple-600 text-white rounded-lg text-lg font-semibold hover:bg-purple-700 transition-colors"
-                        >I&apos;m a Patient
+                        className="flex-1 px-6 py-4 bg-gray-100 text-gray-800 rounded-xl text-lg font-semibold hover:bg-gray-200 transition-colors border-2 border-transparent hover:border-purple-300"
+                      >
+                        I&apos;m a Patient
                       </button>
                       <button
                         onClick={() => {
                           setIsResultsDetailShown(true);
                           setShowResultsDetailsModal(false);
                         }}
-                        className="px-8 py-3 bg-purple-600 text-white rounded-lg text-lg font-semibold hover:bg-purple-700 transition-colors"
-                        >I&apos;m a Healthcare Professional
+                        className="flex-1 px-6 py-4 bg-purple-600 text-white rounded-xl text-lg font-semibold hover:bg-purple-700 transition-colors border-2 border-transparent hover:border-purple-800"
+                      >
+                        I&apos;m a Healthcare Professional
                       </button>
                     </div>
                   </div>
