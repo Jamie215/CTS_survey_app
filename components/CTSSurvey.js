@@ -1426,7 +1426,7 @@ const CTSSurveyApp = () => {
                           setShowResultsDetailsModal(false);
                         }}
                         className="px-8 py-3 bg-purple-600 text-white rounded-lg text-lg font-semibold hover:bg-purple-700 transition-colors"
-                        >I'm a Patient
+                        >I&apos;m a Patient
                       </button>
                       <button
                         onClick={() => {
@@ -1434,7 +1434,7 @@ const CTSSurveyApp = () => {
                           setShowResultsDetailsModal(false);
                         }}
                         className="px-8 py-3 bg-purple-600 text-white rounded-lg text-lg font-semibold hover:bg-purple-700 transition-colors"
-                        >I'm a Healthcare Professional
+                        >I&apos;m a Healthcare Professional
                       </button>
                     </div>
                   </div>
