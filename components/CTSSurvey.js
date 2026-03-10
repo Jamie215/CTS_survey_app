@@ -1201,7 +1201,9 @@ const CTSSurveyApp = () => {
                               {assessmentResults.katz[hand].KatzScore.classification}
                             </span>
                           </div>
-                          <p className="text-gray-600">{assessmentResults.katz[hand].KatzScore.description}</p>
+                          {isResultsDetailShown && (
+                            <p className="text-gray-600">{assessmentResults.katz[hand].KatzScore.description}</p>
+                          )}
                         </div>
 
                         {/* Hand Diagrams */}
