@@ -1,5 +1,4 @@
 import "./globals.css";
-import Script from "next/script";
 
 export const metadata = {
   title: "Carpal Tunnel Syndrome Diagnostic Survey",
@@ -9,11 +8,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <head>
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@latest/dist/driver.css"/>
-      </head>
       <body>
-        <Script src="https://cdn.jsdelivr.net/npm/driver.js@latest/dist/driver.js.iife.js"></Script>
         {children}
       </body>
     </html>
