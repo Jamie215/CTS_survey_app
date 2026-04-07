@@ -52,6 +52,9 @@ export default function DiagnosticQuestions({
             if (question.requiresNumbnessOrTingling && hasNumbnessOrTingling === null && question.id !== 0) {
               return null;
             }
+            if (question.requiresSplintTried && diagnosticAnswers[12] !== 'Yes') {
+              return null;
+            }
 
             const isIncomplete = highlightIncomplete && diagnosticAnswers[question.id] === undefined;
             const isSubQuestion = /[a-g]/.test(question.number);

@@ -100,6 +100,9 @@ const CTSSurveyApp = () => {
         if (q.requiresNumbnessOrTingling) {
           return hasNumbnessOrTingling === true;
         }
+        if (q.requiresSplintTried) {
+          return diagnosticAnswers[12] === 'Yes';
+        }
         return true;
       });
 

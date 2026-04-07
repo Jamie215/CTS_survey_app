@@ -11,5 +11,6 @@
     { id: 9, number: '4', text: "Do you drop small objects like coins or a cup?" },
     { id: 10, number: '5', text: "Do you often have neck pain?" },
     { id: 11, number: '6', text: "Do you have numbness or tingling in your toes?" },
-    { id: 12, number: '7', text: "Have your symptoms improved with using wrist support brace or splint? (If relevant)", hasNotRelevant: true }
+    { id: 12, number: '7', text: "Have you tried a wrist support brace / splint?" },
+    { id: 13, number: '7a', text: "Was the wrist support brace / splint effective or helpful?", requiresSplintTried: true }
   ];
