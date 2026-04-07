@@ -112,7 +112,7 @@ function KamathScoreCard({ kamath, isResultsDetailShown }) {
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
       <div className="bg-gray-100 px-6 py-4 border-b border-gray-200">
         <h3 className="text-xl font-bold text-gray-800">Likelihood of CTS based on the Questionnaire</h3>
-        <p className="text-sm text-gray-600 mt-1">Questionnaire-based assessment (Kamath & Stothard, 2003)</p>
+        <p className="text-sm text-gray-600 mt-1">Questionnaire-based assessment adapted from Kamath & Stothard (2003)</p>
       </div>
 
       <div className={`p-6 ${KAMATH_COLORS[kamath.colorClass].bg}`}>
@@ -136,8 +136,8 @@ function KamathScoreCard({ kamath, isResultsDetailShown }) {
         {isResultsDetailShown && (
           <div className="flex gap-4 text-sm py-3 border-t border-gray-200">
             <span className="text-green-700 font-medium">● &lt;3: Unlikely CTS</span>
-            <span className="text-yellow-700 font-medium">● 3-4: Unclear</span>
-            <span className="text-red-700 font-medium">● ≥5: Likely CTS</span>
+            <span className="text-yellow-700 font-medium">● 3-4: Possible CTS: Unclear</span>
+            <span className="text-red-700 font-medium">● ≥5: Classic / Probable CTS</span>
           </div>
         )}
 
@@ -193,7 +193,7 @@ function KatzScoreCard({ katz, isResultsDetailShown, resultsCanvasRefs }) {
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
       <div className="bg-gray-100 px-6 py-4 border-b border-gray-200">
         <h3 className="text-xl font-bold text-gray-800">Likelihood of CTS based on the Drawings</h3>
-        <p className="text-sm text-gray-600 mt-1">Symptom distribution assessment (Katz et al.)</p>
+        <p className="text-sm text-gray-600 mt-1">Symptom distribution assessment adapted from Katz et al. (1990)</p>
       </div>
 
       <div className="p-6">
