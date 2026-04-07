@@ -76,7 +76,7 @@ export default function HandDiagrams({
           {/* Palm View */}
           <div className="mb-6">
             <h4 className="text-lg font-medium text-gray-700 mb-4">Palm side:</h4>
-            <div className="flex gap-8 justify-center flex-wrap">
+            <div className="flex flex-col sm:flex-row gap-6 sm:gap-8 items-center sm:justify-center">
               {['Left', 'Right'].map((side) => {
                 const canvasKey = `${symptom.type}Front${side}`;
                 return (
@@ -99,7 +99,7 @@ export default function HandDiagrams({
           {/* Back View */}
           <div id={`back-view-section-${symptom.type}`}>
             <h4 className="text-lg font-medium text-gray-700 mb-4">Back of hands:</h4>
-            <div className="flex gap-8 justify-center flex-wrap">
+            <div className="flex flex-col sm:flex-row gap-6 sm:gap-8 items-center sm:justify-center">
               {['Left', 'Right'].map((side) => {
                 const canvasKey = `${symptom.type}Back${side}`;
                 return (

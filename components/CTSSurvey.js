@@ -50,7 +50,7 @@ const CTSSurveyApp = () => {
     handleCanvasPointerMove,
     handleCanvasPointerUp,
     handleClearCanvas,
-  } = useCanvasDrawing(false, currentSection); // isTourActive passed below
+  } = useCanvasDrawing(false, currentSection);
 
   const { isTourActive, handleHelpClick } = useTour(currentSection, isClient, hasNumbnessOrTingling);
 
@@ -76,7 +76,6 @@ const CTSSurveyApp = () => {
     setParticipantId(`CTS-${Date.now()}`);
   }, []);
 
-  // Draw combined symptoms on results canvases
   useEffect(() => {
     if (currentSection === 2) {
       const timer = setTimeout(() => {
@@ -92,7 +91,7 @@ const CTSSurveyApp = () => {
   }, [currentSection, handDiagramData, resultsCanvasRefs]);
 
   // ============================================
-  // NAVIGATION (item #6: consistent handleX naming)
+  // NAVIGATION
   // ============================================
   const handleNextSection = () => {
     if (currentSection === 0) {
@@ -205,22 +204,23 @@ const CTSSurveyApp = () => {
   // ============================================
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-gray-50 pt-8 pb-4">
-        <div className="max-w-4xl mx-auto px-6">
-          <h1 className="text-3xl font-normal text-gray-800">
+      {/* ── Header ── */}
+      <header className="bg-gray-50 pt-6 sm:pt-8 pb-4">
+        <div className="max-w-4xl mx-auto px-3 sm:px-6">
+          <h1 className="text-xl sm:text-3xl font-normal text-gray-800">
             Carpal Tunnel Syndrome Diagnostic Tool
           </h1>
         </div>
       </header>
 
-      <div className="max-w-4xl mx-auto px-6 py-8">
-        {/* Progress Stepper */}
-        <div className="mb-8">
-          <div className="flex items-center justify-center">
+      <div className="max-w-4xl mx-auto px-3 sm:px-6 py-4 sm:py-8">
+        {/* ── Progress Stepper ── */}
+        <div className="mb-6 sm:mb-8">
+          <div className="flex items-center justify-between px-2 sm:justify-center">
             {sections.map((section, index) => (
               <React.Fragment key={section.id}>
-                <div className="flex flex-col items-center w-48">
-                  <span className={`text-lg font-medium mb-2 text-center ${
+                <div className="flex flex-col items-center w-24 sm:w-48">
+                  <span className={`text-xs sm:text-lg font-medium mb-2 text-center leading-tight ${
                     currentSection === index
                       ? 'text-purple-700'
                       : currentSection > index
@@ -229,7 +229,7 @@ const CTSSurveyApp = () => {
                   }`}>
                     {section.title}
                   </span>
-                  <div className={`w-11 h-11 rounded-full flex items-center justify-center text-xl font-semibold border-2 ${
+                  <div className={`w-9 h-9 sm:w-11 sm:h-11 rounded-full flex items-center justify-center text-base sm:text-xl font-semibold border-2 ${
                     currentSection === index
                       ? 'border-purple-600 bg-white text-purple-600'
                       : currentSection > index
@@ -237,15 +237,15 @@ const CTSSurveyApp = () => {
                         : 'border-gray-300 bg-gray-100 text-gray-500'
                   }`}>
                     {currentSection > index ? (
-                      <Check className="w-6 h-6" />
+                      <Check className="w-5 h-5" />
                     ) : (
                       index + 1
                     )}
                   </div>
                 </div>
                 {index < sections.length - 1 && (
-                  <div className="flex items-end pb-2 -mx-2">
-                    <div className={`w-20 h-0.5 ${
+                  <div className="flex items-end pb-2 -mx-1 sm:-mx-2">
+                    <div className={`w-8 sm:w-20 h-0.5 ${
                       currentSection > index ? 'bg-purple-600' : 'bg-gray-300'
                     }`} />
                   </div>
@@ -255,16 +255,18 @@ const CTSSurveyApp = () => {
           </div>
         </div>
 
-        {/* Main Content */}
-        <div className="bg-white rounded-2xl shadow-lg p-8">
+        {/* ── Main Content Card ── */}
+        <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-8">
           {renderSection()}
 
-          {/* Navigation Buttons */}
-          <div className={`flex ${currentSection === 0 ? 'justify-end' : 'justify-between'} mt-10 pt-6 border-t border-gray-200`}>
+          {/* ── Navigation Buttons ── */}
+          <div className={`flex flex-col-reverse sm:flex-row ${
+            currentSection === 0 ? 'sm:justify-end' : 'sm:justify-between'
+          } gap-3 mt-10 pt-6 border-t border-gray-200`}>
             {currentSection > 0 && currentSection !== 2 && (
               <button
                 onClick={handlePreviousSection}
-                className="flex items-center gap-2 px-6 py-3 rounded-lg text-lg font-semibold bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors"
+                className="flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-lg font-semibold bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors"
               >
                 <ChevronLeft className="w-5 h-5" />
                 Previous
@@ -274,7 +276,7 @@ const CTSSurveyApp = () => {
             {currentSection < sections.length - 1 && (
               <button
                 onClick={handleNextSection}
-                className="flex items-center gap-2 px-6 py-3 rounded-lg text-lg font-semibold bg-purple-600 text-white hover:bg-purple-700 transition-colors"
+                className="flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-lg font-semibold bg-purple-600 text-white hover:bg-purple-700 transition-colors"
               >
                 {currentSection === 1 ? 'Calculate CTS Scores' : 'Next'}
                 <ChevronRight className="w-5 h-5" />

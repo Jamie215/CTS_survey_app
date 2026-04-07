@@ -7,9 +7,11 @@ import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../data/constants';
  * Shared canvas component for hand diagram drawing.
  * Eliminates the repeated canvas + clear button pattern.
  *
- * Inline styles replaced with Tailwind classes where possible (item #8).
- * Canvas display dimensions still need explicit style since Tailwind
- * doesn't have built-in support for canvas width/height attributes.
+ * Canvas display size is responsive: fills available width up to
+ * maxWidth, with height maintained via aspect-ratio. The internal canvas
+ * resolution (CANVAS_WIDTH x CANVAS_HEIGHT) remains fixed, and
+ * getEventCoordinates() uses getBoundingClientRect() so coordinate
+ * scaling is handled automatically regardless of display size.
  *
  * @param {Object} props
  * @param {string} props.id - HTML id for tour targeting
@@ -20,7 +22,7 @@ import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../data/constants';
  * @param {Function} props.onPointerMove
  * @param {Function} props.onPointerUp
  * @param {Function} props.onClear
- * @param {{ width: string, height: string }} [props.displaySize] - CSS display dimensions
+ * @param {string} [props.maxWidth] - Maximum CSS display width (default '200px')
  */
 export default function HandDiagramCanvas({
   id,
@@ -31,10 +33,10 @@ export default function HandDiagramCanvas({
   onPointerMove,
   onPointerUp,
   onClear,
-  displaySize = { width: '200px', height: '267px' },
+  maxWidth = '200px',
 }) {
   return (
-    <div className="text-center">
+    <div className="text-center w-full sm:w-auto">
       <p className="mb-2 text-lg font-medium text-gray-700">{label}</p>
       <canvas
         id={id}
@@ -42,7 +44,12 @@ export default function HandDiagramCanvas({
         width={CANVAS_WIDTH}
         height={CANVAS_HEIGHT}
         className="border border-gray-300 rounded-lg cursor-crosshair bg-white touch-none"
-        style={displaySize}
+        style={{
+          width: '100%',
+          maxWidth,
+          height: 'auto',
+          aspectRatio: `${CANVAS_WIDTH}/${CANVAS_HEIGHT}`,
+        }}
         onMouseDown={(e) => onPointerDown(e, canvasKey)}
         onMouseMove={(e) => onPointerMove(e, canvasKey)}
         onMouseUp={(e) => onPointerUp(e, canvasKey)}
@@ -54,7 +61,7 @@ export default function HandDiagramCanvas({
       <button
         id={`clear-btn-${canvasKey}`}
         onClick={() => onClear(canvasKey)}
-        className="mt-2 px-4 py-2 text-lg bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-md transition-colors"
+        className="mt-2 px-6 py-3 text-lg bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-md transition-colors"
       >
         Clear
       </button>

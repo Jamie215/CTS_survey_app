@@ -28,10 +28,6 @@ export default function Results({
 }) {
   const { showDownloadMenu, handleExportJSON, handleExportCSV, handlePrint, handleToggleDownloadMenu } = exportActions;
 
-  const handleScrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
   return (
     <div className="space-y-6">
       <div>
@@ -69,7 +65,7 @@ export default function Results({
         />
       )}
 
-      {/* Modal + Export controls rendered via parent navigation area */}
+      {/* Modal rendered via parent navigation area */}
       {showResultsDetailsModal && (
         <ResultsModal
           onPatient={() => { onSetResultsDetailShown(false); onCloseModal(); }}
@@ -383,21 +379,26 @@ export function ResultsExportControls({ exportActions }) {
   };
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex flex-wrap items-center gap-3">
+      {/* Print button */}
       <button
         onClick={handlePrint}
-        className="print-hide flex items-center gap-2 px-6 py-3 rounded-lg text-lg font-semibold bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors"
+        className="print-hide flex items-center gap-2 px-4 sm:px-6 py-3 rounded-lg text-lg font-semibold bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors"
       >
         <Printer className="w-5 h-5" />
-        Print Results
+        <span className="hidden sm:inline">Print Results</span>
+        <span className="sm:hidden">Print</span>
       </button>
+
+      {/* Download dropdown */}
       <div className="relative print-hide">
         <button
           onClick={handleToggleDownloadMenu}
-          className="flex items-center gap-2 px-6 py-3 rounded-lg text-lg font-semibold bg-purple-600 text-white hover:bg-purple-700 transition-colors"
+          className="flex items-center gap-2 px-4 sm:px-6 py-3 rounded-lg text-lg font-semibold bg-purple-600 text-white hover:bg-purple-700 transition-colors"
         >
           <Download className="w-5 h-5" />
-          Download Results
+          <span className="hidden sm:inline">Download Results</span>
+          <span className="sm:hidden">Download</span>
           <ChevronRight className={`w-4 h-4 transition-transform ${showDownloadMenu ? 'rotate-90' : ''}`} />
         </button>
         {showDownloadMenu && (
@@ -419,12 +420,15 @@ export function ResultsExportControls({ exportActions }) {
           </div>
         )}
       </div>
+
+      {/* Back to top */}
       <button
         onClick={handleScrollToTop}
-        className="flex items-center gap-2 px-6 py-3 rounded-lg text-lg font-semibold bg-purple-400 text-white hover:bg-purple-500 transition-colors print-hide"
+        className="flex items-center gap-2 px-4 sm:px-6 py-3 rounded-lg text-lg font-semibold bg-purple-400 text-white hover:bg-purple-500 transition-colors print-hide"
       >
         <ChevronsUp className="w-5 h-5" />
-        <span className="font-medium">Back to top</span>
+        <span className="hidden sm:inline">Back to top</span>
+        <span className="sm:hidden">Top</span>
       </button>
     </div>
   );
