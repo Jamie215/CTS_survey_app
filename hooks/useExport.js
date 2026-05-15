@@ -76,7 +76,7 @@ export function useExport({
     rows.push(['--- Diagnostic Answers ---']);
     Object.entries(data.diagnosticAnswers).forEach(([qId, answer]) => {
       const question = diagnosticQuestions.find(q => q.id === qId);
-      const label = question ? question.question : qId;
+      const label = question ? question.text : qId;
       rows.push([label, Array.isArray(answer) ? answer.join('; ') : answer]);
     });
     rows.push([]);
