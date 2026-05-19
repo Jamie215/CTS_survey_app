@@ -44,6 +44,8 @@ const CTSSurveyApp = () => {
     isClient,
     handDiagramData,
     svgRegions,
+    svgLoadError,
+    retryLoadSVGRegions,
     canvasRefs,
     resultsCanvasRefs,
     handleCanvasPointerDown,
@@ -180,7 +182,9 @@ const CTSSurveyApp = () => {
             onDiagramEaseChange={setDiagramEase}
             diagramComments={diagramComments}
             onDiagramCommentsChange={setDiagramComments}
-          />
+            svgLoadError={svgLoadError}
+            onRetryLoadSVG={retryLoadSVGRegions}
+          />  
         );
       case 2:
         return (
@@ -276,6 +280,7 @@ const CTSSurveyApp = () => {
             {currentSection < sections.length - 1 && (
               <button
                 onClick={handleNextSection}
+                disabled={currentSection === 1 && !!svgLoadError}
                 className="flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-lg font-semibold bg-purple-600 text-white hover:bg-purple-700 transition-colors"
               >
                 {currentSection === 1 ? 'Calculate CTS Scores' : 'Next'}

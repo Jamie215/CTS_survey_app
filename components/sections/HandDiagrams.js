@@ -1,7 +1,7 @@
 "use client"
 
 import React from 'react';
-import { CircleHelp, Waves, CircleX, Zap } from 'lucide-react';
+import { CircleHelp, Waves, CircleX, Zap, CircleAlert, RefreshCw } from 'lucide-react';
 import HandDiagramCanvas from '../HandDiagramCanvas';
 
 /**
@@ -32,7 +32,44 @@ export default function HandDiagrams({
   onDiagramEaseChange,
   diagramComments,
   onDiagramCommentsChange,
+  svgLoadError,
+  onRetryLoadSVG,
 }) {
+  if (svgLoadError) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-semibold text-gray-800 mb-3">
+            Hand Diagrams
+          </h2>
+        </div>
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-lg font-medium text-red-800 mb-2">
+                Unable to load hand diagrams
+              </p>
+              <p className="text-base text-red-700 mb-4">
+                The hand diagram region data could not be loaded. This may be a
+                temporary network issue. Please check your connection and try again.
+                You can return to the previous section to review your answers in
+                the meantime.
+              </p>
+              <button
+                onClick={onRetryLoadSVG}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Try again
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
   const allSymptoms = [
     { type: 'pain', label: 'Pain', color: 'orange', icon: Zap, instruction: 'Mark areas where you experience pain or discomfort. You will see orange shading' },
     { type: 'tingling', label: 'Tingling', color: 'purple', icon: Waves, instruction: 'Mark areas where you feel pins and needles or tingling sensations. You will see purple shading' },

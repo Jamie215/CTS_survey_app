@@ -10,16 +10,6 @@ import {
   loadSVGRegions,
 } from '../lib/canvasUtils';
 
-/**
- * Custom hook encapsulating all canvas drawing state, refs, and handlers.
- *
- * Uses refs for in-progress stroke data (item #5) to avoid excessive
- * re-renders on every mousemove, committing to state only on stroke end.
- *
- * @param {boolean} isTourActive - blocks drawing while tour is running
- * @param {number} currentSection - current visible section index
- * @returns {Object}
- */
 export function useCanvasDrawing(isTourActive, currentSection) {
   const [handDiagramData, setHandDiagramData] = useState({});
   const [svgRegions, setSvgRegions] = useState({
@@ -28,44 +18,53 @@ export function useCanvasDrawing(isTourActive, currentSection) {
     leftBack: {},
     rightBack: {}
   });
+  const [svgLoadError, setSvgLoadError] = useState(null);
   const [isClient, setIsClient] = useState(false);
 
-  // Refs for active drawing state to avoid stale closures (#5)
+  // Active-stroke refs
   const isDrawingRef = useRef(false);
   const currentCanvasKeyRef = useRef(null);
-  const activeStrokeRef = useRef([]); // accumulate points in ref during drag
+  const activeStrokeRef = useRef([]);
 
+  const canvasRefsContainer = useRef(null);
+  if (canvasRefsContainer.current === null) {
+    canvasRefsContainer.current = {
+        painFrontLeft:     { current: null },
+        painFrontRight:    { current: null },
+        painBackLeft:      { current: null },
+        painBackRight:     { current: null },
+        tinglingFrontLeft: { current: null },
+        tinglingFrontRight:{ current: null },
+        tinglingBackLeft:  { current: null },
+        tinglingBackRight: { current: null },
+        numbnessFrontLeft: { current: null },
+        numbnessFrontRight:{ current: null },
+        numbnessBackLeft:  { current: null },
+        numbnessBackRight: { current: null },
+    };
+  }
   // Canvas refs
-  const canvasRefs = {
-    painFrontLeft: useRef(null),
-    painFrontRight: useRef(null),
-    painBackLeft: useRef(null),
-    painBackRight: useRef(null),
-    tinglingFrontLeft: useRef(null),
-    tinglingFrontRight: useRef(null),
-    tinglingBackLeft: useRef(null),
-    tinglingBackRight: useRef(null),
-    numbnessFrontLeft: useRef(null),
-    numbnessFrontRight: useRef(null),
-    numbnessBackLeft: useRef(null),
-    numbnessBackRight: useRef(null)
-  };
+  const canvasRefs = canvasRefsContainer.current;
 
-  const resultsCanvasRefs = {
-    combinedLeftVolar: useRef(null),
-    combinedRightVolar: useRef(null),
-    combinedLeftDorsal: useRef(null),
-    combinedRightDorsal: useRef(null),
-  };
+  const resultsCanvasRefsContainer = useRef(null);
+  if (resultsCanvasRefsContainer.current === null) {
+    resultsCanvasRefsContainer.current = {
+      combinedLeftVolar:   { current: null },
+      combinedRightVolar:  { current: null },
+      combinedLeftDorsal:  { current: null },
+      combinedRightDorsal: { current: null },
+    };
+  }
+  const resultsCanvasRefs = resultsCanvasRefsContainer.current;
 
   // Client-side init
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  // Load SVG regions
-  useEffect(() => {
-    if (!isClient) return;
+  // Reusable loader — exposed for the retry button as well
+  const retryLoadSVGRegions = useCallback(() => {
+    setSvgLoadError(null);
     loadSVGRegions()
       .then(regions => {
         setSvgRegions(regions);
@@ -79,8 +78,16 @@ export function useCanvasDrawing(isTourActive, currentSection) {
           });
         }, 100);
       })
-      .catch(error => console.error('Error loading SVG regions:', error));
-  }, [isClient]);
+      .catch(error => {
+        console.error('Error loading SVG regions:', error);
+        setSvgLoadError(error?.message || 'Failed to load hand diagram regions.');
+      });
+  }, [canvasRefs]);
+
+  useEffect(() => {
+    if (!isClient) return;
+    retryLoadSVGRegions();
+  }, [isClient, retryLoadSVGRegions]);
 
   // Init canvases on mount
   useEffect(() => {
@@ -202,6 +209,8 @@ export function useCanvasDrawing(isTourActive, currentSection) {
     isClient,
     handDiagramData,
     svgRegions,
+    svgLoadError,
+    retryLoadSVGRegions,
     canvasRefs,
     resultsCanvasRefs,
     handleCanvasPointerDown,
