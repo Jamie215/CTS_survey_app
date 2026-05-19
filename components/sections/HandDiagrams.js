@@ -43,7 +43,7 @@ export default function HandDiagrams({
             Hand Diagrams
           </h2>
         </div>
-        <div className="bg-red-50 border border-red-200 rounded-xl p-6 role='alert'">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6" role="alert">
           <div className="flex items-start gap-3">
             <CircleAlert className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
@@ -162,10 +162,10 @@ export default function HandDiagrams({
 
       {/* Diagram Feedback */}
       <div className="bg-gray-50 rounded-xl p-6 space-y-4">
-        <div>
-          <p className="text-lg font-medium mb-3 text-gray-800">
+        <fieldset>
+          <legend className="text-lg font-medium mb-3 text-gray-800">
             Was it easy to mark areas on the hand diagrams?
-          </p>
+          </legend>
           <div className="flex flex-wrap gap-4">
             {['Very easy', 'Somewhat easy', 'Somewhat difficult', 'Very difficult'].map((option) => (
               <label key={option} className="flex items-center cursor-pointer group">
@@ -184,7 +184,7 @@ export default function HandDiagrams({
                   value={option}
                   checked={diagramEase === option}
                   onChange={(e) => onDiagramEaseChange(e.target.value)}
-                  className="sr-only"
+                  className="sr-only peer"
                 />
                 <span className={`ml-2 text-lg ${
                   diagramEase === option ? 'text-purple-600 font-medium' : 'text-gray-600'
@@ -192,7 +192,7 @@ export default function HandDiagrams({
               </label>
             ))}
           </div>
-        </div>
+        </fieldset>
 
         <div>
           <label className="block text-lg font-medium text-gray-800 mb-2">

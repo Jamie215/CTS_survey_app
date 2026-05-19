@@ -143,10 +143,10 @@ export default function DiagnosticQuestions({
 
       {/* Optional Feedback Section */}
       <div className="bg-gray-50 rounded-xl p-6 space-y-4">
-        <div>
-          <p className="text-lg font-medium mb-3 text-gray-800">
+        <fieldset>
+          <legend className="text-lg font-medium mb-3 text-gray-800">
             Was it easy to answer these questions about your hand symptoms?
-          </p>
+          </legend>
           <div className="flex flex-wrap gap-4">
             {['Very easy', 'Somewhat easy', 'Somewhat difficult', 'Very difficult'].map((option) => (
               <label key={option} className="flex items-center cursor-pointer group">
@@ -165,7 +165,7 @@ export default function DiagnosticQuestions({
                   value={option}
                   checked={diagnosticEase === option}
                   onChange={(e) => onDiagnosticEaseChange(e.target.value)}
-                  className="sr-only"
+                  className="sr-only peer"
                 />
                 <span className={`ml-2 text-lg ${
                   diagnosticEase === option ? 'text-purple-600 font-medium' : 'text-gray-600'
@@ -173,7 +173,7 @@ export default function DiagnosticQuestions({
               </label>
             ))}
           </div>
-        </div>
+        </fieldset>
 
         <div>
           <label className="block text-lg font-medium text-gray-800 mb-2">
