@@ -58,47 +58,52 @@ export default function DiagnosticQuestions({
 
             const isIncomplete = highlightIncomplete && diagnosticAnswers[question.id] === undefined;
             const isSubQuestion = /[a-g]/.test(question.number);
+            const errorId = `error-${question.id}`;
 
             return (
-              <div
+              <fieldset
                 key={question.id}
+                aria-describedby={isIncomplete ? errorId : undefined}
                 className={`${isSubQuestion ? 'ml-6' : ''} ${
                   isIncomplete ? 'bg-red-50 rounded-lg p-4 -mx-4 border border-red-300' : ''
                 }`}
               >
                 {isIncomplete && (
-                  <p className="text-md font-medium text-red-800">This question is required.</p>
+                  <p id={errorId} role="alert" className="text-md font-medium text-red-800">This question is required.</p>
                 )}
 
-                <p className="text-lg font-medium mb-4 text-gray-800">
+                <legend className="text-lg font-medium mb-4 text-gray-800">
                   {question.number}. {question.text}
-                  <span className="text-red-500 ml-1">*</span>
-                </p>
+                  <span className="text-red-500 ml-1" aria-hidden="true">*</span>
+                  <span className="sr-only">(required)</span>
+                </legend>
+
                 <div className="flex flex-wrap gap-6">
                   {['Yes', 'No'].map((option) => (
                     <label key={option} className="flex items-center cursor-pointer group">
-                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
-                        diagnosticAnswers[question.id] === option
-                          ? 'border-purple-600 bg-purple-600'
-                          : 'border-gray-400 group-hover:border-purple-400'
-                      }`}>
-                        {diagnosticAnswers[question.id] === option && (
-                          <div className="w-2.5 h-2.5 rounded-full bg-white" />
-                        )}
-                      </div>
                       <input
                         type="radio"
                         name={`question-${question.id}`}
                         value={option}
                         checked={diagnosticAnswers[question.id] === option}
+                        aria-required="true"
                         onChange={(e) => {
                           onAnswerChange(question.id, e.target.value);
                           if (question.hasNumbnessOrTingling) {
                             onNumbnessOrTinglingChange(option === 'Yes');
                           }
                         }}
-                        className="sr-only"
+                        className="sr-only peer"
                       />
+                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-purple-500 peer-focus-visible:ring-offset-2 ${
+                        diagnosticAnswers[question.id] === option
+                          ? 'border-purple-600 bg-purple-600'
+                          : 'border-gray-500 group-hover:border-purple-400'
+                      }`}>
+                        {diagnosticAnswers[question.id] === option && (
+                          <div className="w-2.5 h-2.5 rounded-full bg-white" />
+                        )}
+                      </div>
                       <span className={`ml-2 text-lg font-medium ${
                         diagnosticAnswers[question.id] === option ? 'text-purple-600' : 'text-gray-600'
                       }`}>{option}</span>
@@ -106,30 +111,31 @@ export default function DiagnosticQuestions({
                   ))}
                   {question.hasNotRelevant && (
                     <label className="flex items-center cursor-pointer group">
-                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
-                        diagnosticAnswers[question.id] === 'Not relevant'
-                          ? 'border-purple-600 bg-purple-600'
-                          : 'border-gray-400 group-hover:border-purple-400'
-                      }`}>
-                        {diagnosticAnswers[question.id] === 'Not relevant' && (
-                          <div className="w-2.5 h-2.5 rounded-full bg-white" />
-                        )}
-                      </div>
                       <input
                         type="radio"
                         name={`question-${question.id}`}
                         value="Not relevant"
                         checked={diagnosticAnswers[question.id] === 'Not relevant'}
+                        aria-required="true"
                         onChange={(e) => onAnswerChange(question.id, e.target.value)}
-                        className="sr-only"
+                        className="sr-only peer"
                       />
+                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-purple-500 peer-focus-visible:ring-offset-2 ${
+                        diagnosticAnswers[question.id] === 'Not relevant'
+                          ? 'border-purple-600 bg-purple-600'
+                          : 'border-gray-500 group-hover:border-purple-400'
+                      }`}>
+                        {diagnosticAnswers[question.id] === 'Not relevant' && (
+                          <div className="w-2.5 h-2.5 rounded-full bg-white" />
+                        )}
+                      </div>
                       <span className={`ml-2 text-lg font-medium ${
                         diagnosticAnswers[question.id] === 'Not relevant' ? 'text-purple-600' : 'text-gray-600'
                       }`}>Not relevant</span>
                     </label>
                   )}
                 </div>
-              </div>
+              </fieldset>
             );
           })}
         </div>

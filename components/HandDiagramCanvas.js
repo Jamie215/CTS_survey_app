@@ -29,6 +29,7 @@ export default function HandDiagramCanvas({
   canvasKey,
   label,
   canvasRef,
+  ariaLabel,
   onPointerDown,
   onPointerMove,
   onPointerUp,
@@ -50,6 +51,7 @@ export default function HandDiagramCanvas({
           height: 'auto',
           aspectRatio: `${CANVAS_WIDTH}/${CANVAS_HEIGHT}`,
         }}
+        aria-label={ariaLabel}
         onMouseDown={(e) => onPointerDown(e, canvasKey)}
         onMouseMove={(e) => onPointerMove(e, canvasKey)}
         onMouseUp={(e) => onPointerUp(e, canvasKey)}

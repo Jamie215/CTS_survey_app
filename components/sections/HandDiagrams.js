@@ -43,7 +43,7 @@ export default function HandDiagrams({
             Hand Diagrams
           </h2>
         </div>
-        <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6 role='alert'">
           <div className="flex items-start gap-3">
             <CircleAlert className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
@@ -123,6 +123,7 @@ export default function HandDiagrams({
                     canvasKey={canvasKey}
                     label={`${side} Hand`}
                     canvasRef={canvasRefs[canvasKey]}
+                    ariaLabel={`${symptom.label} - ${side} hand, palm side`}
                     onPointerDown={onPointerDown}
                     onPointerMove={onPointerMove}
                     onPointerUp={onPointerUp}
@@ -146,6 +147,7 @@ export default function HandDiagrams({
                     canvasKey={canvasKey}
                     label={`${side} Hand`}
                     canvasRef={canvasRefs[canvasKey]}
+                    ariaLabel={`${symptom.label} - ${side} hand, back side`}
                     onPointerDown={onPointerDown}
                     onPointerMove={onPointerMove}
                     onPointerUp={onPointerUp}

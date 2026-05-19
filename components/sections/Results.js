@@ -218,10 +218,10 @@ function KatzHandResult({ hand, result, isResultsDetailShown, volarRef, dorsalRe
     'bg-green-50 border border-green-200';
 
   const scoreTextClass =
-    result.KatzScore.score === 3 ? 'text-red-600' :
-    result.KatzScore.score === 2 ? 'text-orange-600' :
-    result.KatzScore.score === 1 ? 'text-yellow-600' :
-    'text-green-600';
+    result.KatzScore.score === 3 ? 'text-red-700' :
+    result.KatzScore.score === 2 ? 'text-orange-700' :
+    result.KatzScore.score === 1 ? 'text-yellow-700' :
+    'text-green-700';
 
   return (
     <div className="bg-gray-50 rounded-xl p-6">
