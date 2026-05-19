@@ -45,7 +45,7 @@ export default function HandDiagrams({
         </div>
         <div className="bg-red-50 border border-red-200 rounded-xl p-6">
           <div className="flex items-start gap-3">
-            <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
+            <CircleAlert className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
               <p className="text-lg font-medium text-red-800 mb-2">
                 Unable to load hand diagrams
@@ -69,7 +69,7 @@ export default function HandDiagrams({
       </div>
     );
   }
-  
+
   const allSymptoms = [
     { type: 'pain', label: 'Pain', color: 'orange', icon: Zap, instruction: 'Mark areas where you experience pain or discomfort. You will see orange shading' },
     { type: 'tingling', label: 'Tingling', color: 'purple', icon: Waves, instruction: 'Mark areas where you feel pins and needles or tingling sensations. You will see purple shading' },

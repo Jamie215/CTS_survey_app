@@ -281,7 +281,11 @@ const CTSSurveyApp = () => {
               <button
                 onClick={handleNextSection}
                 disabled={currentSection === 1 && !!svgLoadError}
-                className="flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-lg font-semibold bg-purple-600 text-white hover:bg-purple-700 transition-colors"
+                className={`flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-lg font-semibold transition-colors ${
+                currentSection === 1 && svgLoadError
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-purple-600 text-white hover:bg-purple-700'
+                }`}
               >
                 {currentSection === 1 ? 'Calculate CTS Scores' : 'Next'}
                 <ChevronRight className="w-5 h-5" />
