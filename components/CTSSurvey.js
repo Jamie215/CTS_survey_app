@@ -14,7 +14,8 @@ import { useScoring } from '../hooks/useScoring';
 import { useExport } from '../hooks/useExport';
 
 // Canvas utilities
-import { drawSymptomsOnCanvas } from '../lib/canvasUtils';
+import { drawSymptomsOnCanvas, hasAnyDrawings } from '../lib/canvasUtils';
+import EmptyDiagramConfirmModal from './EmptyDiagramConfirmModal';
 
 // Section components
 import DiagnosticQuestions from './sections/DiagnosticQuestions';
@@ -36,6 +37,7 @@ const CTSSurveyApp = () => {
   const [hasNumbnessOrTingling, setHasNumbnessOrTingling] = useState(null);
   const [showResultsDetailsModal, setShowResultsDetailsModal] = useState(true);
   const [isResultsDetailShown, setIsResultsDetailShown] = useState(null);
+  const [showEmptyDiagramModal, setShowEmptyDiagramModal] = useState(false);
 
   // ============================================
   // HOOKS
@@ -122,6 +124,10 @@ const CTSSurveyApp = () => {
     }
 
     if (currentSection === 1) {
+      if (!hasAnyDrawings(handDiagramData)) {
+        setShowEmptyDiagramModal(true);
+        return;
+      }
       handleCalculateScores();
     }
 
@@ -136,6 +142,13 @@ const CTSSurveyApp = () => {
 
   const handleAnswerChange = (questionId, value) => {
     setDiagnosticAnswers(prev => ({ ...prev, [questionId]: value }));
+  };
+
+  const handleConfirmEmptyDiagram = () => {
+    setShowEmptyDiagramModal(false);
+    handleCalculateScores();
+    setCurrentSection(2);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // ============================================
@@ -298,6 +311,12 @@ const CTSSurveyApp = () => {
           </div>
         </div>
       </div>
+      {showEmptyDiagramModal && (
+        <EmptyDiagramConfirmModal
+          onCancel={() => setShowEmptyDiagramModal(false)}
+          onConfirm={handleConfirmEmptyDiagram}
+        />
+      )}
     </div>
   );
 };
