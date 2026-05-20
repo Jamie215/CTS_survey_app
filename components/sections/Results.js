@@ -76,29 +76,38 @@ export default function Results({
 }
 
 function ResultsModal({ onPatient, onClinician }) {
+  const titleId = 'results-modal-title';
+
+  // No `onClose` semantic here — the user must pick a role. We pass
+  // a no-op so Escape doesn't dismiss without a choice. (If you'd
+  // rather Escape defaulted to "I'm a patient", swap the no-op for
+  // onPatient.)
+  const handleClose = () => {};
+
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 print-hide backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl p-10 max-w-lg mx-4 text-center">
-        <div className="w-14 h-14 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-5">
-          <ChartBarBig className="w-7 h-7 text-purple-600" />
-        </div>
-        <p className="text-gray-500 text-lg mb-8">Please select the option that best describes you.</p>
-        <div className="flex gap-4 justify-center">
-          <button
-            onClick={onPatient}
-            className="flex-1 px-6 py-4 bg-gray-100 text-gray-800 rounded-xl text-lg font-semibold hover:bg-gray-200 transition-colors border-2 border-transparent hover:border-purple-300"
-          >
-            I&apos;m a Patient
-          </button>
-          <button
-            onClick={onClinician}
-            className="flex-1 px-6 py-4 bg-purple-600 text-white rounded-xl text-lg font-semibold hover:bg-purple-700 transition-colors border-2 border-transparent hover:border-purple-800"
-          >
-            I&apos;m a Healthcare Professional
-          </button>
-        </div>
+    <Modal open={true} onClose={handleClose} titleId={titleId}>
+      <div className="w-14 h-14 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-5">
+        <ChartBarBig className="w-7 h-7 text-purple-600" />
       </div>
-    </div>
+      <h2 id={titleId} className="sr-only">
+        Choose how to display your results
+      </h2>
+      <p className="text-gray-500 text-lg mb-8">Please select the option that best describes you.</p>
+      <div className="flex gap-4 justify-center">
+        <button
+          onClick={onPatient}
+          className="flex-1 px-6 py-4 bg-gray-100 text-gray-800 rounded-xl text-lg font-semibold hover:bg-gray-200 transition-colors border-2 border-transparent hover:border-purple-300"
+        >
+          I&apos;m a Patient
+        </button>
+        <button
+          onClick={onClinician}
+          className="flex-1 px-6 py-4 bg-purple-600 text-white rounded-xl text-lg font-semibold hover:bg-purple-700 transition-colors border-2 border-transparent hover:border-purple-800"
+        >
+          I&apos;m a Healthcare Professional
+        </button>
+      </div>
+    </Modal>
   );
 }
 
