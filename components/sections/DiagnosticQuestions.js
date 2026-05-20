@@ -2,9 +2,10 @@
 
 import React from 'react';
 import { diagnosticQuestions } from '../../data/diagnosticQuestions';
+import { ANSWERS } from '../../data/constants';
 
 /**
- * Diagnostic Questions section - renders the Kamath questionnaire.
+ * Diagnostic Questions section - renders the Kamath-based questionnaire.
  *
  * @param {Object} props
  * @param {Object} props.diagnosticAnswers
@@ -52,7 +53,7 @@ export default function DiagnosticQuestions({
             if (question.requiresNumbnessOrTingling && hasNumbnessOrTingling === null && question.id !== 0) {
               return null;
             }
-            if (question.requiresSplintTried && diagnosticAnswers[12] !== 'Yes') {
+            if (question.requiresSplintTried && diagnosticAnswers[12] !== ANSWERS.YES) {
               return null;
             }
 
@@ -79,7 +80,7 @@ export default function DiagnosticQuestions({
                 </legend>
 
                 <div className="flex flex-wrap gap-6">
-                  {['Yes', 'No'].map((option) => (
+                  {[ANSWERS.YES, ANSWERS.NO].map((option) => (
                     <label key={option} className="flex items-center cursor-pointer group">
                       <input
                         type="radio"
@@ -90,7 +91,7 @@ export default function DiagnosticQuestions({
                         onChange={(e) => {
                           onAnswerChange(question.id, e.target.value);
                           if (question.hasNumbnessOrTingling) {
-                            onNumbnessOrTinglingChange(option === 'Yes');
+                            onNumbnessOrTinglingChange(option === ANSWERS.YES);
                           }
                         }}
                         className="sr-only peer"
@@ -114,24 +115,24 @@ export default function DiagnosticQuestions({
                       <input
                         type="radio"
                         name={`question-${question.id}`}
-                        value="Not relevant"
-                        checked={diagnosticAnswers[question.id] === 'Not relevant'}
+                        value={ANSWERS.NOT_RELEVANT}
+                        checked={diagnosticAnswers[question.id] === ANSWERS.NOT_RELEVANT}
                         aria-required="true"
                         onChange={(e) => onAnswerChange(question.id, e.target.value)}
                         className="sr-only peer"
                       />
                       <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-purple-500 peer-focus-visible:ring-offset-2 ${
-                        diagnosticAnswers[question.id] === 'Not relevant'
+                        diagnosticAnswers[question.id] === ANSWERS.NOT_RELEVANT
                           ? 'border-purple-600 bg-purple-600'
                           : 'border-gray-500 group-hover:border-purple-400'
                       }`}>
-                        {diagnosticAnswers[question.id] === 'Not relevant' && (
+                        {diagnosticAnswers[question.id] === ANSWERS.NOT_RELEVANT && (
                           <div className="w-2.5 h-2.5 rounded-full bg-white" />
                         )}
                       </div>
                       <span className={`ml-2 text-lg font-medium ${
-                        diagnosticAnswers[question.id] === 'Not relevant' ? 'text-purple-600' : 'text-gray-600'
-                      }`}>Not relevant</span>
+                        diagnosticAnswers[question.id] === ANSWERS.NOT_RELEVANT ? 'text-purple-600' : 'text-gray-600'
+                      }`}>{ANSWERS.NOT_RELEVANT}</span>
                     </label>
                   )}
                 </div>

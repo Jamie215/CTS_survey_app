@@ -4,6 +4,18 @@ export const CANVAS_HEIGHT = 400;
 export const SOME_THRESHOLD = 5;
 export const HALF_THRESHOLD = 50;
 
+/**
+ * Canonical string values used as participant answers throughout the app.
+ *
+ * If a new answer value is ever introduced, add it here first, then
+ * reference it from both the UI and the scoring weights.
+ */
+export const ANSWERS = {
+  YES: 'Yes',
+  NO: 'No',
+  NOT_RELEVANT: 'Not relevant',
+};
+
 export const STROKE_COLORS = {
   tingling: '#9333ea',
   numbness: '#3b82f6',

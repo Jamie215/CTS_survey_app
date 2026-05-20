@@ -3,6 +3,7 @@ import {
   calculateKamathScore,
   kamathQuestionWeights,
 } from '../lib/kamathScoring';
+import { ANSWERS } from '../data/constants';
 
 /**
  * Unit tests for calculateKamathScore.
@@ -18,22 +19,23 @@ import {
  * exactly the questions it cares about and the rest contribute nothing.
  */
 
-// id 7 'Not Relevant' = 0 is used for the baseline so the pregnancy
-// question itself contributes nothing unless a test overrides it.
+// Baseline uses ANSWERS.NOT_RELEVANT for id 7 so the pregnancy question
+// itself contributes nothing unless a test overrides it.
 function base(overrides = {}) {
   const answers = {
-    0: 'Yes',            // gateway for numbness/tingling questions
-    1: 'No', 2: 'No', 3: 'No', 4: 'No', 5: 'No', 6: 'No',
-    7: 'Not Relevant',
-    8: 'No', 9: 'No', 10: 'No', 11: 'No',
-    12: 'No',            // splint gateway
+    0: ANSWERS.YES,            // gateway for numbness/tingling questions
+    1: ANSWERS.NO, 2: ANSWERS.NO, 3: ANSWERS.NO, 4: ANSWERS.NO,
+    5: ANSWERS.NO, 6: ANSWERS.NO,
+    7: ANSWERS.NOT_RELEVANT,
+    8: ANSWERS.NO, 9: ANSWERS.NO, 10: ANSWERS.NO, 11: ANSWERS.NO,
+    12: ANSWERS.NO,            // splint gateway
   };
   return { ...answers, ...overrides };
 }
 
 describe('calculateKamathScore — gateway questions', () => {
   it('always skips id 0 and id 12 regardless of answer', () => {
-    const result = calculateKamathScore(base({ 0: 'Yes', 12: 'Yes' }), true);
+    const result = calculateKamathScore(base({ 0: ANSWERS.YES, 12: ANSWERS.YES }), true);
     const skippedIds = result.skippedQuestions.map((q) => q.id);
     expect(skippedIds).toContain(0);
     expect(skippedIds).toContain(12);
@@ -72,7 +74,7 @@ describe('calculateKamathScore — numbness/tingling skip path', () => {
   });
 
   it('scores ids 1–7 when hasNumbnessOrTingling is true', () => {
-    const result = calculateKamathScore(base({ 1: 'Yes' }), true);
+    const result = calculateKamathScore(base({ 1: ANSWERS.YES }), true);
     const scored1 = result.scoredQuestions.find((q) => q.id === 1);
     expect(scored1).toBeDefined();
     expect(scored1.score).toBe(2);
@@ -82,7 +84,7 @@ describe('calculateKamathScore — numbness/tingling skip path', () => {
 describe('calculateKamathScore — splint gateway (id 13)', () => {
   it('scores id 13 only when id 12 answer is "Yes"', () => {
     const result = calculateKamathScore(
-      base({ 12: 'Yes', 13: 'Yes' }),
+      base({ 12: ANSWERS.YES, 13: ANSWERS.YES }),
       false,
     );
     const scored13 = result.scoredQuestions.find((q) => q.id === 13);
@@ -91,7 +93,7 @@ describe('calculateKamathScore — splint gateway (id 13)', () => {
   });
 
   it('skips id 13 when id 12 is "No"', () => {
-    const result = calculateKamathScore(base({ 12: 'No' }), false);
+    const result = calculateKamathScore(base({ 12: ANSWERS.NO }), false);
     const skipped13 = result.skippedQuestions.find((q) => q.id === 13);
     expect(skipped13).toBeDefined();
     expect(skipped13.reason).toMatch(/splint/i);
@@ -119,70 +121,67 @@ describe('calculateKamathScore — unanswered questions', () => {
 
 describe('calculateKamathScore — invalid answer values', () => {
   /**
-   * Documents current behaviour: an answer not present in the weight
-   * map (e.g. "Maybe") produces score === undefined and is added to
-   * NEITHER scoredQuestions NOR skippedQuestions — it silently
-   * disappears. For a clinical instrument this is a data-integrity
-   * gap; this test exists so the behaviour is visible and a
-   * deliberate decision can be made (throw? record?).
+   * Previously these vanished from both scoredQuestions AND
+   * skippedQuestions, which was a data-integrity gap for a clinical
+   * instrument. They now land in skippedQuestions with a clear reason
+   * so the export reflects what happened.
    */
-  it('silently drops an unrecognised answer value (documents a gap)', () => {
+  it('records an unrecognised answer value in skippedQuestions', () => {
     const result = calculateKamathScore(base({ 8: 'Maybe' }), true);
     const inScored = result.scoredQuestions.some((q) => q.id === 8);
-    const inSkipped = result.skippedQuestions.some((q) => q.id === 8);
+    const skipped8 = result.skippedQuestions.find((q) => q.id === 8);
     expect(inScored).toBe(false);
-    expect(inSkipped).toBe(false);
+    expect(skipped8).toBeDefined();
+    expect(skipped8.reason).toMatch(/invalid answer value/i);
+    expect(skipped8.reason).toMatch(/Maybe/);
+  });
+
+  it('does not affect totalScore for an invalid answer', () => {
+    // The rest of base() contributes 0; an invalid 'Maybe' should not
+    // contribute either, leaving the total at 0.
+    const result = calculateKamathScore(base({ 8: 'Maybe' }), true);
+    expect(result.totalScore).toBe(0);
   });
 });
 
 describe('calculateKamathScore — individual weights', () => {
   it('id 3 (median distribution) scores +2 on Yes', () => {
-    const result = calculateKamathScore(base({ 3: 'Yes' }), true);
+    const result = calculateKamathScore(base({ 3: ANSWERS.YES }), true);
     expect(result.totalScore).toBe(2);
   });
 
   it('id 5 (little finger) scores -2 on Yes, 0 on No (inverted)', () => {
-    const yes = calculateKamathScore(base({ 5: 'Yes' }), true);
+    const yes = calculateKamathScore(base({ 5: ANSWERS.YES }), true);
     expect(yes.totalScore).toBe(-2);
-    const no = calculateKamathScore(base({ 5: 'No' }), true);
+    const no = calculateKamathScore(base({ 5: ANSWERS.NO }), true);
     expect(no.totalScore).toBe(0);
   });
 
   it('id 10 (neck pain) scores -1 on Yes', () => {
-    const result = calculateKamathScore(base({ 10: 'Yes' }), true);
+    const result = calculateKamathScore(base({ 10: ANSWERS.YES }), true);
     expect(result.totalScore).toBe(-1);
   });
 
   it('id 11 (toe symptoms) scores -2 on Yes', () => {
-    const result = calculateKamathScore(base({ 11: 'Yes' }), true);
+    const result = calculateKamathScore(base({ 11: ANSWERS.YES }), true);
     expect(result.totalScore).toBe(-2);
   });
 
   it('id 7 pregnancy: Yes +1, No -1', () => {
-    const yes = calculateKamathScore(base({ 7: 'Yes' }), true);
+    const yes = calculateKamathScore(base({ 7: ANSWERS.YES }), true);
     expect(yes.totalScore).toBe(1);
-    const no = calculateKamathScore(base({ 7: 'No' }), true);
+    const no = calculateKamathScore(base({ 7: ANSWERS.NO }), true);
     expect(no.totalScore).toBe(-1);
   });
 
-  /**
-   * KNOWN BUG — expected to FAIL until fixed.
-   *
-   * The UI (DiagnosticQuestions.js) stores the pregnancy option as
-   * 'Not relevant' (lowercase r). The weight map key is 'Not Relevant'
-   * (capital R). So weights['Not relevant'] is undefined, the answer is
-   * silently dropped, and id 7 lands in neither scoredQuestions nor
-   * skippedQuestions. The total is unaffected only because the intended
-   * weight is 0 — but the answer vanishes from the breakdown entirely.
-   *
-   * Fix: change the weight-map key (and calculateMin/MaxScore comments)
-   * to 'Not relevant' to match the UI. Then this test passes.
-   */
-  it('id 7 "Not relevant" (as stored by the UI) is recorded', () => {
-    const result = calculateKamathScore(base({ 7: 'Not relevant' }), true);
-    const inScored = result.scoredQuestions.some((q) => q.id === 7);
-    const inSkipped = result.skippedQuestions.some((q) => q.id === 7);
-    expect(inScored || inSkipped).toBe(true);
+  it('id 7 "Not relevant" (as stored by the UI) is recorded as scored with 0', () => {
+    // After the casing fix + ANSWERS constants, 'Not relevant' is a
+    // valid weight-map key and the answer appears in scoredQuestions
+    // with score 0 (not silently dropped, not in skippedQuestions).
+    const result = calculateKamathScore(base({ 7: ANSWERS.NOT_RELEVANT }), true);
+    const scored7 = result.scoredQuestions.find((q) => q.id === 7);
+    expect(scored7).toBeDefined();
+    expect(scored7.score).toBe(0);
   });
 });
 
@@ -190,7 +189,7 @@ describe('calculateKamathScore — classification boundaries', () => {
   const numbnessBase = (over) => base(over);
 
   it('total 2 → Unlikely CTS (green)', () => {
-    const r = calculateKamathScore(numbnessBase({ 1: 'Yes' }), true);
+    const r = calculateKamathScore(numbnessBase({ 1: ANSWERS.YES }), true);
     expect(r.totalScore).toBe(2);
     expect(r.classification).toBe('Unlikely CTS');
     expect(r.colorClass).toBe('green');
@@ -198,7 +197,7 @@ describe('calculateKamathScore — classification boundaries', () => {
 
   it('total 3 → Possible CTS: Unclear (yellow)', () => {
     const r = calculateKamathScore(
-      numbnessBase({ 1: 'Yes', 2: 'Yes' }),
+      numbnessBase({ 1: ANSWERS.YES, 2: ANSWERS.YES }),
       true,
     );
     expect(r.totalScore).toBe(3);
@@ -208,7 +207,7 @@ describe('calculateKamathScore — classification boundaries', () => {
 
   it('total 4 → Possible CTS: Unclear (yellow)', () => {
     const r = calculateKamathScore(
-      numbnessBase({ 1: 'Yes', 2: 'Yes', 4: 'Yes' }),
+      numbnessBase({ 1: ANSWERS.YES, 2: ANSWERS.YES, 4: ANSWERS.YES }),
       true,
     );
     expect(r.totalScore).toBe(4);
@@ -217,7 +216,12 @@ describe('calculateKamathScore — classification boundaries', () => {
 
   it('total 5 → Classic / Probable CTS (red)', () => {
     const r = calculateKamathScore(
-      numbnessBase({ 1: 'Yes', 2: 'Yes', 4: 'Yes', 6: 'Yes' }),
+      numbnessBase({
+        1: ANSWERS.YES,
+        2: ANSWERS.YES,
+        4: ANSWERS.YES,
+        6: ANSWERS.YES,
+      }),
       true,
     );
     expect(r.totalScore).toBe(5);
@@ -227,7 +231,11 @@ describe('calculateKamathScore — classification boundaries', () => {
 
   it('a negative total still classifies as Unlikely CTS', () => {
     const r = calculateKamathScore(
-      numbnessBase({ 5: 'Yes', 10: 'Yes', 11: 'Yes' }),
+      numbnessBase({
+        5: ANSWERS.YES,
+        10: ANSWERS.YES,
+        11: ANSWERS.YES,
+      }),
       true,
     );
     expect(r.totalScore).toBeLessThan(0);
@@ -240,8 +248,6 @@ describe('calculateKamathScore — max/min possible score', () => {
    * Computes the expected bounds directly from kamathQuestionWeights so
    * the test fails if a weight changes and the (currently hardcoded)
    * calculateMaxScore/calculateMinScore literals are not updated.
-   * The literals are already stale today — this test should FAIL until
-   * they are recomputed.
    */
   function expectedBounds(hasNT) {
     let max = 0;
