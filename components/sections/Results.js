@@ -111,7 +111,7 @@ function KamathScoreCard({ kamath, isResultsDetailShown }) {
       </div>
 
       <div className={`p-6 ${KAMATH_COLORS[kamath.colorClass].bg}`}>
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-4 gap-2">
           <div>
             <div className={`text-2xl font-bold ${KAMATH_COLORS[kamath.colorClass].text}`}>
               {kamath.classification}
