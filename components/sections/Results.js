@@ -4,6 +4,7 @@ import React from 'react';
 import { AlertCircle, ChartBarBig, Download, ChevronsUp, ChevronRight, Printer } from 'lucide-react';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, KAMATH_COLORS } from '../../data/constants';
 import { diagnosticQuestions } from '../../data/diagnosticQuestions';
+import { KAMATH_BANDS } from '../../lib/kamathScoring';
 
 /**
  * Results section - displays Kamath-based and Katz-based scoring results.
@@ -127,11 +128,21 @@ function KamathScoreCard({ kamath, isResultsDetailShown }) {
           )}
         </div>
 
+        {/*
+          Legend driven by KAMATH_BANDS (the source of truth for the
+          classification rule). If a boundary is tuned in
+          lib/kamathScoring.js, this row updates automatically.
+        */}
         {isResultsDetailShown && (
-          <div className="flex gap-4 text-sm py-3 border-t border-gray-200">
-            <span className="text-green-700 font-medium">● &lt;3: Unlikely CTS</span>
-            <span className="text-yellow-700 font-medium">● 3-4: Possible CTS: Unclear</span>
-            <span className="text-red-700 font-medium">● ≥5: Classic / Probable CTS</span>
+          <div className="flex flex-wrap gap-4 text-sm py-3 border-t border-gray-200">
+            {KAMATH_BANDS.map((band) => (
+              <span
+                key={band.classification}
+                className={`${KAMATH_COLORS[band.colorClass].text} font-medium`}
+              >
+                ● {band.legendLabel}
+              </span>
+            ))}
           </div>
         )}
 
@@ -212,7 +223,7 @@ function KatzScoreCard({ katz, isResultsDetailShown, resultsCanvasRefs }) {
  * Render the human-readable summary for a single hand.
  *
  * Reads flags from result.flags (populated by useScoring from
- * analyzeSymptomDistribution)
+ * analyzeSymptomDistribution).
  */
 function KatzHandResult({ hand, result, isResultsDetailShown, volarRef, dorsalRef }) {
   const scoreColorClass =

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   calculateKamathScore,
   kamathQuestionWeights,
+  KAMATH_BANDS
 } from '../lib/kamathScoring';
 import { ANSWERS } from '../data/constants';
 
@@ -276,5 +277,59 @@ describe('calculateKamathScore — max/min possible score', () => {
   it('maxPossibleScore matches the sum of best answers (no-numbness path)', () => {
     const r = calculateKamathScore(base(), false);
     expect(r.maxPossibleScore).toBe(expectedBounds(false).max);
+  });
+});
+
+describe('calculateKamathScore — KAMATH_BANDS as single source of truth', () => {
+  /**
+   * The classification text and color the function returns must come
+   * from KAMATH_BANDS, not from a separate hardcoded branch. If a band
+   * is edited (boundaries, label, color), this guards against the
+   * classifier and the display drifting apart.
+   */
+  it('classification and colorClass come from a band in KAMATH_BANDS', () => {
+    // Use a score that lands in each band, exercising the lookup.
+    const cases = [
+      calculateKamathScore(base(), true),                                  // 0 → green band
+      calculateKamathScore(base({ 1: ANSWERS.YES, 2: ANSWERS.YES }), true), // 3 → yellow band
+      calculateKamathScore(
+        base({ 1: ANSWERS.YES, 2: ANSWERS.YES, 4: ANSWERS.YES, 6: ANSWERS.YES }),
+        true,
+      ),                                                                    // 5 → red band
+    ];
+ 
+    for (const result of cases) {
+      const matchingBand = KAMATH_BANDS.find(
+        (b) =>
+          b.classification === result.classification &&
+          b.colorClass === result.colorClass,
+      );
+      expect(matchingBand).toBeDefined();
+      // And the score really does fall inside that band.
+      expect(result.totalScore).toBeGreaterThanOrEqual(matchingBand.min);
+      expect(result.totalScore).toBeLessThanOrEqual(matchingBand.max);
+    }
+  });
+ 
+  it('every band has a non-empty legendLabel for the display', () => {
+    // The Kamath legend in Results.js renders band.legendLabel for each
+    // band. An empty label would render a hanging bullet — catch it here.
+    for (const band of KAMATH_BANDS) {
+      expect(typeof band.legendLabel).toBe('string');
+      expect(band.legendLabel.length).toBeGreaterThan(0);
+    }
+  });
+ 
+  it('bands cover the full integer range with no gaps or overlaps', () => {
+    // Walk a wide range of integer scores and confirm exactly one band
+    // claims each. Gaps would mean unclassifiable scores; overlaps
+    // would mean the first-match rule silently picks one band over
+    // another based on array order.
+    for (let score = -20; score <= 30; score++) {
+      const matches = KAMATH_BANDS.filter(
+        (b) => score >= b.min && score <= b.max,
+      );
+      expect(matches.length).toBe(1);
+    }
   });
 });
