@@ -138,6 +138,7 @@ export function useCanvasDrawing(isTourActive, currentSection) {
 
     const { x, y } = getEventCoordinates(e, canvas);
     activeStrokeRef.current.push({ type: 'start', x, y });
+    activeStrokeRef.current.push({ type: 'draw', x, y });
 
     const ctx = canvas.getContext('2d');
     const symptomType = getSymptomType(canvasKey);
