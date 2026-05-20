@@ -27,7 +27,6 @@ const CTSSurveyApp = () => {
   // STATE
   // ============================================
   const [currentSection, setCurrentSection] = useState(0);
-  const [participantId, setParticipantId] = useState('');
   const [diagnosticAnswers, setDiagnosticAnswers] = useState({});
   const [diagnosticEase, setDiagnosticEase] = useState('');
   const [diagnosticComments, setDiagnosticComments] = useState('');
@@ -38,6 +37,13 @@ const CTSSurveyApp = () => {
   const [showResultsDetailsModal, setShowResultsDetailsModal] = useState(true);
   const [isResultsDetailShown, setIsResultsDetailShown] = useState(null);
   const [showEmptyDiagramModal, setShowEmptyDiagramModal] = useState(false);
+
+  const [participantId] = useState(() => {
+    const id = typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+      return `CTS-${id}`;
+  });
 
   // ============================================
   // HOOKS
@@ -76,10 +82,6 @@ const CTSSurveyApp = () => {
   // ============================================
   // EFFECTS
   // ============================================
-  useEffect(() => {
-    setParticipantId(`CTS-${Date.now()}`);
-  }, []);
-
   useEffect(() => {
     if (currentSection === 2) {
       const timer = setTimeout(() => {
