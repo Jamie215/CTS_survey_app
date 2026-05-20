@@ -21,9 +21,19 @@ export function useScoring(diagnosticAnswers, hasNumbnessOrTingling, svgRegions,
     return {
       KatzScore: {
         ...calculateKatzScore(symptoms),
-        coverageBySymptom: symptoms.coverageBySymptom
+        coverageBySymptom: symptoms.coverageBySymptom,
       },
-      detailedCoverage: symptoms.detailedCoverage
+      detailedCoverage: symptoms.detailedCoverage,
+      // Per-digit / palm / dorsum flags from analyzeSymptomDistribution.
+      flags: {
+        thumbAffected: symptoms.thumbAffected,
+        indexAffected: symptoms.indexAffected,
+        middleAffected: symptoms.middleAffected,
+        medianDigitsAffected: symptoms.medianDigitsAffected,
+        palmAffected: symptoms.palmAffected,
+        dorsumAffected: symptoms.dorsumAffected,
+        wristAffected: symptoms.wristAffected,
+      },
     };
   }, [svgRegions, handDiagramData]);
 

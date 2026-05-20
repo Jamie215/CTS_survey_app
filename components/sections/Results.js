@@ -6,7 +6,7 @@ import { CANVAS_WIDTH, CANVAS_HEIGHT, KAMATH_COLORS } from '../../data/constants
 import { diagnosticQuestions } from '../../data/diagnosticQuestions';
 
 /**
- * Results section - displays Kamath and Katz scoring results.
+ * Results section - displays Kamath-based and Katz-based scoring results.
  *
  * @param {Object} props
  * @param {Object|null} props.assessmentResults
@@ -26,8 +26,6 @@ export default function Results({
   resultsCanvasRefs,
   exportActions,
 }) {
-  const { showDownloadMenu, handleExportJSON, handleExportCSV, handlePrint, handleToggleDownloadMenu } = exportActions;
-
   return (
     <div className="space-y-6">
       <div>
@@ -48,7 +46,7 @@ export default function Results({
         </div>
       </div>
 
-      {/* KAMATH SCORE */}
+      {/* KAMATH-BASED SCORE */}
       {assessmentResults?.kamath && (
         <KamathScoreCard
           kamath={assessmentResults.kamath}
@@ -56,7 +54,7 @@ export default function Results({
         />
       )}
 
-      {/* KATZ SCORE */}
+      {/* KATZ-BASED SCORE */}
       {assessmentResults?.katz && (
         <KatzScoreCard
           katz={assessmentResults.katz}
@@ -108,7 +106,7 @@ function KamathScoreCard({ kamath, isResultsDetailShown }) {
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
       <div className="bg-gray-100 px-6 py-4 border-b border-gray-200">
         <h3 className="text-xl font-bold text-gray-800">Likelihood of CTS based on the Questionnaire</h3>
-        <p className="text-sm text-gray-600 mt-1">Questionnaire-based assessment adapted from Kamath & Stothard (2003)</p>
+        <p className="text-sm text-gray-600 mt-1">Questionnaire-based assessment adapted from Kamath &amp; Stothard (2003)</p>
       </div>
 
       <div className={`p-6 ${KAMATH_COLORS[kamath.colorClass].bg}`}>
@@ -210,6 +208,12 @@ function KatzScoreCard({ katz, isResultsDetailShown, resultsCanvasRefs }) {
   );
 }
 
+/**
+ * Render the human-readable summary for a single hand.
+ *
+ * Reads flags from result.flags (populated by useScoring from
+ * analyzeSymptomDistribution)
+ */
 function KatzHandResult({ hand, result, isResultsDetailShown, volarRef, dorsalRef }) {
   const scoreColorClass =
     result.KatzScore.score === 3 ? 'bg-red-50 border border-red-200' :
@@ -222,6 +226,24 @@ function KatzHandResult({ hand, result, isResultsDetailShown, volarRef, dorsalRe
     result.KatzScore.score === 2 ? 'text-orange-700' :
     result.KatzScore.score === 1 ? 'text-yellow-700' :
     'text-green-700';
+
+  const flags = result.flags || {};
+  const affectedDigitNames = [
+    flags.thumbAffected && 'Thumb',
+    flags.indexAffected && 'Index',
+    flags.middleAffected && 'Middle',
+  ].filter(Boolean);
+
+  // Palm summary mirrors the precedence used in the classification:
+  // ulnar-only is a meaningfully different finding from "any palm".
+  let palmSummary;
+  if (!flags.palmAffected?.any) {
+    palmSummary = 'No';
+  } else if (flags.palmAffected.confinedToUlnar) {
+    palmSummary = 'Ulnar only';
+  } else {
+    palmSummary = 'Yes';
+  }
 
   return (
     <div className="bg-gray-50 rounded-xl p-6">
@@ -262,30 +284,19 @@ function KatzHandResult({ hand, result, isResultsDetailShown, volarRef, dorsalRe
         </div>
       </div>
 
-      {/* Summary Stats */}
+      {/* Summary Stats — driven by classification flags */}
       {isResultsDetailShown && (
         <div className="text-base space-y-1">
           <p>
             <span className="font-medium">Median digits affected:</span>{' '}
-            {result.KatzScore.coverageBySymptom ?
-              [
-                result.detailedCoverage?.thumb_distal > 5 && 'Thumb',
-                result.detailedCoverage?.index_distal > 5 && 'Index',
-                result.detailedCoverage?.middle_distal > 5 && 'Middle'
-              ].filter(Boolean).join(', ') || 'None'
-              : 'None'}
+            {affectedDigitNames.length > 0 ? affectedDigitNames.join(', ') : 'None'}
           </p>
           <p>
-            <span className="font-medium">Palm involvement:</span>{' '}
-            {result.detailedCoverage?.palm_radial > 5 || result.detailedCoverage?.palm_ulnar > 5
-              ? (result.detailedCoverage?.palm_ulnar > 5 && !(result.detailedCoverage?.palm_radial > 5)
-                  ? 'Ulnar only'
-                  : 'Yes')
-              : 'No'}
+            <span className="font-medium">Palm involvement:</span> {palmSummary}
           </p>
           <p>
             <span className="font-medium">Dorsum:</span>{' '}
-            {result.detailedCoverage?.dorsum > 5 ? 'Yes' : 'No'}
+            {flags.dorsumAffected ? 'Yes' : 'No'}
           </p>
         </div>
       )}
@@ -316,7 +327,7 @@ function KatzHandResult({ hand, result, isResultsDetailShown, volarRef, dorsalRe
                 isDualRegion
               />
               <div>
-                <p className="font-medium text-gray-700 mb-1">Palm & Dorsum</p>
+                <p className="font-medium text-gray-700 mb-1">Palm &amp; Dorsum</p>
                 <div className="text-gray-600 space-y-0.5">
                   <div className="flex justify-between">
                     <span>Palm (Radial):</span>
