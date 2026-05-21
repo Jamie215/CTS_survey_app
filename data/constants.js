@@ -53,3 +53,10 @@ export const KAMATH_COLORS = {
     textDark: 'text-red-800'
   }
 };
+
+/**
+ * Version identifier for the consent text. Bump this whenever the
+ * wording in consentContent.js is materially revised, so REDCap
+ * records carry accurate provenance of which version was shown.
+ */
+export const CONSENT_VERSION = 'v1-draft';

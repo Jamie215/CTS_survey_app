@@ -27,6 +27,7 @@ export default function Results({
   onCloseModal,
   resultsCanvasRefs,
   exportActions,
+  consent,
 }) {
   return (
     <div className="space-y-6">
@@ -67,6 +68,7 @@ export default function Results({
 
       {/* Modal rendered via parent navigation area */}
       {showResultsDetailsModal && (
+        <DataSharingPanel consent={consent} />
         <ResultsModal
           onPatient={() => { onSetResultsDetailShown(false); onCloseModal(); }}
           onClinician={() => { onSetResultsDetailShown(true); onCloseModal(); }}
@@ -395,6 +397,34 @@ function CoverageBlock({ title, coverageBySymptom, region, isDualRegion = false 
           </div>
         );
       })}
+    </div>
+  );
+}
+
+function DataSharingPanel({ consent}) {
+  return (
+    <div className="bg-gray-50 rounded-xl p-6 print-hide">
+      <h3 className="text-lg font-semibold text-gray-800 mb-3">
+        Research data sharing
+      </h3>
+
+      <p className="text-gray-600 mb-4">
+        {consent.dataSharing
+          ? 'You have agreed to share your anonymized responses for research.'
+          : 'You have chosen not to share your responses for research. You can still print or download them for your own records.'}
+      </p>
+
+      <label className="flex items-center gap-3 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={consent.dataSharing}
+          onChange={(e) => consent.updateDataSharing(e.target.checked)}
+          className="w-5 h-5 accent-purple-600"
+        />
+        <span className="text-gray-700">
+          Share my anonymized responses for research
+        </span>
+      </label>
     </div>
   );
 }

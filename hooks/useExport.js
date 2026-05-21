@@ -26,12 +26,19 @@ export function useExport({
   diagramEase,
   diagramComments,
   assessmentResults,
+  consent,
 }) {
   const [showDownloadMenu, setShowDownloadMenu] = useState(false);
 
   const buildExportData = useCallback(() => ({
     participantId,
     timestamp: new Date().toISOString(),
+    consent: {
+      acknowledged: consent.acknowledged,
+      dataSharing: consent.dataSharing,
+      acknowledgedAt: consent.acknowledgedAt,
+      version: consent.version,
+    },
     diagnosticAnswers,
     diagnosticEase,
     diagnosticComments,
@@ -42,7 +49,7 @@ export function useExport({
   }), [
     participantId, diagnosticAnswers, diagnosticEase,
     diagnosticComments, handDiagramData, diagramEase,
-    diagramComments, assessmentResults,
+    diagramComments, assessmentResults, consent,
   ]);
 
   const downloadFile = useCallback((content, filename, mimeType) => {
@@ -85,6 +92,14 @@ export function useExport({
     rows.push(['Diagnostic Comments', data.diagnosticComments]);
     rows.push(['Diagram Ease', data.diagramEase]);
     rows.push(['Diagram Comments', data.diagramComments]);
+    rows.push([]);
+
+    // --- Consent ---
+    rows.push(['--- Consent ---']);
+    rows.push(['Acknowledged', data.consent?.acknowledged ?? '']);
+    rows.push(['Data Sharing', data.consent?.dataSharing ?? '']);
+    rows.push(['Acknowledged At', data.consent?.acknowledgedAt ?? '']);
+    rows.push(['Consent Version', data.consent?.version ?? '']);
     rows.push([]);
 
     if (data.assessmentResults?.kamath) {

@@ -77,6 +77,7 @@ const CTSSurveyApp = () => {
     diagramEase,
     diagramComments,
     assessmentResults,
+    consent,
   });
 
   // ============================================
@@ -211,6 +212,7 @@ const CTSSurveyApp = () => {
             onCloseModal={() => setShowResultsDetailsModal(false)}
             resultsCanvasRefs={resultsCanvasRefs}
             exportActions={exportActions}
+            consent={consent}
           />
         );
       default:
