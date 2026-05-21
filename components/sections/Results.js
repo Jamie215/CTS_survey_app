@@ -113,7 +113,7 @@ function ResultsModal({ onPatient, onClinician }) {
 
 function KamathScoreCard({ kamath, isResultsDetailShown }) {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden results-block">
       <div className="bg-gray-100 px-6 py-4 border-b border-gray-200">
         <h3 className="text-xl font-bold text-gray-800">Likelihood of CTS based on the Questionnaire</h3>
         <p className="text-sm text-gray-600 mt-1">Questionnaire-based assessment adapted from Kamath &amp; Stothard (2003)</p>
@@ -204,7 +204,7 @@ function KamathScoreCard({ kamath, isResultsDetailShown }) {
 
 function KatzScoreCard({ katz, isResultsDetailShown, resultsCanvasRefs }) {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden results-block">
       <div className="bg-gray-100 px-6 py-4 border-b border-gray-200">
         <h3 className="text-xl font-bold text-gray-800">Likelihood of CTS based on the Drawings</h3>
         <p className="text-sm text-gray-600 mt-1">Symptom distribution assessment adapted from Katz et al. (1990)</p>
@@ -266,7 +266,7 @@ function KatzHandResult({ hand, result, isResultsDetailShown, volarRef, dorsalRe
   }
 
   return (
-    <div className="bg-gray-50 rounded-xl p-6">
+    <div className="bg-gray-50 rounded-xl p-6 results-block">
       <h4 className="text-lg font-bold text-gray-800 mb-4 capitalize">{hand} Hand</h4>
 
       <div className={`rounded-lg p-4 mb-4 ${scoreColorClass}`}>
@@ -346,7 +346,7 @@ function KatzHandResult({ hand, result, isResultsDetailShown, volarRef, dorsalRe
                 region="middle"
                 isDualRegion
               />
-              <div>
+              <div className="results-block">
                 <p className="font-medium text-gray-700 mb-1">Palm &amp; Dorsum</p>
                 <div className="text-gray-600 space-y-0.5">
                   <div className="flex justify-between">

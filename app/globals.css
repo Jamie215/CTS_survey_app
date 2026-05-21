@@ -106,7 +106,13 @@
   /* Reset rounded containers for clean page flow */
   .rounded-2xl {
     border-radius: 0 !important;
-    padding: 0 !important;
+    box-shadow: none !important;
+  }
+
+  /* Keep result blocks together across page boundaries */
+  .results-block {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
   }
 
   /* Ensure canvases print at correct proportions */

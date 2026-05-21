@@ -234,7 +234,7 @@ const CTSSurveyApp = () => {
 
       <div className="max-w-4xl mx-auto px-3 sm:px-6 py-4 sm:py-8">
         {/* ── Progress Stepper ── */}
-        <div className="mb-6 sm:mb-8">
+        <div className="mb-6 sm:mb-8 print-hide">
           <div className="flex items-center justify-between px-2 sm:justify-center">
             {sections.map((section, index) => (
               <React.Fragment key={section.id}>
