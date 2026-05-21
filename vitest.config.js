@@ -8,8 +8,8 @@ import { defineConfig } from 'vitest/config';
  * environment is used — fast, no jsdom needed.
  *
  * NOT covered here: the canvas-pixel functions in katzScoring.js
- * (calculateRegionCoverage, calculateCombinedRegionCoverage,
- * analyzeSymptomDistribution) depend on a real <canvas> 2d context and
+ * (calculateRegionCoverage, calculateCombinedRegionCoverage)
+ * depend on a real <canvas> 2d context and
  * are out of scope for unit tests — they are verified via the manual
  * scoring-verification pass instead.
  */
