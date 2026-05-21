@@ -22,7 +22,7 @@ import DiagnosticQuestions from './sections/DiagnosticQuestions';
 import HandDiagrams from './sections/HandDiagrams';
 import Results, { ResultsExportControls } from './sections/Results';
 
-const CTSSurveyApp = () => {
+const CTSSurveyApp = ({ consent }) => {
   // ============================================
   // STATE
   // ============================================

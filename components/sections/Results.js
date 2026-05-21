@@ -66,9 +66,11 @@ export default function Results({
         />
       )}
 
+      {/* Research data sharing */}
+      <DataSharingPanel consent={consent} />
+
       {/* Modal rendered via parent navigation area */}
       {showResultsDetailsModal && (
-        <DataSharingPanel consent={consent} />
         <ResultsModal
           onPatient={() => { onSetResultsDetailShown(false); onCloseModal(); }}
           onClinician={() => { onSetResultsDetailShown(true); onCloseModal(); }}
