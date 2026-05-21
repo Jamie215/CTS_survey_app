@@ -5,6 +5,7 @@ import { AlertCircle, ChartBarBig, Download, ChevronsUp, ChevronRight, Printer }
 import { CANVAS_WIDTH, CANVAS_HEIGHT, KAMATH_COLORS } from '../../data/constants';
 import { diagnosticQuestions } from '../../data/diagnosticQuestions';
 import { KAMATH_BANDS } from '../../lib/kamathScoring';
+import Modal from '../Modal';
 
 /**
  * Results section - displays Kamath-based and Katz-based scoring results.
