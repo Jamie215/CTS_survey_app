@@ -60,7 +60,7 @@ const CTSSurveyApp = ({ consent }) => {
     handleCanvasPointerMove,
     handleCanvasPointerUp,
     handleClearCanvas,
-  } = useCanvasDrawing(false, currentSection);
+  } = useCanvasDrawing(currentSection);
 
   const { isTourActive, handleHelpClick } = useTour(currentSection, isClient, hasNumbnessOrTingling);
 

@@ -1,28 +1,21 @@
 "use client"
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../data/constants';
 
 /**
  * Shared canvas component for hand diagram drawing.
- * Eliminates the repeated canvas + clear button pattern.
  *
- * Canvas display size is responsive: fills available width up to
- * maxWidth, with height maintained via aspect-ratio. The internal canvas
- * resolution (CANVAS_WIDTH x CANVAS_HEIGHT) remains fixed, and
- * getEventCoordinates() uses getBoundingClientRect() so coordinate
- * scaling is handled automatically regardless of display size.
+ * Touch listeners are attached imperatively with { passive: false } so
+ * that preventDefault() actually fires. React's synthetic touch
+ * listeners on the document root are passive by default in modern
+ * browsers (Chrome 56+, etc.), which means an inline
+ * onTouchStart={(e) => e.preventDefault()} is silently ignored and
+ * logs the "Unable to preventDefault inside passive event listener"
+ * warning. The CSS touch-action: none on the canvas prevents some
+ * gestures, but JS-level prevention has to be wired up directly.
  *
- * @param {Object} props
- * @param {string} props.id - HTML id for tour targeting
- * @param {string} props.canvasKey - Key in handDiagramData
- * @param {string} props.label - e.g. "Left Hand" or "Right Hand"
- * @param {React.RefObject} props.canvasRef
- * @param {Function} props.onPointerDown
- * @param {Function} props.onPointerMove
- * @param {Function} props.onPointerUp
- * @param {Function} props.onClear
- * @param {string} [props.maxWidth] - Maximum CSS display width (default '200px')
+ * Mouse listeners stay on the JSX since they don't have this issue.
  */
 export default function HandDiagramCanvas({
   id,
@@ -36,6 +29,45 @@ export default function HandDiagramCanvas({
   onClear,
   maxWidth = '200px',
 }) {
+  // Stash the latest handlers in refs so the effect below can read the
+  // current values without having to re-bind the listeners on every
+  // render (which would also re-trigger the warning).
+  const handlersRef = useRef({ onPointerDown, onPointerMove, onPointerUp });
+  handlersRef.current = { onPointerDown, onPointerMove, onPointerUp };
+
+  useEffect(() => {
+    const canvas = canvasRef?.current;
+    if (!canvas) return;
+
+    const handleTouchStart = (e) => {
+      e.preventDefault();
+      handlersRef.current.onPointerDown(e, canvasKey);
+    };
+    const handleTouchMove = (e) => {
+      e.preventDefault();
+      handlersRef.current.onPointerMove(e, canvasKey);
+    };
+    const handleTouchEnd = (e) => {
+      e.preventDefault();
+      handlersRef.current.onPointerUp(e, canvasKey);
+    };
+
+    // passive: false is the whole point — without it, preventDefault()
+    // is a no-op and the browser scrolls/zooms during drawing.
+    const opts = { passive: false };
+    canvas.addEventListener('touchstart', handleTouchStart, opts);
+    canvas.addEventListener('touchmove', handleTouchMove, opts);
+    canvas.addEventListener('touchend', handleTouchEnd, opts);
+    canvas.addEventListener('touchcancel', handleTouchEnd, opts);
+
+    return () => {
+      canvas.removeEventListener('touchstart', handleTouchStart, opts);
+      canvas.removeEventListener('touchmove', handleTouchMove, opts);
+      canvas.removeEventListener('touchend', handleTouchEnd, opts);
+      canvas.removeEventListener('touchcancel', handleTouchEnd, opts);
+    };
+  }, [canvasRef, canvasKey]);
+
   return (
     <div className="text-center w-full sm:w-auto">
       <p className="mb-2 text-lg font-medium text-gray-700">{label}</p>
@@ -56,9 +88,6 @@ export default function HandDiagramCanvas({
         onMouseMove={(e) => onPointerMove(e, canvasKey)}
         onMouseUp={(e) => onPointerUp(e, canvasKey)}
         onMouseLeave={(e) => onPointerUp(e, canvasKey)}
-        onTouchStart={(e) => { e.preventDefault(); onPointerDown(e, canvasKey); }}
-        onTouchMove={(e) => { e.preventDefault(); onPointerMove(e, canvasKey); }}
-        onTouchEnd={(e) => { e.preventDefault(); onPointerUp(e, canvasKey); }}
       />
       <button
         id={`clear-btn-${canvasKey}`}

@@ -12,7 +12,7 @@ import {
   loadSVGRegions,
 } from '../lib/canvasUtils';
 
-export function useCanvasDrawing(isTourActive, currentSection) {
+export function useCanvasDrawing(currentSection) {
   const [handDiagramData, setHandDiagramData] = useState({});
   const [svgRegions, setSvgRegions] = useState({
     leftFront: {}, rightFront: {}, leftBack: {}, rightBack: {},
@@ -132,8 +132,7 @@ export function useCanvasDrawing(isTourActive, currentSection) {
   // ─── Event handlers ──────────────────────────────────────────────
 
   const handleCanvasPointerDown = useCallback((e, canvasKey) => {
-    if (isTourActive) return;
-    e.preventDefault();
+    if (e.cancelable) e.preventDefault();
 
     const ref = canvasRefs[canvasKey];
     const canvas = ref?.current;
@@ -153,12 +152,11 @@ export function useCanvasDrawing(isTourActive, currentSection) {
     ctx.beginPath();
     ctx.arc(x, y, 6, 0, Math.PI * 2);
     ctx.fill();
-  }, [isTourActive, canvasRefs]);
+  }, [canvasRefs]);
 
   const handleCanvasPointerMove = useCallback((e, canvasKey) => {
-    if (isTourActive) return;
     if (!isDrawingRef.current || currentCanvasKeyRef.current !== canvasKey) return;
-    e.preventDefault();
+    if (e.cancelable) e.preventDefault();
 
     const ref = canvasRefs[canvasKey];
     const canvas = ref?.current;
@@ -182,11 +180,11 @@ export function useCanvasDrawing(isTourActive, currentSection) {
     }
 
     activeStrokeRef.current.push({ type: 'draw', x, y });
-  }, [isTourActive, canvasRefs]);
+  }, [canvasRefs]);
 
   const handleCanvasPointerUp = useCallback((e, canvasKey) => {
     if (!isDrawingRef.current || currentCanvasKeyRef.current !== canvasKey) return;
-    e.preventDefault();
+    if (e.cancelable) e.preventDefault();
 
     activeStrokeRef.current.push({ type: 'end' });
 
