@@ -1,6 +1,6 @@
 "use client"
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { AlertCircle, ChartBarBig, Download, ChevronsUp, ChevronRight, Printer } from 'lucide-react';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, KAMATH_COLORS } from '../../data/constants';
 import { diagnosticQuestions } from '../../data/diagnosticQuestions';
@@ -436,8 +436,40 @@ function DataSharingPanel({ consent}) {
  * Separated to keep the navigation area clean.
  */
 export function ResultsExportControls({ exportActions }) {
-  const { showDownloadMenu, handleExportJSON, handleExportCSV, handlePrint, handleToggleDownloadMenu } = exportActions;
+  const { showDownloadMenu, handleExportJSON, handleExportCSV, handlePrint, handleToggleDownloadMenu, handleCloseDownloadMenu } = exportActions;
 
+  const menuContainerRef = useRef(null);
+  const menuId = 'results-download-menu';
+
+  // Close on outside click or Escape, only while open.
+  useEffect(() => {
+    if (!showDownloadMenu) return;
+
+    const handlePointerDown = (e) => {
+      if (
+        menuContainerRef.current &&
+        !menuContainerRef.current.contains(e.target)
+      ) {
+        handleCloseDownloadMenu();
+      }
+    };
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        handleCloseDownloadMenu();
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('touchstart', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('touchstart', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showDownloadMenu, handleCloseDownloadMenu]);
+  
   const handleScrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -455,31 +487,49 @@ export function ResultsExportControls({ exportActions }) {
       </button>
 
       {/* Download dropdown */}
-      <div className="relative print-hide">
+      <div className="relative print-hide" ref={menuContainerRef}>
         <button
           onClick={handleToggleDownloadMenu}
+          aria-haspopup="menu"
+          aria-expanded={showDownloadMenu}
+          aria-controls={menuId}
           className="flex items-center gap-2 px-4 sm:px-6 py-3 rounded-lg text-lg font-semibold bg-purple-600 text-white hover:bg-purple-700 transition-colors"
         >
           <Download className="w-5 h-5" />
           <span className="hidden sm:inline">Download Results</span>
           <span className="sm:hidden">Download</span>
-          <ChevronRight className={`w-4 h-4 transition-transform ${showDownloadMenu ? 'rotate-90' : ''}`} />
+          <ChevronRight
+            className={`w-4 h-4 transition-transform ${showDownloadMenu ? 'rotate-90' : ''}`}
+            aria-hidden="true"
+          />
         </button>
+
         {showDownloadMenu && (
-          <div className="absolute bottom-full mb-2 left-0 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden min-w-[200px]">
+          <div
+            id={menuId}
+            role="menu"
+            aria-label="Download format"
+            className="absolute bottom-full mb-2 left-0 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden min-w-[240px]"
+          >
             <button
+              role="menuitem"
               onClick={handleExportJSON}
-              className="w-full px-4 py-3 text-left text-gray-700 hover:bg-purple-50 hover:text-purple-700 transition-colors flex items-center gap-2"
+              className="w-full px-4 py-3 text-left text-gray-700 hover:bg-purple-50 hover:text-purple-700 transition-colors flex flex-col gap-0.5"
             >
-              <span className="font-medium">JSON</span>
-              <span className="text-sm text-gray-500">(.json)</span>
+              <span className="font-medium">JSON — full record</span>
+              <span className="text-sm text-gray-500">
+                Includes raw stroke data (.json)
+              </span>
             </button>
             <button
+              role="menuitem"
               onClick={handleExportCSV}
-              className="w-full px-4 py-3 text-left text-gray-700 hover:bg-purple-50 hover:text-purple-700 transition-colors flex items-center gap-2 border-t border-gray-100 print-hide"
+              className="w-full px-4 py-3 text-left text-gray-700 hover:bg-purple-50 hover:text-purple-700 transition-colors flex flex-col gap-0.5 border-t border-gray-100"
             >
               <span className="font-medium">CSV</span>
-              <span className="text-sm text-gray-500">(.csv)</span>
+              <span className="text-sm text-gray-500">
+                Flat tabular export (.csv)
+              </span>
             </button>
           </div>
         )}

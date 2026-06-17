@@ -1,3 +1,5 @@
+// hooks/useCanvasDrawing.js
+
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from 'react';
@@ -13,10 +15,7 @@ import {
 export function useCanvasDrawing(isTourActive, currentSection) {
   const [handDiagramData, setHandDiagramData] = useState({});
   const [svgRegions, setSvgRegions] = useState({
-    leftFront: {},
-    rightFront: {},
-    leftBack: {},
-    rightBack: {}
+    leftFront: {}, rightFront: {}, leftBack: {}, rightBack: {},
   });
   const [svgLoadError, setSvgLoadError] = useState(null);
   const [isClient, setIsClient] = useState(false);
@@ -26,24 +25,27 @@ export function useCanvasDrawing(isTourActive, currentSection) {
   const currentCanvasKeyRef = useRef(null);
   const activeStrokeRef = useRef([]);
 
+  // Lazy-init stable container of canvas refs. Doing this once means
+  // identity is stable across renders, which is what lets us safely
+  // list `canvasRefs` in useCallback/useEffect dep arrays without
+  // retriggering.
   const canvasRefsContainer = useRef(null);
   if (canvasRefsContainer.current === null) {
     canvasRefsContainer.current = {
-        painFrontLeft:     { current: null },
-        painFrontRight:    { current: null },
-        painBackLeft:      { current: null },
-        painBackRight:     { current: null },
-        tinglingFrontLeft: { current: null },
-        tinglingFrontRight:{ current: null },
-        tinglingBackLeft:  { current: null },
-        tinglingBackRight: { current: null },
-        numbnessFrontLeft: { current: null },
-        numbnessFrontRight:{ current: null },
-        numbnessBackLeft:  { current: null },
-        numbnessBackRight: { current: null },
+      painFrontLeft:     { current: null },
+      painFrontRight:    { current: null },
+      painBackLeft:      { current: null },
+      painBackRight:     { current: null },
+      tinglingFrontLeft: { current: null },
+      tinglingFrontRight:{ current: null },
+      tinglingBackLeft:  { current: null },
+      tinglingBackRight: { current: null },
+      numbnessFrontLeft: { current: null },
+      numbnessFrontRight:{ current: null },
+      numbnessBackLeft:  { current: null },
+      numbnessBackRight: { current: null },
     };
   }
-  // Canvas refs
   const canvasRefs = canvasRefsContainer.current;
 
   const resultsCanvasRefsContainer = useRef(null);
@@ -57,28 +59,38 @@ export function useCanvasDrawing(isTourActive, currentSection) {
   }
   const resultsCanvasRefs = resultsCanvasRefsContainer.current;
 
+  // Latest-ref pattern for handDiagramData. The section-change effect
+  // below needs the *current* drawing state when it fires, but we
+  // don't want it to refire every time a stroke is committed (which
+  // would wipe and redraw the canvas mid-interaction).
+  const handDiagramDataRef = useRef(handDiagramData);
+  useEffect(() => {
+    handDiagramDataRef.current = handDiagramData;
+  }, [handDiagramData]);
+
   // Client-side init
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  // Reusable loader — exposed for the retry button as well
+  // Reusable SVG region loader — also exposed for the retry button.
   const retryLoadSVGRegions = useCallback(() => {
     setSvgLoadError(null);
     loadSVGRegions()
-      .then(regions => {
+      .then((regions) => {
         setSvgRegions(regions);
-        setTimeout(() => {
-          Object.entries(canvasRefs).forEach(([key, ref]) => {
-            if (ref.current) {
-              const isLeft = key.includes('Left');
-              const isBack = key.includes('Back');
-              drawHandOutline(ref.current, isLeft, isBack);
-            }
-          });
-        }, 100);
+        // Repaint any currently mounted canvases. Outlines are PNG-
+        // based and unrelated to SVG regions, but if the user is on
+        // section 1 when the load completes, this gives them a fresh
+        // background to draw on.
+        Object.entries(canvasRefs).forEach(([key, ref]) => {
+          if (!ref.current) return;
+          const isLeft = key.includes('Left');
+          const isBack = key.includes('Back');
+          drawHandOutline(ref.current, isLeft, isBack);
+        });
       })
-      .catch(error => {
+      .catch((error) => {
         console.error('Error loading SVG regions:', error);
         setSvgLoadError(error?.message || 'Failed to load hand diagram regions.');
       });
@@ -89,40 +101,35 @@ export function useCanvasDrawing(isTourActive, currentSection) {
     retryLoadSVGRegions();
   }, [isClient, retryLoadSVGRegions]);
 
-  // Init canvases on mount
+  // Reinit canvases when navigating to the hand diagram section. Draws
+  // the outline first, then replays any existing strokes on top once
+  // the outline image has actually painted (#11).
   useEffect(() => {
+    if (!isClient) return;
+    if (currentSection !== 1) return;
+
+    let cancelled = false;
+
     Object.entries(canvasRefs).forEach(([key, ref]) => {
-      if (ref.current) {
-        const isLeft = key.includes('Left');
-        const isBack = key.includes('Back');
-        drawHandOutline(ref.current, isLeft, isBack);
-      }
+      if (!ref.current) return;
+      const isLeft = key.includes('Left');
+      const isBack = key.includes('Back');
+      const existingData = handDiagramDataRef.current[key];
+
+      drawHandOutline(ref.current, isLeft, isBack).then(() => {
+        if (cancelled) return;
+        if (existingData && existingData.length > 0) {
+          redrawStrokes(ref.current, existingData, getSymptomType(key));
+        }
+      });
     });
-  }, [isClient]);
 
-  // Reinit canvases when navigating to hand diagram section
-  useEffect(() => {
-    if (currentSection === 1) {
-      const timer = setTimeout(() => {
-        Object.entries(canvasRefs).forEach(([key, ref]) => {
-          if (ref.current) {
-            const isLeft = key.includes('Left');
-            const isBack = key.includes('Back');
-            const existingData = handDiagramData[key];
-            drawHandOutline(ref.current, isLeft, isBack);
-            if (existingData && existingData.length > 0) {
-              setTimeout(() => {
-                redrawStrokes(ref.current, existingData, getSymptomType(key));
-              }, 150);
-            }
-          }
-        });
-      }, 50);
-      return () => clearTimeout(timer);
-    }
-  }, [currentSection]);
+    return () => {
+      cancelled = true;
+    };
+  }, [currentSection, isClient, canvasRefs]);
 
-  // --- Event handlers (item #6: consistent handleX naming) ---
+  // ─── Event handlers ──────────────────────────────────────────────
 
   const handleCanvasPointerDown = useCallback((e, canvasKey) => {
     if (isTourActive) return;
@@ -146,7 +153,7 @@ export function useCanvasDrawing(isTourActive, currentSection) {
     ctx.beginPath();
     ctx.arc(x, y, 6, 0, Math.PI * 2);
     ctx.fill();
-  }, [isTourActive]);
+  }, [isTourActive, canvasRefs]);
 
   const handleCanvasPointerMove = useCallback((e, canvasKey) => {
     if (isTourActive) return;
@@ -175,7 +182,7 @@ export function useCanvasDrawing(isTourActive, currentSection) {
     }
 
     activeStrokeRef.current.push({ type: 'draw', x, y });
-  }, [isTourActive]);
+  }, [isTourActive, canvasRefs]);
 
   const handleCanvasPointerUp = useCallback((e, canvasKey) => {
     if (!isDrawingRef.current || currentCanvasKeyRef.current !== canvasKey) return;
@@ -183,11 +190,10 @@ export function useCanvasDrawing(isTourActive, currentSection) {
 
     activeStrokeRef.current.push({ type: 'end' });
 
-    // Commit accumulated stroke to state only on pointer up (#5)
     const committedPoints = [...activeStrokeRef.current];
-    setHandDiagramData(prev => ({
+    setHandDiagramData((prev) => ({
       ...prev,
-      [canvasKey]: [...(prev[canvasKey] || []), ...committedPoints]
+      [canvasKey]: [...(prev[canvasKey] || []), ...committedPoints],
     }));
 
     isDrawingRef.current = false;
@@ -198,13 +204,12 @@ export function useCanvasDrawing(isTourActive, currentSection) {
   const handleClearCanvas = useCallback((canvasKey) => {
     const ref = canvasRefs[canvasKey];
     const canvas = ref?.current;
-    if (canvas) {
-      const isLeft = canvasKey.includes('Left');
-      const isBack = canvasKey.includes('Back');
-      drawHandOutline(canvas, isLeft, isBack);
-      setHandDiagramData(prev => ({ ...prev, [canvasKey]: [] }));
-    }
-  }, []);
+    if (!canvas) return;
+    const isLeft = canvasKey.includes('Left');
+    const isBack = canvasKey.includes('Back');
+    drawHandOutline(canvas, isLeft, isBack);
+    setHandDiagramData((prev) => ({ ...prev, [canvasKey]: [] }));
+  }, [canvasRefs]);
 
   return {
     isClient,

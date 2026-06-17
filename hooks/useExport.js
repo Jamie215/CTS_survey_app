@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { diagnosticQuestions } from '../data/diagnosticQuestions';
+import { captureHandDiagrams } from '../lib/canvasUtils';
 
 /**
  * Custom hook for building export data and downloading results.
@@ -22,7 +23,7 @@ export function useExport({
   diagnosticAnswers,
   diagnosticEase,
   diagnosticComments,
-  handDiagramData,
+  handDiagramImages,
   diagramEase,
   diagramComments,
   assessmentResults,
@@ -30,7 +31,7 @@ export function useExport({
 }) {
   const [showDownloadMenu, setShowDownloadMenu] = useState(false);
 
-  const buildExportData = useCallback(() => ({
+  const buildExportData = useCallback(async () => ({
     participantId,
     timestamp: new Date().toISOString(),
     consent: {
@@ -42,13 +43,13 @@ export function useExport({
     diagnosticAnswers,
     diagnosticEase,
     diagnosticComments,
-    handDiagramData,
+    handDiagramImages,
     diagramEase,
     diagramComments,
     assessmentResults,
   }), [
     participantId, diagnosticAnswers, diagnosticEase,
-    diagnosticComments, handDiagramData, diagramEase,
+    diagnosticComments, handDiagramImages, diagramEase,
     diagramComments, assessmentResults, consent,
   ]);
 
@@ -72,8 +73,8 @@ export function useExport({
     );
   }, [buildExportData, downloadFile, participantId]);
 
-  const handleExportCSV = useCallback(() => {
-    const data = buildExportData();
+  const handleExportCSV = useCallback(async () => {
+    const data = await buildExportData();
     const rows = [];
 
     rows.push(['Participant ID', data.participantId]);
@@ -126,9 +127,9 @@ export function useExport({
       });
     }
 
-    rows.push(['--- Hand Diagram Data ---']);
-    Object.entries(data.handDiagramData).forEach(([canvasKey, points]) => {
-      rows.push([canvasKey, `${(points || []).length} data points`]);
+    rows.push(['--- Hand Diagram Images ---']);
+    Object.entries(data.handDiagramImages).forEach(([key, dataUrl]) => {
+      rows.push([key, dataUrl ? 'captured' : 'empty']);
     });
 
     const csvContent = rows.map(row =>
@@ -151,11 +152,16 @@ export function useExport({
     setShowDownloadMenu(prev => !prev);
   }, []);
 
+  const handleCloseDownloadMenu = useCallback(() => {
+    setShowDownloadMenu(false);
+  }, []);
+
   return {
     showDownloadMenu,
     handleExportJSON,
     handleExportCSV,
     handlePrint,
     handleToggleDownloadMenu,
+    handleCloseDownloadMenu,
   };
 }
