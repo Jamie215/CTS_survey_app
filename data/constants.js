@@ -60,3 +60,12 @@ export const KAMATH_COLORS = {
  * records carry accurate provenance of which version was shown.
  */
 export const CONSENT_VERSION = 'v1-draft';
+
+/**
+ * Idle session timeout. After IDLE_TIMEOUT_MS of no input, a warning
+ * modal appears with a IDLE_WARNING_MS countdown before the session
+ * resets. Designed for kiosk deployment where participants may leave
+ * the tab open between users.
+ */
+export const IDLE_TIMEOUT_MS = 10 * 60 * 1000;  // 10 minutes
+export const IDLE_WARNING_MS = 60 * 1000;        // 60 seconds

@@ -1,17 +1,18 @@
 "use client"
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
 
 // Data
 import { diagnosticQuestions } from '../data/diagnosticQuestions';
-import { sections } from '../data/constants';
+import { sections, IDLE_TIMEOUT_MS, IDLE_WARNING_MS } from '../data/constants';
 
 // Hooks
 import { useCanvasDrawing } from '../hooks/useCanvasDrawing';
 import { useTour } from '../hooks/useTour';
 import { useScoring } from '../hooks/useScoring';
 import { useExport } from '../hooks/useExport';
+import { useIdleTimeout } from '../hooks/useIdleTimeout';
 
 // Canvas utilities
 import { drawSymptomsOnCanvas, hasAnyDrawings } from '../lib/canvasUtils';
@@ -21,6 +22,7 @@ import EmptyDiagramConfirmModal from './EmptyDiagramConfirmModal';
 import DiagnosticQuestions from './sections/DiagnosticQuestions';
 import HandDiagrams from './sections/HandDiagrams';
 import Results, { ResultsExportControls } from './sections/Results';
+import IdleWarningModal from './IdleWarningModal';
 
 const CTSSurveyApp = ({ consent }) => {
   // ============================================
@@ -146,6 +148,17 @@ const CTSSurveyApp = ({ consent }) => {
   const handleAnswerChange = (questionId, value) => {
     setDiagnosticAnswers(prev => ({ ...prev, [questionId]: value }));
   };
+
+  const handleSessionReset = useCallback(() => {
+    window.location.reload();
+  }, []);
+
+  const { showWarning: showIdleWarning, secondsRemaining, dismissWarning } =
+    useIdleTimeout({
+      idleMs: IDLE_TIMEOUT_MS,
+      warningMs: IDLE_WARNING_MS,
+      onTimeout: handleSessionReset,
+    });
 
   const handleConfirmEmptyDiagram = () => {
     setShowEmptyDiagramModal(false);
@@ -319,6 +332,13 @@ const CTSSurveyApp = ({ consent }) => {
         <EmptyDiagramConfirmModal
           onCancel={() => setShowEmptyDiagramModal(false)}
           onConfirm={handleConfirmEmptyDiagram}
+        />
+      )}
+      {showIdleWarning && (
+        <IdleWarningModal
+          secondsRemaining={secondsRemaining}
+          onDismiss={dismissWarning}
+          onEndNow={handleSessionReset}
         />
       )}
     </div>
