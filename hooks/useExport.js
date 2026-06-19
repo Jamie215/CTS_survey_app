@@ -84,7 +84,7 @@ export function useExport({
     rows.push(['--- Diagnostic Answers ---']);
     Object.entries(data.diagnosticAnswers).forEach(([qId, answer]) => {
       const question = diagnosticQuestions.find(q => q.id === Number(qId));
-      const label = question ? question.text : qId;
+      const label = question.text;
       rows.push([label, Array.isArray(answer) ? answer.join('; ') : answer]);
     });
     rows.push([]);
@@ -98,7 +98,6 @@ export function useExport({
     // --- Consent ---
     rows.push(['--- Consent ---']);
     rows.push(['Acknowledged', data.consent?.acknowledged ?? '']);
-    rows.push(['Data Sharing', data.consent?.dataSharing ?? '']);
     rows.push(['Acknowledged At', data.consent?.acknowledgedAt ?? '']);
     rows.push(['Consent Version', data.consent?.version ?? '']);
     rows.push([]);
@@ -106,8 +105,6 @@ export function useExport({
     if (data.assessmentResults?.kamath) {
       rows.push(['--- Kamath Score ---']);
       rows.push(['Total Score', data.assessmentResults.kamath.totalScore]);
-      rows.push(['Max Possible', data.assessmentResults.kamath.maxPossible]);
-      rows.push(['Percentage', data.assessmentResults.kamath.percentage]);
       rows.push(['Classification', data.assessmentResults.kamath.classification]);
       rows.push([]);
     }
@@ -117,7 +114,7 @@ export function useExport({
       Object.entries(data.assessmentResults.katz).forEach(([hand, result]) => {
         rows.push([`Hand: ${hand}`]);
         rows.push(['Classification', result.KatzScore?.classification]);
-        rows.push(['Classic Pattern Score', result.KatzScore?.classicPatternScore]);
+        rows.push(['Classic Pattern Score', result.KatzScore?.score]);
         if (result.detailedCoverage) {
           Object.entries(result.detailedCoverage).forEach(([region, value]) => {
             rows.push([`Coverage - ${region}`, typeof value === 'number' ? value.toFixed(2) : value]);
@@ -126,11 +123,6 @@ export function useExport({
         rows.push([]);
       });
     }
-
-    rows.push(['--- Hand Diagram Images ---']);
-    Object.entries(data.handDiagramImages).forEach(([key, dataUrl]) => {
-      rows.push([key, dataUrl ? 'captured' : 'empty']);
-    });
 
     const csvContent = rows.map(row =>
       row.map(cell => {
