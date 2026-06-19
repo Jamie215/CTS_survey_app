@@ -10,7 +10,7 @@ import { SOME_THRESHOLD, HALF_THRESHOLD } from '../data/constants';
  * calculateCombinedRegionCoverage) requires a real canvas and is
  * covered by manual verification rather than unit tests.
  *
- * SOME_THRESHOLD = 5, HALF_THRESHOLD = 50 — these tests assume
+ * SOME_THRESHOLD, HALF_THRESHOLD — these tests assume
  * those values; if they're tuned, the threshold-boundary tests
  * below will need to follow.
  */

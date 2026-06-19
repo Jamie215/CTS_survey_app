@@ -335,18 +335,18 @@ function KatzHandResult({ hand, result, isResultsDetailShown, volarRef, dorsalRe
           <div className="mt-3 bg-white rounded-lg p-4 border border-gray-200">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-base">
               <CoverageBlock
-                title="Thumb (Distal)"
+                title="Thumb - Distal"
                 coverageBySymptom={result.KatzScore.coverageBySymptom}
                 region="thumb_distal"
               />
               <CoverageBlock
-                title="Index (Distal/Middle)"
+                title="Index - Distal/Middle"
                 coverageBySymptom={result.KatzScore.coverageBySymptom}
                 region="index"
                 isDualRegion
               />
               <CoverageBlock
-                title="Middle (Distal/Middle)"
+                title="Middle - Distal/Middle"
                 coverageBySymptom={result.KatzScore.coverageBySymptom}
                 region="middle"
                 isDualRegion
