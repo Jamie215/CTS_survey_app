@@ -14,7 +14,6 @@ import {
 
 /**
  * Custom hook for managing driver.js guided tours.
- * Replaces the old CDN-based window.driver pattern with npm imports.
  *
  * @param {number} currentSection
  * @param {boolean} isClient
@@ -25,6 +24,18 @@ export function useTour(currentSection, isClient, hasNumbnessOrTingling) {
   const [isTourActive, setIsTourActive] = useState(false);
   const driverRef = useRef(null);
 
+  // Latest-ref for hasNumbnessOrTingling so handleStartHandDiagramTour
+  // keeps a stable identity across renders. Without this, answering Q1
+  // would flip the handler's identity, re-run the section-trigger
+  // effect below, and the effect's cleanup would tear down the active
+  // questions highlight under the user. Matches the pattern used in
+  // useIdleTimeout (showWarningRef) and useCanvasDrawing
+  // (handDiagramDataRef).
+  const hasNumbnessOrTinglingRef = useRef(hasNumbnessOrTingling);
+  useEffect(() => {
+    hasNumbnessOrTinglingRef.current = hasNumbnessOrTingling;
+  }, [hasNumbnessOrTingling]);
+
   // Clear tour history on page refresh (session-only tours)
   useEffect(() => {
     if (!isClient) return;
@@ -32,25 +43,12 @@ export function useTour(currentSection, isClient, hasNumbnessOrTingling) {
     localStorage.removeItem('cts-survey-tour-completed-handDiagram');
   }, [isClient]);
 
-  // Trigger tours based on current section
-  useEffect(() => {
-    if (!isClient) return;
-
-    const timer = setTimeout(() => {
-      if (currentSection === 0 && !hasTourBeenCompleted('questions')) {
-        handleStartHighlight();
-      } else if (currentSection === 1 && !hasTourBeenCompleted('handDiagram')) {
-        handleStartHandDiagramTour();
-      }
-    }, 500);
-
-    return () => {
-      clearTimeout(timer);
-      if (driverRef.current) {
-        driverRef.current.destroy();
-      }
-    };
-  }, [currentSection, isClient]);
+  // ── Tour handlers ─────────────────────────────────────────────────
+  // Declared before the section-trigger effect that calls them so the
+  // control flow reads top-to-bottom. Both handlers have empty
+  // dependency arrays — their identities are stable for the lifetime
+  // of the hook, which is what keeps the section-trigger effect from
+  // re-running on every parent render.
 
   const handleStartHighlight = useCallback(() => {
     const element = document.querySelector(questionsHighlightConfig.element);
@@ -73,7 +71,7 @@ export function useTour(currentSection, isClient, hasNumbnessOrTingling) {
   }, []);
 
   const handleStartHandDiagramTour = useCallback(() => {
-    const steps = getHandDiagramTourSteps(hasNumbnessOrTingling);
+    const steps = getHandDiagramTourSteps(hasNumbnessOrTinglingRef.current);
 
     const allElementsExist = steps.every(step => {
       const exists = document.querySelector(step.element);
@@ -108,7 +106,7 @@ export function useTour(currentSection, isClient, hasNumbnessOrTingling) {
     });
 
     driverRef.current.drive();
-  }, [hasNumbnessOrTingling]);
+  }, []);
 
   const handleHelpClick = useCallback(() => {
     if (currentSection === 1) {
@@ -116,6 +114,28 @@ export function useTour(currentSection, isClient, hasNumbnessOrTingling) {
       handleStartHandDiagramTour();
     }
   }, [currentSection, handleStartHandDiagramTour]);
+
+  // Trigger tours based on current section. Effective deps reduce to
+  // [currentSection, isClient] because both handlers are stable; the
+  // exhaustive-deps rule still wants them listed.
+  useEffect(() => {
+    if (!isClient) return;
+
+    const timer = setTimeout(() => {
+      if (currentSection === 0 && !hasTourBeenCompleted('questions')) {
+        handleStartHighlight();
+      } else if (currentSection === 1 && !hasTourBeenCompleted('handDiagram')) {
+        handleStartHandDiagramTour();
+      }
+    }, 500);
+
+    return () => {
+      clearTimeout(timer);
+      if (driverRef.current) {
+        driverRef.current.destroy();
+      }
+    };
+  }, [currentSection, isClient, handleStartHighlight, handleStartHandDiagramTour]);
 
   return {
     isTourActive,

@@ -32,7 +32,7 @@ export function useScoring(diagnosticAnswers, hasNumbnessOrTingling, svgRegions,
         medianDigitsAffected: symptoms.medianDigitsAffected,
         palmAffected: symptoms.palmAffected,
         dorsumAffected: symptoms.dorsumAffected,
-        wristAffected: symptoms.wristAffected,
+        wristAffected: symptoms.wristAffected, // wrist flag does not affect our assessment result but may be useful for future analysis
       },
     };
   }, [svgRegions, handDiagramData]);

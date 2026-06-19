@@ -23,7 +23,7 @@ export function useExport({
   diagnosticAnswers,
   diagnosticEase,
   diagnosticComments,
-  handDiagramImages,
+  handDiagramData,
   diagramEase,
   diagramComments,
   assessmentResults,
@@ -43,13 +43,13 @@ export function useExport({
     diagnosticAnswers,
     diagnosticEase,
     diagnosticComments,
-    handDiagramImages,
+    handDiagramImages: await captureHandDiagrams(handDiagramData),
     diagramEase,
     diagramComments,
     assessmentResults,
   }), [
     participantId, diagnosticAnswers, diagnosticEase,
-    diagnosticComments, handDiagramImages, diagramEase,
+    diagnosticComments, handDiagramData, diagramEase,
     diagramComments, assessmentResults, consent,
   ]);
 
@@ -64,8 +64,8 @@ export function useExport({
     setShowDownloadMenu(false);
   }, []);
 
-  const handleExportJSON = useCallback(() => {
-    const data = buildExportData();
+  const handleExportJSON = useCallback(async () => {
+    const data = await buildExportData();
     downloadFile(
       JSON.stringify(data, null, 2),
       `${participantId}_results.json`,
@@ -83,7 +83,7 @@ export function useExport({
 
     rows.push(['--- Diagnostic Answers ---']);
     Object.entries(data.diagnosticAnswers).forEach(([qId, answer]) => {
-      const question = diagnosticQuestions.find(q => q.id === qId);
+      const question = diagnosticQuestions.find(q => q.id === Number(qId));
       const label = question ? question.text : qId;
       rows.push([label, Array.isArray(answer) ? answer.join('; ') : answer]);
     });

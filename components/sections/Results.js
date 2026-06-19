@@ -403,7 +403,7 @@ function CoverageBlock({ title, coverageBySymptom, region, isDualRegion = false 
   );
 }
 
-function DataSharingPanel({ consent}) {
+function DataSharingPanel({ consent }) {
   return (
     <div className="bg-gray-50 rounded-xl p-6 print-hide">
       <h3 className="text-lg font-semibold text-gray-800 mb-3">

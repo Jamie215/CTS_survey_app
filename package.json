@@ -8,8 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
-    "test:watch": "vitest",
-    "export": "next build"
+    "test:watch": "vitest"
   },
   "dependencies": {
     "driver.js": "^1.3.1",
