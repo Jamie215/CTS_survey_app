@@ -22,10 +22,10 @@ import { consentContent } from '../data/consentContent';
  */
 export default function ConsentModal({ onConsent, onDecline }) {
   const [acknowledged, setAcknowledged] = useState(false);
-  const [shareData, setShareData] = useState(null); // null = not yet chosen
+  const [shareData, setShareData] = useState(false);
   const titleId = 'consent-modal-title';
 
-  const canProceed = acknowledged && shareData !== null;
+  const canProceed = acknowledged && shareData; // Require both acknowledgement and data sharing to proceed
 
   const handleProceed = () => {
     if (!canProceed) return;
@@ -80,26 +80,14 @@ export default function ConsentModal({ onConsent, onDecline }) {
           <div className="flex flex-col gap-2 mt-3">
             <label className="flex items-start gap-3 cursor-pointer group">
               <input
-                type="radio"
-                name="data-sharing"
-                checked={shareData === true}
-                onChange={() => setShareData(true)}
+                type="checkbox"
+                checked={shareData}
+                onChange={(e) => setShareData(e.target.checked)}
                 className="mt-1 w-5 h-5 accent-purple-600 cursor-pointer"
               />
-              <span className="text-gray-700">
-                {consentContent.dataSharing.optInLabel}
-              </span>
-            </label>
-            <label className="flex items-start gap-3 cursor-pointer group">
-              <input
-                type="radio"
-                name="data-sharing"
-                checked={shareData === false}
-                onChange={() => setShareData(false)}
-                className="mt-1 w-5 h-5 accent-purple-600 cursor-pointer"
-              />
-              <span className="text-gray-700">
-                {consentContent.dataSharing.optOutLabel}
+              <span className="text-gray-700 font-medium">
+                {consentContent.dataSharing.checkboxLabel}
+                <span className="text-red-500 ml-1" aria-hidden="true">*</span>
               </span>
             </label>
           </div>

@@ -9,7 +9,7 @@ import { CONSENT_VERSION } from '../data/constants';
  * Two tiers:
  *   - acknowledged: required to proceed. Confirms the user understands
  *     this is a screening tool, not a diagnosis.
- *   - dataSharing: optional. Permission to submit anonymized results
+ *   - dataSharing: required to proceed. Permission to submit anonymized results
  *     to the REDCap research database.
  *
  * No persistence: each session starts fresh.
@@ -22,16 +22,10 @@ export function useConsent() {
   const [dataSharing, setDataSharing] = useState(false);
   const [acknowledgedAt, setAcknowledgedAt] = useState(null);
 
-  const grantConsent = useCallback(({ shareData }) => {
+  const grantConsent = useCallback(({}) => {
     setAcknowledged(true);
-    setDataSharing(!!shareData);
+    setDataSharing(true);
     setAcknowledgedAt(new Date().toISOString());
-  }, []);
-
-  // Allow the user to change their data-sharing preference later
-  // (e.g. from the Results section) without re-acknowledging.
-  const updateDataSharing = useCallback((shareData) => {
-    setDataSharing(!!shareData);
   }, []);
 
   return {
@@ -40,6 +34,5 @@ export function useConsent() {
     acknowledgedAt,
     version: CONSENT_VERSION,
     grantConsent,
-    updateDataSharing,
   };
 }

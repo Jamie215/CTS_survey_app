@@ -28,12 +28,10 @@ export const consentContent = {
     heading: 'Data Collection Agreement for Research',
     body: [
       'We are studying how well this tool identifies CTS symptoms. With your permission, your anonymized responses will be sent to a secure research database managed by the Roth | McFarlane Hand and Upper Limb Centre at St. Joseph\'s Health Care London.',
-      'No personally identifying information is collected. Participation is voluntary, and choosing not to share will not affect your ability to use the tool.',
+      'No personally identifying information is collected.',
     ],
-    optInLabel:
-      'Yes, I agree to share my anonymized responses for research.',
-    optOutLabel:
-      'No, I would like to use the tool without sharing my data.',
+    checkboxLabel:
+      'I agree to share my anonymized responses for research.',
   },
 
   buttons: {
