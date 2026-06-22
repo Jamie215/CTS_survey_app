@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import { diagnosticQuestions } from '../data/diagnosticQuestions';
 import { captureHandDiagrams } from '../lib/canvasUtils';
+import { SOME_THRESHOLD, HALF_THRESHOLD } from '../data/constants';
 
 /**
  * Custom hook for building export data and downloading results.
@@ -47,6 +48,10 @@ export function useExport({
     diagramEase,
     diagramComments,
     assessmentResults,
+    katzThresholds: {
+      someThreshold: SOME_THRESHOLD,
+      halfThreshold: HALF_THRESHOLD,
+    },
   }), [
     participantId, diagnosticAnswers, diagnosticEase,
     diagnosticComments, handDiagramData, diagramEase,
@@ -106,6 +111,13 @@ export function useExport({
       rows.push(['--- Kamath Score ---']);
       rows.push(['Total Score', data.assessmentResults.kamath.totalScore]);
       rows.push(['Classification', data.assessmentResults.kamath.classification]);
+      rows.push([]);
+    }
+
+    if (data.katzThresholds) {
+      rows.push(['--- Katz Thresholds ---']);
+      rows.push(['Some Threshold', data.katzThresholds.someThreshold]);
+      rows.push(['Half Threshold', data.katzThresholds.halfThreshold]);
       rows.push([]);
     }
 

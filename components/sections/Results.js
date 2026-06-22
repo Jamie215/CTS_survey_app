@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import { AlertCircle, ChartBarBig, Download, ChevronsUp, ChevronRight, Printer } from 'lucide-react';
-import { CANVAS_WIDTH, CANVAS_HEIGHT, KAMATH_COLORS, KATZ_REGIONS } from '../../data/constants';
+import { CANVAS_WIDTH, CANVAS_HEIGHT, KAMATH_COLORS, KATZ_REGIONS, SOME_THRESHOLD, HALF_THRESHOLD } from '../../data/constants';
 import { diagnosticQuestions } from '../../data/diagnosticQuestions';
 import { KAMATH_BANDS } from '../../lib/kamathScoring';
 import Modal from '../Modal';
@@ -213,7 +213,7 @@ function KatzScoreCard({ katz, isResultsDetailShown, resultsCanvasRefs }) {
       </div>
 
       <div className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {['left', 'right'].map((hand) => (
             <KatzHandResult
               key={hand}
@@ -238,11 +238,6 @@ function KatzScoreCard({ katz, isResultsDetailShown, resultsCanvasRefs }) {
  * symptom layers measured against the region — NOT the sum of the
  * three per-symptom values, because the user's strokes for different
  * symptoms can overlap on the canvas.
- *
- * Layout: a single table at all viewport widths, wrapped in
- * overflow-x-auto so narrow viewports can scroll horizontally if the
- * five columns don't fit. tabular-nums keeps the percentages aligned
- * across rows.
  */
 function CoverageTable({ result }) {
   const coverageBySymptom = result.KatzScore?.coverageBySymptom || {};
@@ -256,9 +251,9 @@ function CoverageTable({ result }) {
         <thead>
           <tr className="border-b border-gray-200">
             <th className="py-2 pr-2 font-medium text-gray-600 text-left">Region</th>
-            <th className="py-2 px-1 font-medium text-orange-600 text-center">Pain</th>
-            <th className="py-2 px-1 font-medium text-purple-600 text-center">Tingling</th>
-            <th className="py-2 px-1 font-medium text-blue-600 text-center">Numbness</th>
+            <th className="py-2 px-1 font-medium text-orange-600 text-center max-md:hidden">Pain</th>
+            <th className="py-2 px-1 font-medium text-purple-600 text-center max-md:hidden">Tingling</th>
+            <th className="py-2 px-1 font-medium text-blue-600 text-center max-md:hidden">Numbness</th>
             <th className="py-2 pl-1 font-medium text-gray-700 text-center">Combined</th>
           </tr>
         </thead>
@@ -269,16 +264,15 @@ function CoverageTable({ result }) {
                 <span className="font-medium">{group}</span>
                 {label && <span className="text-gray-500">: {label}</span>}
               </td>
-              <td className="py-1.5 px-1 text-gray-600 text-center">{cell('pain', key)}</td>
-              <td className="py-1.5 px-1 text-gray-600 text-center">{cell('tingling', key)}</td>
-              <td className="py-1.5 px-1 text-gray-600 text-center">{cell('numbness', key)}</td>
+              <td className="py-1.5 px-1 text-gray-600 text-center max-md:hidden">{cell('pain', key)}</td>
+              <td className="py-1.5 px-1 text-gray-600 text-center max-md:hidden">{cell('tingling', key)}</td>
+              <td className="py-1.5 px-1 text-gray-600 text-center max-md:hidden">{cell('numbness', key)}</td>
               <td className="py-1.5 pl-1 text-gray-700 text-center">{fmt(detailedCoverage[key])}</td>
             </tr>
           ))}
         </tbody>
       </table>
-      <p className="text-xs text-gray-500 mt-2 flex items-start gap-1">
-        <AlertCircle className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
+      <p className="text-xs text-gray-500 mt-2 italic">
         Combined is the union of all three symptom layers in that region, not the sum of the per-symptom values.
       </p>
     </div>
@@ -374,6 +368,10 @@ function KatzHandResult({ hand, result, isResultsDetailShown, volarRef, dorsalRe
           <p>
             <span className="font-medium">Dorsum:</span>{' '}
             {flags.dorsumAffected ? 'Yes' : 'No'}
+          </p>
+          <p className="text-xs text-gray-500 mt-2 italic">
+            A region is flagged as affected when symptom coverage exceeds {SOME_THRESHOLD}%.
+            The middle segments of the index and middle fingers use a {HALF_THRESHOLD}% threshold instead.
           </p>
         </div>
       )}
