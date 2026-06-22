@@ -55,6 +55,36 @@ export const KAMATH_COLORS = {
 };
 
 /**
+ * Canonical Katz region list, ordered for display in the Results UI
+ * and as the contract for per-region REDCap field naming.
+ *
+ * `key` matches the SVG inkscape:label values in /public/hands/*.svg,
+ * which are also the keys populated in
+ * coverageBySymptom[symptom][region] by analyzeSymptomDistribution.
+ *
+ * UI display is driven by this list. The CSV export iterates
+ * coverageBySymptom directly, so a region appearing in the SVGs but
+ * missing from this list is still captured in the data — UI omission
+ * never silently drops research data.
+ */
+export const KATZ_REGIONS = [
+  { key: 'thumb_distal',    group: 'Thumb',        label: 'Distal' },
+  { key: 'thumb_proximal',  group: 'Thumb',        label: 'Proximal' },
+  { key: 'index_distal',    group: 'Index',        label: 'Distal' },
+  { key: 'index_middle',    group: 'Index',        label: 'Middle' },
+  { key: 'index_proximal',  group: 'Index',        label: 'Proximal' },
+  { key: 'middle_distal',   group: 'Middle',       label: 'Distal' },
+  { key: 'middle_middle',   group: 'Middle',       label: 'Middle' },
+  { key: 'middle_proximal', group: 'Middle',       label: 'Proximal' },
+  { key: 'palm_radial',     group: 'Palm',         label: 'Radial' },
+  { key: 'palm_ulnar',      group: 'Palm',         label: 'Ulnar' },
+  { key: 'wrist',           group: 'Wrist',        label: '' },
+  { key: 'dorsum',          group: 'Back of hand', label: '' },
+];
+
+export const KATZ_SYMPTOMS = ['pain', 'tingling', 'numbness'];
+
+/**
  * Version identifier for the consent text. Bump this whenever the
  * wording in consentContent.js is materially revised, so REDCap
  * records carry accurate provenance of which version was shown.

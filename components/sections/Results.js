@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import { AlertCircle, ChartBarBig, Download, ChevronsUp, ChevronRight, Printer } from 'lucide-react';
-import { CANVAS_WIDTH, CANVAS_HEIGHT, KAMATH_COLORS } from '../../data/constants';
+import { CANVAS_WIDTH, CANVAS_HEIGHT, KAMATH_COLORS, KATZ_REGIONS } from '../../data/constants';
 import { diagnosticQuestions } from '../../data/diagnosticQuestions';
 import { KAMATH_BANDS } from '../../lib/kamathScoring';
 import Modal from '../Modal';
@@ -231,6 +231,61 @@ function KatzScoreCard({ katz, isResultsDetailShown, resultsCanvasRefs }) {
 }
 
 /**
+ * Per-region coverage breakdown table.
+ *
+ * One row per Katz region (from KATZ_REGIONS), with one column per
+ * symptom plus a Combined column. Combined is the union of all three
+ * symptom layers measured against the region — NOT the sum of the
+ * three per-symptom values, because the user's strokes for different
+ * symptoms can overlap on the canvas.
+ *
+ * Layout: a single table at all viewport widths, wrapped in
+ * overflow-x-auto so narrow viewports can scroll horizontally if the
+ * five columns don't fit. tabular-nums keeps the percentages aligned
+ * across rows.
+ */
+function CoverageTable({ result }) {
+  const coverageBySymptom = result.KatzScore?.coverageBySymptom || {};
+  const detailedCoverage = result.detailedCoverage || {};
+  const fmt = (v) => (typeof v === 'number' ? `${v.toFixed(1)}%` : '—');
+  const cell = (symptom, region) => fmt(coverageBySymptom?.[symptom]?.[region]);
+
+  return (
+    <div>
+      <table className="w-full text-xs tabular-nums">
+        <thead>
+          <tr className="border-b border-gray-200">
+            <th className="py-2 pr-2 font-medium text-gray-600 text-left">Region</th>
+            <th className="py-2 px-1 font-medium text-orange-600 text-center">Pain</th>
+            <th className="py-2 px-1 font-medium text-purple-600 text-center">Tingling</th>
+            <th className="py-2 px-1 font-medium text-blue-600 text-center">Numbness</th>
+            <th className="py-2 pl-1 font-medium text-gray-700 text-center">Combined</th>
+          </tr>
+        </thead>
+        <tbody>
+          {KATZ_REGIONS.map(({ key, group, label }) => (
+            <tr key={key} className="border-b border-gray-100">
+              <td className="py-1.5 pr-2 text-gray-700 text-left">
+                <span className="font-medium">{group}</span>
+                {label && <span className="text-gray-500">: {label}</span>}
+              </td>
+              <td className="py-1.5 px-1 text-gray-600 text-center">{cell('pain', key)}</td>
+              <td className="py-1.5 px-1 text-gray-600 text-center">{cell('tingling', key)}</td>
+              <td className="py-1.5 px-1 text-gray-600 text-center">{cell('numbness', key)}</td>
+              <td className="py-1.5 pl-1 text-gray-700 text-center">{fmt(detailedCoverage[key])}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="text-xs text-gray-500 mt-2 flex items-start gap-1">
+        <AlertCircle className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
+        Combined is the union of all three symptom layers in that region, not the sum of the per-symptom values.
+      </p>
+    </div>
+  );
+}
+
+/**
  * Render the human-readable summary for a single hand.
  *
  * Reads flags from result.flags (populated by useScoring from
@@ -330,42 +385,7 @@ function KatzHandResult({ hand, result, isResultsDetailShown, volarRef, dorsalRe
             View detailed coverage breakdown
           </summary>
           <div className="mt-3 bg-white rounded-lg p-4 border border-gray-200">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-base">
-              <CoverageBlock
-                title="Thumb - Distal"
-                coverageBySymptom={result.KatzScore.coverageBySymptom}
-                region="thumb_distal"
-              />
-              <CoverageBlock
-                title="Index - Distal/Middle"
-                coverageBySymptom={result.KatzScore.coverageBySymptom}
-                region="index"
-                isDualRegion
-              />
-              <CoverageBlock
-                title="Middle - Distal/Middle"
-                coverageBySymptom={result.KatzScore.coverageBySymptom}
-                region="middle"
-                isDualRegion
-              />
-              <div className="results-block">
-                <p className="font-medium text-gray-700 mb-1">Palm &amp; Dorsum</p>
-                <div className="text-gray-600 space-y-0.5">
-                  <div className="flex justify-between">
-                    <span>Palm (Radial):</span>
-                    <span>{(result.detailedCoverage?.palm_radial || 0).toFixed(1)}%</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Palm (Ulnar):</span>
-                    <span>{(result.detailedCoverage?.palm_ulnar || 0).toFixed(1)}%</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Dorsum:</span>
-                    <span>{(result.detailedCoverage?.dorsum || 0).toFixed(1)}%</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <CoverageTable result={result} />
           </div>
         </details>
       )}
@@ -373,32 +393,6 @@ function KatzHandResult({ hand, result, isResultsDetailShown, volarRef, dorsalRe
   );
 }
 
-function CoverageBlock({ title, coverageBySymptom, region, isDualRegion = false }) {
-  return (
-    <div>
-      <p className="font-medium text-gray-700 mb-1">{title}</p>
-      {['pain', 'tingling', 'numbness'].map(symptom => {
-        if (isDualRegion) {
-          const distal = coverageBySymptom?.[symptom]?.[`${region}_distal`] || 0;
-          const middle = coverageBySymptom?.[symptom]?.[`${region}_middle`] || 0;
-          return (
-            <div key={symptom} className="flex justify-between text-gray-600">
-              <span className="capitalize">{symptom}:</span>
-              <span>{distal.toFixed(1)}% / {middle.toFixed(1)}%</span>
-            </div>
-          );
-        }
-        const coverage = coverageBySymptom?.[symptom]?.[region] || 0;
-        return (
-          <div key={symptom} className="flex justify-between text-gray-600">
-            <span className="capitalize">{symptom}:</span>
-            <span>{coverage.toFixed(1)}%</span>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
 
 /**
  * Export controls for the Results section footer.

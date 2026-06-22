@@ -115,9 +115,36 @@ export function useExport({
         rows.push([`Hand: ${hand}`]);
         rows.push(['Classification', result.KatzScore?.classification]);
         rows.push(['Classic Pattern Score', result.KatzScore?.score]);
+
+        // Per-symptom coverage: one row per region × symptom.
+        const coverageBySymptom = result.KatzScore?.coverageBySymptom;
+        if (coverageBySymptom) {
+          const allRegions = new Set();
+          Object.values(coverageBySymptom).forEach(symptomMap =>
+            Object.keys(symptomMap).forEach(r => allRegions.add(r))
+          );
+          rows.push(['Coverage by symptom (%)']);
+          Array.from(allRegions).sort().forEach(region => {
+            ['pain', 'tingling', 'numbness'].forEach(symptom => {
+              const value = coverageBySymptom[symptom]?.[region];
+              rows.push([
+                `${region}_${symptom}`,
+                typeof value === 'number' ? value.toFixed(2) : '',
+              ]);
+            });
+          });
+        }
+
+        // Combined coverage (union of all three symptoms over the region).
+        // NOT the sum of per-symptom values — strokes for different
+        // symptoms can overlap on the canvas.
         if (result.detailedCoverage) {
+          rows.push(['Combined coverage (%)']);
           Object.entries(result.detailedCoverage).forEach(([region, value]) => {
-            rows.push([`Coverage - ${region}`, typeof value === 'number' ? value.toFixed(2) : value]);
+            rows.push([
+              `${region}_combined`,
+              typeof value === 'number' ? value.toFixed(2) : value,
+            ]);
           });
         }
         rows.push([]);
