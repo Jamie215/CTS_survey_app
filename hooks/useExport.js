@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import { diagnosticQuestions } from '../data/diagnosticQuestions';
 import { captureHandDiagrams } from '../lib/canvasUtils';
-import { SOME_THRESHOLD, HALF_THRESHOLD } from '../data/constants';
+import { MIN_THRESHOLD, HALF_THRESHOLD } from '../data/constants';
 
 /**
  * Build the CSV row array from an export-data payload. Pure function —
@@ -18,44 +18,61 @@ import { SOME_THRESHOLD, HALF_THRESHOLD } from '../data/constants';
 export function buildCsvRows(data) {
   const rows = [];
 
-  rows.push(['Participant ID', data.participantId]);
-  rows.push(['Timestamp', data.timestamp]);
+  rows.push(['timestamp', data.timestamp]);
   rows.push([]);
 
-  rows.push(['--- Diagnostic Answers ---']);
-  Object.entries(data.diagnosticAnswers || {}).forEach(([qId, answer]) => {
-    const question = diagnosticQuestions.find(q => q.id === Number(qId));
-    const label = question?.text ?? `Question ${qId}`;
-    rows.push([label, Array.isArray(answer) ? answer.join('; ') : answer]);
-  });
+  diagnosticQuestions.forEach(question => {
+  const label = question.field ?? `Question ${question.id}`;
+  let value;
+
+  if (question.hasNumbnessOrTingling) {
+    // Question 0: value lives in its own state, not in diagnosticAnswers.
+    // Translate the boolean to a string consistent with other Yes/No answers.
+    value =
+      data.hasNumbnessOrTingling === true ? 'Yes'
+      : data.hasNumbnessOrTingling === false ? 'No'
+      : '';
+  } else {
+    // Gate-off check is computed at export time from the live gateway
+    // value, NOT from whether an answer is present — so a yes→no toggle
+    // that left stale data behind still exports as NA.
+    const isGatedOff =
+      (question.requiresNumbnessOrTingling && data.hasNumbnessOrTingling === false) ||
+      (question.requiresSplintTried && data.diagnosticAnswers?.[12] !== 'Yes');
+
+    if (isGatedOff) {
+      value = 'NA';  // Not applicable due to gating
+    } else {
+      const answer = data.diagnosticAnswers?.[question.id];
+      value = Array.isArray(answer) ? answer.join('; ') : (answer ?? '');
+    }
+  }
+
+  rows.push([label, value]);
+});
   rows.push([]);
 
-  rows.push(['Diagnostic Ease', data.diagnosticEase]);
-  rows.push(['Diagnostic Comments', data.diagnosticComments]);
-  rows.push(['Diagram Ease', data.diagramEase]);
-  rows.push(['Diagram Comments', data.diagramComments]);
+  rows.push(['kamath_diagnosticEase', data.diagnosticEase]);
+  rows.push(['kamath_diagnosticComments', data.diagnosticComments]);
+  rows.push(['katz_diagramEase', data.diagramEase]);
+  rows.push(['katz_diagramComments', data.diagramComments]);
   rows.push([]);
 
   if (data.assessmentResults?.kamath) {
-    rows.push(['--- Kamath Score ---']);
-    rows.push(['Total Score', data.assessmentResults.kamath.totalScore]);
-    rows.push(['Classification', data.assessmentResults.kamath.classification]);
+    rows.push(['kamath_totalScore', data.assessmentResults.kamath.totalScore]);
+    rows.push(['kamath_classification', data.assessmentResults.kamath.classification]);
     rows.push([]);
   }
 
   if (data.katzThresholds) {
-    rows.push(['--- Katz Thresholds (%) ---']);
-    rows.push(['Some Threshold', data.katzThresholds.someThresholdPct]);
-    rows.push(['Half Threshold', data.katzThresholds.halfThresholdPct]);
+    rows.push(['katz_minDrawingThreshold', data.katzThresholds.minThresholdPct]);
     rows.push([]);
   }
 
   if (data.assessmentResults?.katz) {
-    rows.push(['--- Katz Scores ---']);
     Object.entries(data.assessmentResults.katz).forEach(([hand, result]) => {
-      rows.push([`Hand: ${hand}`]);
-      rows.push(['Classification', result.KatzScore?.classification]);
-      rows.push(['Classic Pattern Score', result.KatzScore?.score]);
+      rows.push([`katz_${hand}_classification`, result.KatzScore?.classification]);
+      rows.push([`katz_${hand}_classicPatternScore`, result.KatzScore?.score]);
 
       // Per-symptom coverage: one row per region × symptom.
       const coverageBySymptom = result.KatzScore?.coverageBySymptom;
@@ -64,12 +81,11 @@ export function buildCsvRows(data) {
         Object.values(coverageBySymptom).forEach(symptomMap =>
           Object.keys(symptomMap).forEach(r => allRegions.add(r))
         );
-        rows.push(['Coverage by symptom (%)']);
         Array.from(allRegions).sort().forEach(region => {
           ['pain', 'tingling', 'numbness'].forEach(symptom => {
             const value = coverageBySymptom[symptom]?.[region];
             rows.push([
-              `${region}_${symptom}`,
+              `katz_${hand}_${region}_${symptom}`,
               typeof value === 'number' ? value.toFixed(2) : '',
             ]);
           });
@@ -80,10 +96,9 @@ export function buildCsvRows(data) {
       // NOT the sum of per-symptom values — strokes for different
       // symptoms can overlap on the canvas.
       if (result.detailedCoverage) {
-        rows.push(['Combined coverage (%)']);
         Object.entries(result.detailedCoverage).forEach(([region, value]) => {
           rows.push([
-            `${region}_combined`,
+            `katz_${hand}_${region}_combined`,
             typeof value === 'number' ? value.toFixed(2) : value,
           ]);
         });
@@ -130,6 +145,7 @@ export function rowsToCsv(rows) {
 export function useExport({
   participantId,
   diagnosticAnswers,
+  hasNumbnessOrTingling,
   diagnosticEase,
   diagnosticComments,
   handDiagramData,
@@ -143,6 +159,7 @@ export function useExport({
     participantId,
     timestamp: new Date().toISOString(),
     diagnosticAnswers,
+    hasNumbnessOrTingling,
     diagnosticEase,
     diagnosticComments,
     handDiagramImages: await captureHandDiagrams(handDiagramData),
@@ -150,11 +167,11 @@ export function useExport({
     diagramComments,
     assessmentResults,
     katzThresholds: {
-      someThresholdPct: SOME_THRESHOLD,
+      minThresholdPct: MIN_THRESHOLD,
       halfThresholdPct: HALF_THRESHOLD,
     },
   }), [
-    participantId, diagnosticAnswers, diagnosticEase,
+    participantId, diagnosticAnswers, hasNumbnessOrTingling, diagnosticEase,
     diagnosticComments, handDiagramData, diagramEase,
     diagramComments, assessmentResults,
   ]);

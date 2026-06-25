@@ -73,6 +73,7 @@ const CTSSurveyApp = ({}) => {
   const exportActions = useExport({
     participantId,
     diagnosticAnswers,
+    hasNumbnessOrTingling,
     diagnosticEase,
     diagnosticComments,
     handDiagramData,

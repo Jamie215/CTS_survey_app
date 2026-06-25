@@ -1,7 +1,7 @@
 export const CANVAS_WIDTH = 300;
 export const CANVAS_HEIGHT = 400;
 
-export const SOME_THRESHOLD = 5;
+export const MIN_THRESHOLD = 5;
 export const HALF_THRESHOLD = 50;
 
 /**

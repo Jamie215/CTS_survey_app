@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import { AlertCircle, ChartBarBig, Download, ChevronsUp, ChevronRight, Printer } from 'lucide-react';
-import { CANVAS_WIDTH, CANVAS_HEIGHT, KAMATH_COLORS, KATZ_REGIONS, SOME_THRESHOLD, HALF_THRESHOLD } from '../../data/constants';
+import { CANVAS_WIDTH, CANVAS_HEIGHT, KAMATH_COLORS, KATZ_REGIONS, MIN_THRESHOLD, HALF_THRESHOLD } from '../../data/constants';
 import { diagnosticQuestions } from '../../data/diagnosticQuestions';
 import { KAMATH_BANDS } from '../../lib/kamathScoring';
 import Modal from '../Modal';
@@ -369,7 +369,7 @@ function KatzHandResult({ hand, result, isResultsDetailShown, volarRef, dorsalRe
             {flags.dorsumAffected ? 'Yes' : 'No'}
           </p>
           <p className="text-xs text-gray-500 mt-2 italic">
-            A region is flagged as affected when symptom coverage exceeds {SOME_THRESHOLD}%.
+            A region is flagged as affected when symptom coverage exceeds {MIN_THRESHOLD}%.
             The middle segments of the index and middle fingers use a {HALF_THRESHOLD}% threshold instead.
           </p>
         </div>

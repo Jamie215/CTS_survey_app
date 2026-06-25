@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { deriveSymptomFlags, analyzeSymptomDistribution } from '../lib/katzScoring';
-import { SOME_THRESHOLD, HALF_THRESHOLD } from '../data/constants';
+import { MIN_THRESHOLD, HALF_THRESHOLD } from '../data/constants';
 
 /**
  * Unit tests for deriveSymptomFlags — the pure threshold/flag logic
@@ -10,7 +10,7 @@ import { SOME_THRESHOLD, HALF_THRESHOLD } from '../data/constants';
  * calculateCombinedRegionCoverage) requires a real canvas and is
  * covered by manual verification rather than unit tests.
  *
- * SOME_THRESHOLD, HALF_THRESHOLD — these tests assume
+ * MIN_THRESHOLD, HALF_THRESHOLD — these tests assume
  * those values; if they're tuned, the threshold-boundary tests
  * below will need to follow.
  */
@@ -27,17 +27,17 @@ function emptyCoverage() {
 }
 
 describe('deriveSymptomFlags — digit rules', () => {
-  it('thumb: affected only when thumb_distal strictly exceeds SOME_THRESHOLD', () => {
-    expect(deriveSymptomFlags({ ...emptyCoverage(), thumb_distal: SOME_THRESHOLD + 0.1 }).thumbAffected).toBe(true);
-    expect(deriveSymptomFlags({ ...emptyCoverage(), thumb_distal: SOME_THRESHOLD }).thumbAffected).toBe(false);
+  it('thumb: affected only when thumb_distal strictly exceeds MIN_THRESHOLD', () => {
+    expect(deriveSymptomFlags({ ...emptyCoverage(), thumb_distal: MIN_THRESHOLD + 0.1 }).thumbAffected).toBe(true);
+    expect(deriveSymptomFlags({ ...emptyCoverage(), thumb_distal: MIN_THRESHOLD }).thumbAffected).toBe(false);
     expect(deriveSymptomFlags(emptyCoverage()).thumbAffected).toBe(false);
   });
 
-  it('index: affected if index_middle >= HALF_THRESHOLD OR index_distal > SOME_THRESHOLD', () => {
+  it('index: affected if index_middle >= HALF_THRESHOLD OR index_distal > MIN_THRESHOLD', () => {
     expect(deriveSymptomFlags({ ...emptyCoverage(), index_middle: HALF_THRESHOLD }).indexAffected).toBe(true);
     expect(deriveSymptomFlags({ ...emptyCoverage(), index_middle: HALF_THRESHOLD - 0.1 }).indexAffected).toBe(false);
-    expect(deriveSymptomFlags({ ...emptyCoverage(), index_distal: SOME_THRESHOLD + 0.1 }).indexAffected).toBe(true);
-    expect(deriveSymptomFlags({ ...emptyCoverage(), index_distal: SOME_THRESHOLD }).indexAffected).toBe(false);
+    expect(deriveSymptomFlags({ ...emptyCoverage(), index_distal: MIN_THRESHOLD + 0.1 }).indexAffected).toBe(true);
+    expect(deriveSymptomFlags({ ...emptyCoverage(), index_distal: MIN_THRESHOLD }).indexAffected).toBe(false);
   });
 
   it('index proximal coverage on its own does NOT trigger affected', () => {
@@ -47,8 +47,8 @@ describe('deriveSymptomFlags — digit rules', () => {
 
   it('middle: mirrors index rule on middle_* regions', () => {
     expect(deriveSymptomFlags({ ...emptyCoverage(), middle_middle: HALF_THRESHOLD }).middleAffected).toBe(true);
-    expect(deriveSymptomFlags({ ...emptyCoverage(), middle_distal: SOME_THRESHOLD + 0.1 }).middleAffected).toBe(true);
-    expect(deriveSymptomFlags({ ...emptyCoverage(), middle_middle: HALF_THRESHOLD - 1, middle_distal: SOME_THRESHOLD }).middleAffected).toBe(false);
+    expect(deriveSymptomFlags({ ...emptyCoverage(), middle_distal: MIN_THRESHOLD + 0.1 }).middleAffected).toBe(true);
+    expect(deriveSymptomFlags({ ...emptyCoverage(), middle_middle: HALF_THRESHOLD - 1, middle_distal: MIN_THRESHOLD }).middleAffected).toBe(false);
   });
 
   it('medianDigitsAffected counts thumb + index + middle independently', () => {
@@ -63,10 +63,10 @@ describe('deriveSymptomFlags — digit rules', () => {
 });
 
 describe('deriveSymptomFlags — palm logic', () => {
-  it('radial/ulnar each use SOME_THRESHOLD strictly', () => {
-    expect(deriveSymptomFlags({ ...emptyCoverage(), palm_radial: SOME_THRESHOLD + 0.1 }).palmAffected.radial).toBe(true);
-    expect(deriveSymptomFlags({ ...emptyCoverage(), palm_radial: SOME_THRESHOLD }).palmAffected.radial).toBe(false);
-    expect(deriveSymptomFlags({ ...emptyCoverage(), palm_ulnar: SOME_THRESHOLD + 0.1 }).palmAffected.ulnar).toBe(true);
+  it('radial/ulnar each use MIN_THRESHOLD strictly', () => {
+    expect(deriveSymptomFlags({ ...emptyCoverage(), palm_radial: MIN_THRESHOLD + 0.1 }).palmAffected.radial).toBe(true);
+    expect(deriveSymptomFlags({ ...emptyCoverage(), palm_radial: MIN_THRESHOLD }).palmAffected.radial).toBe(false);
+    expect(deriveSymptomFlags({ ...emptyCoverage(), palm_ulnar: MIN_THRESHOLD + 0.1 }).palmAffected.ulnar).toBe(true);
   });
 
   it('any: true if either radial or ulnar is affected', () => {
@@ -85,14 +85,14 @@ describe('deriveSymptomFlags — palm logic', () => {
 });
 
 describe('deriveSymptomFlags — dorsum and wrist', () => {
-  it('dorsum: SOME_THRESHOLD strict', () => {
-    expect(deriveSymptomFlags({ ...emptyCoverage(), dorsum: SOME_THRESHOLD + 0.1 }).dorsumAffected).toBe(true);
-    expect(deriveSymptomFlags({ ...emptyCoverage(), dorsum: SOME_THRESHOLD }).dorsumAffected).toBe(false);
+  it('dorsum: MIN_THRESHOLD strict', () => {
+    expect(deriveSymptomFlags({ ...emptyCoverage(), dorsum: MIN_THRESHOLD + 0.1 }).dorsumAffected).toBe(true);
+    expect(deriveSymptomFlags({ ...emptyCoverage(), dorsum: MIN_THRESHOLD }).dorsumAffected).toBe(false);
   });
 
-  it('wrist: SOME_THRESHOLD strict', () => {
-    expect(deriveSymptomFlags({ ...emptyCoverage(), wrist: SOME_THRESHOLD + 0.1 }).wristAffected).toBe(true);
-    expect(deriveSymptomFlags({ ...emptyCoverage(), wrist: SOME_THRESHOLD }).wristAffected).toBe(false);
+  it('wrist: MIN_THRESHOLD strict', () => {
+    expect(deriveSymptomFlags({ ...emptyCoverage(), wrist: MIN_THRESHOLD + 0.1 }).wristAffected).toBe(true);
+    expect(deriveSymptomFlags({ ...emptyCoverage(), wrist: MIN_THRESHOLD }).wristAffected).toBe(false);
   });
 });
 

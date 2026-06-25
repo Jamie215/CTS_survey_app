@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { buildCsvRows, rowsToCsv } from '../hooks/useExport';
-import { SOME_THRESHOLD, HALF_THRESHOLD } from '../data/constants';
+import { MIN_THRESHOLD, HALF_THRESHOLD } from '../data/constants';
 
 /**
  * Unit tests for the CSV export pipeline.
@@ -29,7 +29,7 @@ function baseExportData(overrides = {}) {
     handDiagramImages: {},
     assessmentResults: null,
     katzThresholds: {
-      someThresholdPct: SOME_THRESHOLD,
+      minThresholdPct: MIN_THRESHOLD,
       halfThresholdPct: HALF_THRESHOLD,
     },
     ...overrides,
@@ -53,7 +53,7 @@ describe('buildCsvRows — Katz thresholds provenance', () => {
   // values mid-study.
   it('emits the threshold values used at the time of export', () => {
     const rows = buildCsvRows(baseExportData());
-    expect(valueFor(rows, 'Some Threshold')).toBe(SOME_THRESHOLD);
+    expect(valueFor(rows, 'Min Threshold')).toBe(MIN_THRESHOLD);
     expect(valueFor(rows, 'Half Threshold')).toBe(HALF_THRESHOLD);
   });
 
