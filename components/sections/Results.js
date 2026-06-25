@@ -27,7 +27,6 @@ export default function Results({
   onCloseModal,
   resultsCanvasRefs,
   exportActions,
-  consent,
 }) {
   return (
     <div className="space-y-6">

@@ -24,7 +24,7 @@ import HandDiagrams from './sections/HandDiagrams';
 import Results, { ResultsExportControls } from './sections/Results';
 import IdleWarningModal from './IdleWarningModal';
 
-const CTSSurveyApp = ({ consent }) => {
+const CTSSurveyApp = ({}) => {
   // ============================================
   // STATE
   // ============================================
@@ -79,7 +79,6 @@ const CTSSurveyApp = ({ consent }) => {
     diagramEase,
     diagramComments,
     assessmentResults,
-    consent,
   });
 
   // ============================================
@@ -225,7 +224,6 @@ const CTSSurveyApp = ({ consent }) => {
             onCloseModal={() => setShowResultsDetailsModal(false)}
             resultsCanvasRefs={resultsCanvasRefs}
             exportActions={exportActions}
-            consent={consent}
           />
         );
       default:

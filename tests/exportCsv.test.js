@@ -21,12 +21,6 @@ function baseExportData(overrides = {}) {
   return {
     participantId: 'CTS-test-001',
     timestamp: '2026-06-22T00:00:00.000Z',
-    consent: {
-      acknowledged: true,
-      dataSharing: true,
-      acknowledgedAt: '2026-06-22T00:00:00.000Z',
-      version: 'v1-draft',
-    },
     diagnosticAnswers: {},
     diagnosticEase: 'Very easy',
     diagnosticComments: '',
@@ -50,21 +44,6 @@ describe('buildCsvRows — top-level identification', () => {
     const rows = buildCsvRows(baseExportData());
     expect(rows[0]).toEqual(['Participant ID', 'CTS-test-001']);
     expect(rows[1]).toEqual(['Timestamp', '2026-06-22T00:00:00.000Z']);
-  });
-});
-
-describe('buildCsvRows — consent block', () => {
-  it('emits the three consent rows', () => {
-    const rows = buildCsvRows(baseExportData());
-    expect(valueFor(rows, 'Acknowledged')).toBe(true);
-    expect(valueFor(rows, 'Acknowledged At')).toBe('2026-06-22T00:00:00.000Z');
-    expect(valueFor(rows, 'Consent Version')).toBe('v1-draft');
-  });
-
-  it('coerces missing consent to empty strings rather than throwing', () => {
-    const rows = buildCsvRows(baseExportData({ consent: undefined }));
-    expect(valueFor(rows, 'Acknowledged')).toBe('');
-    expect(valueFor(rows, 'Consent Version')).toBe('');
   });
 });
 

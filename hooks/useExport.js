@@ -36,12 +36,6 @@ export function buildCsvRows(data) {
   rows.push(['Diagram Comments', data.diagramComments]);
   rows.push([]);
 
-  rows.push(['--- Consent ---']);
-  rows.push(['Acknowledged', data.consent?.acknowledged ?? '']);
-  rows.push(['Acknowledged At', data.consent?.acknowledgedAt ?? '']);
-  rows.push(['Consent Version', data.consent?.version ?? '']);
-  rows.push([]);
-
   if (data.assessmentResults?.kamath) {
     rows.push(['--- Kamath Score ---']);
     rows.push(['Total Score', data.assessmentResults.kamath.totalScore]);
@@ -142,19 +136,12 @@ export function useExport({
   diagramEase,
   diagramComments,
   assessmentResults,
-  consent,
 }) {
   const [showDownloadMenu, setShowDownloadMenu] = useState(false);
 
   const buildExportData = useCallback(async () => ({
     participantId,
     timestamp: new Date().toISOString(),
-    consent: {
-      acknowledged: consent.acknowledged,
-      dataSharing: consent.dataSharing,
-      acknowledgedAt: consent.acknowledgedAt,
-      version: consent.version,
-    },
     diagnosticAnswers,
     diagnosticEase,
     diagnosticComments,
@@ -169,7 +156,7 @@ export function useExport({
   }), [
     participantId, diagnosticAnswers, diagnosticEase,
     diagnosticComments, handDiagramData, diagramEase,
-    diagramComments, assessmentResults, consent,
+    diagramComments, assessmentResults,
   ]);
 
   const downloadFile = useCallback((content, filename, mimeType) => {

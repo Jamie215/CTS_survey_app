@@ -85,13 +85,6 @@ export const KATZ_REGIONS = [
 export const KATZ_SYMPTOMS = ['pain', 'tingling', 'numbness'];
 
 /**
- * Version identifier for the consent text. Bump this whenever the
- * wording in consentContent.js is materially revised, so REDCap
- * records carry accurate provenance of which version was shown.
- */
-export const CONSENT_VERSION = 'v1-draft';
-
-/**
  * Idle session timeout. After IDLE_TIMEOUT_MS of no input, a warning
  * modal appears with a IDLE_WARNING_MS countdown before the session
  * resets. Designed for kiosk deployment where participants may leave
