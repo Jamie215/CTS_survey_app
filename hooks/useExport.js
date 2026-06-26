@@ -52,10 +52,10 @@ export function buildCsvRows(data) {
 });
   rows.push([]);
 
-  rows.push(['kamath_diagnosticEase', data.diagnosticEase]);
-  rows.push(['kamath_diagnosticComments', data.diagnosticComments]);
-  rows.push(['katz_diagramEase', data.diagramEase]);
-  rows.push(['katz_diagramComments', data.diagramComments]);
+  rows.push(['kamath_ease', data.diagnosticEase]);
+  rows.push(['kamath_comments', data.diagnosticComments]);
+  rows.push(['katz_ease', data.diagramEase]);
+  rows.push(['katz_comments', data.diagramComments]);
   rows.push([]);
 
   if (data.assessmentResults?.kamath) {
@@ -64,15 +64,9 @@ export function buildCsvRows(data) {
     rows.push([]);
   }
 
-  if (data.katzThresholds) {
-    rows.push(['katz_minDrawingThreshold', data.katzThresholds.minThresholdPct]);
-    rows.push([]);
-  }
-
   if (data.assessmentResults?.katz) {
     Object.entries(data.assessmentResults.katz).forEach(([hand, result]) => {
-      rows.push([`katz_${hand}_classification`, result.KatzScore?.classification]);
-      rows.push([`katz_${hand}_classicPatternScore`, result.KatzScore?.score]);
+      rows.push([`katz_${hand.toLowerCase().at(0)}_classification`, result.KatzScore?.classification]);
 
       // Per-symptom coverage: one row per region × symptom.
       const coverageBySymptom = result.KatzScore?.coverageBySymptom;
@@ -83,22 +77,25 @@ export function buildCsvRows(data) {
         );
         Array.from(allRegions).sort().forEach(region => {
           ['pain', 'tingling', 'numbness'].forEach(symptom => {
+            const symptomAbbrev = symptom === 'pain' ? 'pain' : symptom === 'tingling' ? 'tingle' : symptom === 'numbness' ? 'numb' : '';
+            const regionAbbrev = region === 'palm_radial' ? 'palm_rad' : region === 'palm_ulnar' ? 'palm_ul' : region === 'dorsum' ? 'dorsum' : region === 'thumb_proximal' ? 'thumb_p' : region === 'thumb_distal' ? 'thumb_d' : region === 'index_proximal' ? 'index_p' : region === 'index_middle' ? 'index_m' : region === 'index_distal' ? 'index_d' : region === 'middle_proximal' ? 'middle_p' : region === 'middle_middle' ? 'middle_m' : region === 'middle_distal' ? 'middle_d' : region === 'wrist' ? 'wrist' : '';
             const value = coverageBySymptom[symptom]?.[region];
             rows.push([
-              `katz_${hand}_${region}_${symptom}`,
+              `katz_${hand.toLowerCase().at(0)}_${regionAbbrev}_${symptomAbbrev}`,
               typeof value === 'number' ? value.toFixed(2) : '',
             ]);
           });
         });
       }
 
-      // Combined coverage (union of all three symptoms over the region).
+      // Total coverage (union of all three symptoms over the region).
       // NOT the sum of per-symptom values — strokes for different
       // symptoms can overlap on the canvas.
       if (result.detailedCoverage) {
         Object.entries(result.detailedCoverage).forEach(([region, value]) => {
+          const regionAbbrev = region === 'palm_radial' ? 'palm_rad' : region === 'palm_ulnar' ? 'palm_ul' : region === 'dorsum' ? 'dorsum' : region === 'thumb_proximal' ? 'thumb_p' : region === 'thumb_distal' ? 'thumb_d' : region === 'index_proximal' ? 'index_p' : region === 'index_middle' ? 'index_m' : region === 'index_distal' ? 'index_d' : region === 'middle_proximal' ? 'middle_p' : region === 'middle_middle' ? 'middle_m' : region === 'middle_distal' ? 'middle_d' : region === 'wrist' ? 'wrist' : '';
           rows.push([
-            `katz_${hand}_${region}_combined`,
+            `katz_${hand.toLowerCase().at(0)}_${regionAbbrev}_total`,
             typeof value === 'number' ? value.toFixed(2) : value,
           ]);
         });
