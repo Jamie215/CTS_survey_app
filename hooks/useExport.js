@@ -1,118 +1,182 @@
 "use client"
 
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import { diagnosticQuestions } from '../data/diagnosticQuestions';
-import { captureHandDiagrams } from '../lib/canvasUtils';
-import { MIN_THRESHOLD, HALF_THRESHOLD } from '../data/constants';
 
-/**
- * Build the CSV row array from an export-data payload. Pure function —
- * no DOM, no captureHandDiagrams, no download. Extracted so the row
- * contract with REDCap can be tested directly. Once REDCap field
- * naming is finalised, the row labels emitted here become the
- * data-dictionary contract.
- *
- * @param {Object} data
- * @returns {Array<Array<string|number|boolean|null>>}
- */
-export function buildCsvRows(data) {
-  const rows = [];
+// Splint gateway question ID — distinct from the numbness gateway (id: 0),
+// which lives outside diagnosticAnswers as a boolean (data.hasNumbnessOrTingling).
+// Splint gateway lives inside diagnosticAnswers as a 'Yes'/'No' string.
+// Consider moving to data/constants.js alongside the numbness gateway constant.
+const SPLINT_GATEWAY_ID = 12;
 
-  rows.push(['timestamp', data.timestamp]);
-  rows.push([]);
+const REGION_ABBREV = {
+  palm_radial: 'palm_rad',
+  palm_ulnar: 'palm_ul',
+  dorsum: 'dorsum',
+  thumb_proximal: 'thumb_p',
+  thumb_distal: 'thumb_d',
+  index_proximal: 'index_p',
+  index_middle: 'index_m',
+  index_distal: 'index_d',
+  middle_proximal: 'middle_p',
+  middle_middle: 'middle_m',
+  middle_distal: 'middle_d',
+  wrist: 'wrist',
+};
 
+const SYMPTOM_ABBREV = {
+  pain: 'pain',
+  tingling: 'tingle',
+  numbness: 'numb',
+};
+
+// --- Section builders --------------------------------------------------------
+// Each helper returns a plain object whose keys are REDCap variable names and
+// whose values are CSV-/REDCap-friendly strings. Both buildFieldMap (flat) and
+// buildCsvRows (sectioned) compose these helpers so the field-name contract
+// lives in exactly one place.
+
+function buildQuestionFields(data) {
+  const fields = {};
   diagnosticQuestions.forEach(question => {
-  const label = question.field ?? `Question ${question.id}`;
-  let value;
+    const key = question.field ?? `question_${question.id}`;
+    let value;
 
-  if (question.hasNumbnessOrTingling) {
-    // Question 0: value lives in its own state, not in diagnosticAnswers.
-    // Translate the boolean to a string consistent with other Yes/No answers.
-    value =
-      data.hasNumbnessOrTingling === true ? 'Yes'
-      : data.hasNumbnessOrTingling === false ? 'No'
-      : '';
-  } else {
-    // Gate-off check is computed at export time from the live gateway
-    // value, NOT from whether an answer is present — so a yes→no toggle
-    // that left stale data behind still exports as NA.
-    const isGatedOff =
-      (question.requiresNumbnessOrTingling && data.hasNumbnessOrTingling === false) ||
-      (question.requiresSplintTried && data.diagnosticAnswers?.[12] !== 'Yes');
-
-    if (isGatedOff) {
-      value = 'NA';  // Not applicable due to gating
+    if (question.hasNumbnessOrTingling) {
+      // Numbness gateway: boolean state, translated to Yes/No for consistency.
+      value =
+        data.hasNumbnessOrTingling === true ? 'Yes'
+        : data.hasNumbnessOrTingling === false ? 'No'
+        : '';
     } else {
-      const answer = data.diagnosticAnswers?.[question.id];
-      value = Array.isArray(answer) ? answer.join('; ') : (answer ?? '');
+      // Gate-off check uses the LIVE gateway value, not answer presence —
+      // a yes→no toggle leaving stale data behind still exports as empty.
+      const isGatedOff =
+        (question.requiresNumbnessOrTingling && data.hasNumbnessOrTingling === false) ||
+        (question.requiresSplintTried && data.diagnosticAnswers?.[SPLINT_GATEWAY_ID] !== 'Yes');
+
+      if (isGatedOff) {
+        value = '';
+      } else {
+        const answer = data.diagnosticAnswers?.[question.id];
+        value = Array.isArray(answer) ? answer.join('; ') : (answer ?? '');
+      }
     }
-  }
 
-  rows.push([label, value]);
-});
-  rows.push([]);
+    fields[key] = value;
+  });
+  return fields;
+}
 
-  rows.push(['kamath_ease', data.diagnosticEase]);
-  rows.push(['kamath_comments', data.diagnosticComments]);
-  rows.push(['katz_ease', data.diagramEase]);
-  rows.push(['katz_comments', data.diagramComments]);
-  rows.push([]);
+function buildFeedbackFields(data) {
+  return {
+    kamath_ease: data.diagnosticEase ?? '',
+    kamath_comments: data.diagnosticComments ?? '',
+    katz_ease: data.diagramEase ?? '',
+    katz_comments: data.diagramComments ?? '',
+  };
+}
 
-  if (data.assessmentResults?.kamath) {
-    rows.push(['kamath_totalScore', data.assessmentResults.kamath.totalScore]);
-    rows.push(['kamath_classification', data.assessmentResults.kamath.classification]);
-    rows.push([]);
-  }
+function buildKamathScoreFields(data) {
+  const kamath = data.assessmentResults?.kamath;
+  if (!kamath) return {};
+  return {
+    kamath_totalScore: kamath.totalScore,
+    kamath_classification: kamath.classification,
+  };
+}
 
-  if (data.assessmentResults?.katz) {
-    Object.entries(data.assessmentResults.katz).forEach(([hand, result]) => {
-      rows.push([`katz_${hand.toLowerCase().at(0)}_classification`, result.KatzScore?.classification]);
+function buildKatzHandFields(data, handKey) {
+  const katz = data.assessmentResults?.katz;
+  if (!katz) return {};
 
-      // Per-symptom coverage: one row per region × symptom.
-      const coverageBySymptom = result.KatzScore?.coverageBySymptom;
-      if (coverageBySymptom) {
-        const allRegions = new Set();
-        Object.values(coverageBySymptom).forEach(symptomMap =>
-          Object.keys(symptomMap).forEach(r => allRegions.add(r))
-        );
-        Array.from(allRegions).sort().forEach(region => {
-          ['pain', 'tingling', 'numbness'].forEach(symptom => {
-            const symptomAbbrev = symptom === 'pain' ? 'pain' : symptom === 'tingling' ? 'tingle' : symptom === 'numbness' ? 'numb' : '';
-            const regionAbbrev = region === 'palm_radial' ? 'palm_rad' : region === 'palm_ulnar' ? 'palm_ul' : region === 'dorsum' ? 'dorsum' : region === 'thumb_proximal' ? 'thumb_p' : region === 'thumb_distal' ? 'thumb_d' : region === 'index_proximal' ? 'index_p' : region === 'index_middle' ? 'index_m' : region === 'index_distal' ? 'index_d' : region === 'middle_proximal' ? 'middle_p' : region === 'middle_middle' ? 'middle_m' : region === 'middle_distal' ? 'middle_d' : region === 'wrist' ? 'wrist' : '';
-            const value = coverageBySymptom[symptom]?.[region];
-            rows.push([
-              `katz_${hand.toLowerCase().at(0)}_${regionAbbrev}_${symptomAbbrev}`,
-              typeof value === 'number' ? value.toFixed(2) : '',
-            ]);
-          });
-        });
-      }
+  // Case-insensitive lookup so 'left'/'Left' both resolve.
+  const actualKey = Object.keys(katz).find(k => k.toLowerCase() === handKey.toLowerCase());
+  if (!actualKey) return {};
+  const result = katz[actualKey];
 
-      // Total coverage (union of all three symptoms over the region).
-      // NOT the sum of per-symptom values — strokes for different
-      // symptoms can overlap on the canvas.
-      if (result.detailedCoverage) {
-        Object.entries(result.detailedCoverage).forEach(([region, value]) => {
-          const regionAbbrev = region === 'palm_radial' ? 'palm_rad' : region === 'palm_ulnar' ? 'palm_ul' : region === 'dorsum' ? 'dorsum' : region === 'thumb_proximal' ? 'thumb_p' : region === 'thumb_distal' ? 'thumb_d' : region === 'index_proximal' ? 'index_p' : region === 'index_middle' ? 'index_m' : region === 'index_distal' ? 'index_d' : region === 'middle_proximal' ? 'middle_p' : region === 'middle_middle' ? 'middle_m' : region === 'middle_distal' ? 'middle_d' : region === 'wrist' ? 'wrist' : '';
-          rows.push([
-            `katz_${hand.toLowerCase().at(0)}_${regionAbbrev}_total`,
-            typeof value === 'number' ? value.toFixed(2) : value,
-          ]);
-        });
-      }
-      rows.push([]);
+  const sidePrefix = `katz_${handKey.charAt(0).toLowerCase()}`;
+  const fields = {};
+
+  fields[`${sidePrefix}_classification`] = result.KatzScore?.classification ?? '';
+
+  // Per-symptom coverage: one entry per region × symptom.
+  const coverageBySymptom = result.KatzScore?.coverageBySymptom;
+  if (coverageBySymptom) {
+    const allRegions = new Set();
+    Object.values(coverageBySymptom).forEach(symptomMap =>
+      Object.keys(symptomMap).forEach(r => allRegions.add(r))
+    );
+    Array.from(allRegions).sort().forEach(region => {
+      const regionAbbrev = REGION_ABBREV[region] ?? region;
+      ['pain', 'tingling', 'numbness'].forEach(symptom => {
+        const symptomAbbrev = SYMPTOM_ABBREV[symptom];
+        const value = coverageBySymptom[symptom]?.[region];
+        fields[`${sidePrefix}_${regionAbbrev}_${symptomAbbrev}`] =
+          typeof value === 'number' ? value.toFixed(2) : '';
+      });
     });
   }
 
-  return rows;
+  // Total coverage = union of all three symptoms over the region, NOT the
+  // sum — strokes for different symptoms can overlap on the canvas.
+  if (result.detailedCoverage) {
+    Object.entries(result.detailedCoverage).forEach(([region, value]) => {
+      const regionAbbrev = REGION_ABBREV[region] ?? region;
+      fields[`${sidePrefix}_${regionAbbrev}_total`] =
+        typeof value === 'number' ? value.toFixed(2) : (value ?? '');
+    });
+  }
+
+  return fields;
+}
+
+// --- Public surface ----------------------------------------------------------
+
+/**
+ * Canonical field map: REDCap variable name → value. Pure, sync. This is
+ * the single source of truth for the REDCap field contract; both the CSV
+ * emitter and the (forthcoming) REDCap submission payload builder consume
+ * from the same section helpers, so they cannot drift.
+ *
+ * @param {Object} data
+ * @returns {Object<string, string|number>}
+ */
+export function buildFieldMap(data) {
+  return {
+    timestamp: data.timestamp,
+    ...buildQuestionFields(data),
+    ...buildFeedbackFields(data),
+    ...buildKamathScoreFields(data),
+    ...buildKatzHandFields(data, 'left'),
+    ...buildKatzHandFields(data, 'right'),
+  };
+}
+
+/**
+ * Build CSV rows for the human-readable backup download. Inserts a blank
+ * row between sections for visual separation. Pure function.
+ *
+ * @param {Object} data
+ * @returns {Array<Array<string|number>>}
+ */
+export function buildCsvRows(data) {
+  const sections = [
+    [['timestamp', data.timestamp]],
+    Object.entries(buildQuestionFields(data)),
+    Object.entries(buildFeedbackFields(data)),
+    Object.entries(buildKamathScoreFields(data)),
+    Object.entries(buildKatzHandFields(data, 'left')),
+    Object.entries(buildKatzHandFields(data, 'right')),
+  ];
+  return sections.flatMap((section, i) =>
+    i === 0 || section.length === 0 ? section : [[], ...section]
+  );
 }
 
 /**
  * Serialise CSV rows to text. Quotes any cell containing a comma,
  * a quote, or a newline; doubles internal quotes per RFC 4180.
- *
- * @param {Array<Array<string|number|boolean|null>>} rows
- * @returns {string}
  */
 export function rowsToCsv(rows) {
   return rows.map(row =>
@@ -126,100 +190,45 @@ export function rowsToCsv(rows) {
 }
 
 /**
- * Custom hook for building export data and downloading results.
- *
- * @param {Object} params
- * @param {string} params.participantId
- * @param {Object} params.diagnosticAnswers
- * @param {string} params.diagnosticEase
- * @param {string} params.diagnosticComments
- * @param {Object} params.handDiagramData
- * @param {string} params.diagramEase
- * @param {string} params.diagramComments
- * @param {Object|null} params.assessmentResults
- * @returns {Object}
+ * Hook for the CSV backup download.  
+ * canvas PNGs are REDCap-bound only and handled by the (forthcoming) submission path, not
+ * here. CSV download is a user-initiated backup — typically used when API
+ * submission has failed or when a coordinator requests a local copy.
  */
 export function useExport({
-  participantId,
   diagnosticAnswers,
   hasNumbnessOrTingling,
   diagnosticEase,
   diagnosticComments,
-  handDiagramData,
   diagramEase,
   diagramComments,
   assessmentResults,
 }) {
-  const [showDownloadMenu, setShowDownloadMenu] = useState(false);
+  const handleExportCSV = useCallback(() => {
+    const data = {
+      timestamp: new Date().toISOString(),
+      diagnosticAnswers,
+      hasNumbnessOrTingling,
+      diagnosticEase,
+      diagnosticComments,
+      diagramEase,
+      diagramComments,
+      assessmentResults,
+    };
+    const csv = rowsToCsv(buildCsvRows(data));
+    const filename = `cts_results_${data.timestamp.replace(/[:.]/g, '-')}.csv`;
 
-  const buildExportData = useCallback(async () => ({
-    participantId,
-    timestamp: new Date().toISOString(),
-    diagnosticAnswers,
-    hasNumbnessOrTingling,
-    diagnosticEase,
-    diagnosticComments,
-    handDiagramImages: await captureHandDiagrams(handDiagramData),
-    diagramEase,
-    diagramComments,
-    assessmentResults,
-    katzThresholds: {
-      minThresholdPct: MIN_THRESHOLD,
-      halfThresholdPct: HALF_THRESHOLD,
-    },
-  }), [
-    participantId, diagnosticAnswers, hasNumbnessOrTingling, diagnosticEase,
-    diagnosticComments, handDiagramData, diagramEase,
-    diagramComments, assessmentResults,
-  ]);
-
-  const downloadFile = useCallback((content, filename, mimeType) => {
-    const blob = new Blob([content], { type: mimeType });
+    const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
-    setShowDownloadMenu(false);
-  }, []);
+  }, [
+    diagnosticAnswers, hasNumbnessOrTingling, diagnosticEase, diagnosticComments,
+    diagramEase, diagramComments, assessmentResults,
+  ]);
 
-  const handleExportJSON = useCallback(async () => {
-    const data = await buildExportData();
-    downloadFile(
-      JSON.stringify(data, null, 2),
-      `${participantId}_results.json`,
-      'application/json'
-    );
-  }, [buildExportData, downloadFile, participantId]);
-
-  const handleExportCSV = useCallback(async () => {
-    const data = await buildExportData();
-    downloadFile(
-      rowsToCsv(buildCsvRows(data)),
-      `${participantId}_results.csv`,
-      'text/csv'
-    );
-  }, [buildExportData, downloadFile, participantId]);
-
-  const handlePrint = useCallback(() => {
-    window.print();
-  }, []);
-
-  const handleToggleDownloadMenu = useCallback(() => {
-    setShowDownloadMenu(prev => !prev);
-  }, []);
-
-  const handleCloseDownloadMenu = useCallback(() => {
-    setShowDownloadMenu(false);
-  }, []);
-
-  return {
-    showDownloadMenu,
-    handleExportJSON,
-    handleExportCSV,
-    handlePrint,
-    handleToggleDownloadMenu,
-    handleCloseDownloadMenu,
-  };
+  return { handleExportCSV };
 }
