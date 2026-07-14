@@ -2,10 +2,10 @@ import { readSession, importRecord, importFile, json } from '../_lib/redcap.js';
 
 // FormData key → REDCap file-upload field. Match these to your dictionary.
 const IMAGE_FIELDS = {
-  img_left_palm: 'katz_l_palm_img',
-  img_left_back: 'katz_l_dorsum_img',
-  img_right_palm: 'katz_r_palm_img',
-  img_right_back: 'katz_r_dorsum_img',
+  img_left_palmar: 'katz_l_palmar',
+  img_left_dorsal: 'katz_l_dorsal',
+  img_right_palmar: 'katz_r_palmar',
+  img_right_dorsal: 'katz_r_dorsal',
 };
 
 export async function onRequestPost({ request, env }) {

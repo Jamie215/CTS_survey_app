@@ -1,12 +1,68 @@
+// Shared helpers for the Cloudflare Pages Functions that talk to REDCap.
 export const ACCESS_KEY_FIELD = 'access_key';
 export const RECORD_ID_FIELD = 'record_id';
+
+export const NON_REDCAP_FIELDS = new Set(); // app-only keys to strip (empty now)
+const PROTECTED_FIELDS = new Set([RECORD_ID_FIELD, 'redcap_event_name']);
+
+export function sanitizeFields(fields) {
+  const clean = {};
+  for (const [key, value] of Object.entries(fields || {})) {
+    if (NON_REDCAP_FIELDS.has(key)) continue;
+    if (PROTECTED_FIELDS.has(key)) continue;
+    clean[key] = value;
+  }
+  return clean;
+}
+
+const YESNO_FIELDS = new Set([
+  'kamath_numb', 'kamath_numb_wakeup', 'kamath_numb_firstwakeup',
+  'kamath_numb_fingersmed', 'kamath_numb_quickmovements', 'kamath_numb_littlefinger', 'kamath_numb_activities', 'kamath_wristpain', 'kamath_dropobjects', 'kamath_neckpain', 'kamath_toesnumbortingle', 'kamath_splinttried', 'kamath_splinteffectiveness',
+]);
+
+const YESNO_CODES = { Yes: 1, No: 0 };
+
+const EASE_CODES = { 'Very easy': 1, 'Somewhat easy': 2, 'Somewhat difficult': 3, 'Very difficult': 4 };
+
+const KATZ_CLASS_CODES = {
+  'Unlikely CTS': '0',
+  'Possible CTS Symptom Distribution': '1',
+  'Probable CTS Symptom Distribution': '2',
+  'Classic CTS Symptom Distribution': '3',
+};
+
+const RADIO_CODES = {
+  kamath_numb_pregnant : { Yes: 1, No: 2, "Not relevant": 3 },
+  kamath_ease: EASE_CODES,
+  katz_l_clasification: KATZ_CLASS_CODES,
+  katz_r_clasification: KATZ_CLASS_CODES,
+}
+
+export function toRedcapValues(fields) {
+  const out = {};
+  for (const [key, value] of Object.entries(fields || {})) {
+    if (value === '' || value === null || value === undefined) {
+      out[key] = value;
+    } else if (YESNO_FIELDS.has(key)) {
+      out[key] = YESNO_CODES[value] ?? value;
+    } else if (RADIO_CODES[key]) {
+      out[key] = RADIO_CODES[key][value] ?? value;
+    } else {
+      out[key] = value;
+    }
+  }
+  return out;
+}
 
 const SESSION_TTL_SECONDS = 2 * 60 * 60; // 2 hours
 const SESSION_COOKIE = 'cts_rc_session';
 
 /** POST to the REDCap API (urlencoded, token in body). */
 export async function redcapApi(env, params) {
-  const body = new URLSearchParams({ token: env.REDCAP_API_TOKEN, ...params });
+  const body = new URLSearchParams({ 
+    token: env.REDCAP_API_TOKEN, 
+    ...params,
+  }); 
   const res = await fetch(env.REDCAP_API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -17,11 +73,17 @@ export async function redcapApi(env, params) {
   try { return JSON.parse(text); } catch { return text; }
 }
 
-/** Opaque access key → { recordId, eventName } (longitudinal-aware). */
+/** 
+ *  Resolve an opaque access key to a participant record AND timepoint.
+ * 
+ * The study is longitudinal (baseline, 6-week, 3 month), sop each invitation carries its own per-record, per-event access ke field and match the exact row to recover both the record id and the REDCap event name for that timepoint.
+ */
 export async function resolveAccessKey(env, accessKey) {
   if (!accessKey || typeof accessKey !== 'string') return null;
   const rows = await redcapApi(env, {
-    content: 'record', format: 'json', type: 'flat',
+    content: 'record', 
+    format: 'json', 
+    type: 'flat',
     fields: `${RECORD_ID_FIELD},${ACCESS_KEY_FIELD}`,
     filterLogic: `[${ACCESS_KEY_FIELD}] = "${accessKey.replace(/"/g, '')}"`,
     returnFormat: 'json',
@@ -35,15 +97,19 @@ export async function resolveAccessKey(env, accessKey) {
 /** Import field map into one record/event. Blank values never wipe data. */
 export async function importRecord(env, { recordId, eventName, fields }) {
   const record = {
+    ...toRedcapValues(sanitizeFields(fields)),
     [RECORD_ID_FIELD]: recordId,
     ...(eventName ? { redcap_event_name: eventName } : {}),
-    ...fields,
   };
   return redcapApi(env, {
-    content: 'record', action: 'import', format: 'json', type: 'flat',
+    content: 'record', 
+    action: 'import', 
+    format: 'json', 
+    type: 'flat',
     overwriteBehavior: 'normal',
     data: JSON.stringify([record]),
-    returnContent: 'count', returnFormat: 'json',
+    returnContent: 'count', 
+    returnFormat: 'json',
   });
 }
 

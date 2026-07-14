@@ -81,7 +81,7 @@ function buildKamathScoreFields(data) {
   const kamath = data.assessmentResults?.kamath;
   if (!kamath) return {};
   return {
-    kamath_totalScore: kamath.totalScore,
+    kamath_score: kamath.totalScore,
     kamath_classification: kamath.classification,
   };
 }
@@ -204,9 +204,12 @@ export function useExport({
   diagramComments,
   assessmentResults,
 }) {
+  const date = new Date();
+  const formattedDate = new Intl.DateTimeFormat('en-US', {
+    day: '2-digit', month: '2-digit', year: 'numeric'}).format(date).replace(/\//g, '-');
   const handleExportCSV = useCallback(() => {
     const data = {
-      timestamp: new Date().toISOString(),
+      timestamp: formattedDate,
       diagnosticAnswers,
       hasNumbnessOrTingling,
       diagnosticEase,

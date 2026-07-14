@@ -17,7 +17,9 @@ export function useRedcapSession() {
     resolveSession(accessKey)
       .then((result) => {
         if (cancelled) return;
-        if (result.ok) { setTimepoint(result.timepoint || null); setStatus('ready'); }
+        if (result.ok) { 
+          setTimepoint(result.timepoint || null); setStatus('ready'); 
+        }
         else setStatus(result.error === 'invalid_key' ? 'invalid' : 'error');
       })
       .catch(() => { if (!cancelled) setStatus('error'); });

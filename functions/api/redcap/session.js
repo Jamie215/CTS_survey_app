@@ -3,8 +3,8 @@ import { resolveAccessKey, createSessionCookie, json } from '../_lib/redcap.js';
 // Adjust to your project's real unique event names.
 const TIMEPOINT_LABELS = {
   baseline_arm_1: 'Baseline',
-  week6_arm_1: '6-Week Follow-up',
-  month3_arm_1: '3-Month Follow-up',
+  '6_weeks_arm_1': '6-Week',
+  '3_months_arm_1': '3-Month',
 };
 
 export async function onRequestGet({ request, env }) {
