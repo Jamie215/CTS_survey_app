@@ -34,8 +34,9 @@ const KATZ_CLASS_CODES = {
 const RADIO_CODES = {
   kamath_numb_pregnant : { Yes: 1, No: 2, "Not relevant": 3 },
   kamath_ease: EASE_CODES,
-  katz_l_clasification: KATZ_CLASS_CODES,
-  katz_r_clasification: KATZ_CLASS_CODES,
+  katz_ease: EASE_CODES,
+  katz_l_classification: KATZ_CLASS_CODES,
+  katz_r_classification: KATZ_CLASS_CODES,
 }
 
 export function toRedcapValues(fields) {
