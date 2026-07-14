@@ -13,6 +13,8 @@ import { useTour } from '../hooks/useTour';
 import { useScoring } from '../hooks/useScoring';
 import { useExport } from '../hooks/useExport';
 import { useIdleTimeout } from '../hooks/useIdleTimeout';
+import { useRedcapSession } from '../hooks/useRedcapSession';
+import { useRedcapSubmit } from '../hooks/useRedcapSubmit';
 
 // Canvas utilities
 import { drawSymptomsOnCanvas, hasAnyDrawings } from '../lib/canvasUtils';
@@ -80,6 +82,26 @@ const CTSSurveyApp = ({}) => {
     diagramEase,
     diagramComments,
     assessmentResults,
+  });
+
+  // REDCap: resolve the invitation link's access key to a record + timepoint.
+  // Absent a ?k= link, redcapEnabled is false and the app runs standalone.
+  const { redcapEnabled, status: redcapStatus, timepoint } = useRedcapSession();
+
+  // Auto-submit to REDCap once the Results section renders with scores ready.
+  const { status: redcapSubmitStatus } = useRedcapSubmit({
+    enabled: redcapEnabled,
+    active: currentSection === 2,
+    data: {
+      diagnosticAnswers,
+      hasNumbnessOrTingling,
+      diagnosticEase,
+      diagnosticComments,
+      diagramEase,
+      diagramComments,
+      assessmentResults,
+    },
+    resultsCanvasRefs,
   });
 
   // ============================================
@@ -247,6 +269,14 @@ const CTSSurveyApp = ({}) => {
       </header>
 
       <div className="max-w-4xl mx-auto px-3 sm:px-6 py-4 sm:py-8">
+        {/* ── REDCap session banner ── */}
+        <RedcapBanner
+          sessionStatus={redcapStatus}
+          submitStatus={redcapSubmitStatus}
+          timepoint={timepoint}
+          onResults={currentSection === 2}
+        />
+
         {/* ── Progress Stepper ── */}
         <div className="mb-6 sm:mb-8 print-hide">
           <div className="flex items-center justify-between px-2 sm:justify-center">
@@ -343,5 +373,46 @@ const CTSSurveyApp = ({}) => {
     </div>
   );
 };
+
+/**
+ * Thin status banner for REDCap-linked sessions. Renders nothing in
+ * standalone mode (no ?k= link). Shows the timepoint once linked, and the
+ * auto-submission outcome on the Results page.
+ */
+function RedcapBanner({ sessionStatus, submitStatus, timepoint, onResults }) {
+  if (sessionStatus === 'none') return null;
+
+  let tone = 'bg-blue-50 border-blue-200 text-blue-800';
+  let message;
+
+  if (sessionStatus === 'resolving') {
+    message = 'Verifying your survey link…';
+  } else if (sessionStatus === 'invalid') {
+    tone = 'bg-red-50 border-red-200 text-red-800';
+    message = 'This survey link is not valid or has expired. Please contact your study coordinator.';
+  } else if (sessionStatus === 'error') {
+    tone = 'bg-yellow-50 border-yellow-200 text-yellow-800';
+    message = 'We could not verify your survey link right now. You can still complete the assessment; results may need to be submitted manually.';
+  } else if (sessionStatus === 'ready') {
+    const label = timepoint ? `${timepoint} assessment` : 'study assessment';
+    if (onResults && submitStatus === 'success') {
+      tone = 'bg-green-50 border-green-200 text-green-800';
+      message = `Your ${label} has been submitted to the study. Thank you!`;
+    } else if (onResults && submitStatus === 'submitting') {
+      message = 'Submitting your responses to the study…';
+    } else if (onResults && submitStatus === 'error') {
+      tone = 'bg-yellow-50 border-yellow-200 text-yellow-800';
+      message = 'We could not submit your responses automatically. Please download the CSV and send it to your study coordinator.';
+    } else {
+      message = `You are completing the ${label}. Your responses will be submitted automatically when you finish.`;
+    }
+  }
+
+  return (
+    <div className={`mb-4 rounded-lg border px-4 py-3 text-sm ${tone} print-hide`}>
+      {message}
+    </div>
+  );
+}
 
 export default CTSSurveyApp;
