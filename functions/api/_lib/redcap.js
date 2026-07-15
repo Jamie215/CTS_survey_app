@@ -74,7 +74,73 @@ export async function redcapApi(env, params) {
   try { return JSON.parse(text); } catch { return text; }
 }
 
-/** 
+/**
+ * Generate a URL-safe, unguessable access key. 24 random bytes (192 bits)
+ * base64url-encoded — far beyond the ~128-bit floor for a bearer token that
+ * travels in a link. Uses the Web Crypto RNG available in the Workers runtime.
+ */
+export function generateAccessKey() {
+  const bytes = crypto.getRandomValues(new Uint8Array(24));
+  let bin = '';
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+/**
+ * Read the current access_key for one record across all its events.
+ * Returns a map of { [redcap_event_name]: access_key } for rows that exist.
+ * Events with no saved data (or a blank key) are simply absent from the map.
+ */
+export async function readRecordKeys(env, recordId) {
+  const rows = await redcapApi(env, {
+    content: 'record',
+    format: 'json',
+    type: 'flat',
+    records: String(recordId),
+    fields: `${RECORD_ID_FIELD},${ACCESS_KEY_FIELD}`,
+    returnFormat: 'json',
+  });
+  const map = {};
+  if (Array.isArray(rows)) {
+    for (const r of rows) {
+      const key = r[ACCESS_KEY_FIELD];
+      if (key) map[r.redcap_event_name || ''] = key;
+    }
+  }
+  return map;
+}
+
+/**
+ * Provision missing per-event access keys for a record. Idempotent: only
+ * events whose key is currently blank get a freshly generated token, so
+ * re-firing (REDCap re-saves the record constantly) never rotates a key
+ * that may already be sitting in a sent invitation email. Returns the list
+ * of events that were newly provisioned (empty if nothing needed doing).
+ */
+export async function provisionRecordKeys(env, { recordId, eventNames }) {
+  const existing = await readRecordKeys(env, recordId);
+  const toCreate = eventNames.filter((ev) => !existing[ev]);
+  if (toCreate.length === 0) return [];
+
+  const data = toCreate.map((ev) => ({
+    [RECORD_ID_FIELD]: recordId,
+    redcap_event_name: ev,
+    [ACCESS_KEY_FIELD]: generateAccessKey(),
+  }));
+  await redcapApi(env, {
+    content: 'record',
+    action: 'import',
+    format: 'json',
+    type: 'flat',
+    overwriteBehavior: 'normal',
+    data: JSON.stringify(data),
+    returnContent: 'count',
+    returnFormat: 'json',
+  });
+  return toCreate;
+}
+
+/**
  *  Resolve an opaque access key to a participant record AND timepoint.
  * 
  * The study is longitudinal (baseline, 6-week, 3 month), sop each invitation carries its own per-record, per-event access ke field and match the exact row to recover both the record id and the REDCap event name for that timepoint.
