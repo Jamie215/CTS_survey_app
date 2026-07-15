@@ -1,4 +1,4 @@
-import { provisionRecordKeys, json } from './_lib/redcap.js';
+import { provisionRecordKeys, json } from '../_lib/redcap.js';
 
 // 3 Longitudinal events that each need their own access key
 const EVENT_NAMES = ['baseline_arm_1', '6_weeks_arm_1', '3_months_arm_1'];
