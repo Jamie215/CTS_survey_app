@@ -207,7 +207,6 @@ export function rowsToCsv(rows) {
  * submission has failed or when a coordinator requests a local copy.
  */
 export function useExport({
-  timestamp,
   diagnosticAnswers,
   hasNumbnessOrTingling,
   diagnosticEase,
@@ -217,8 +216,19 @@ export function useExport({
   assessmentResults,
 }) {
   const handleExportCSV = useCallback(() => {
+    const date = new Date();
+    const pad = (num) => String(num).padStart(2, '0');
+
+    const yyyy = date.getFullYear();
+    const mm = pad(date.getMonth() + 1); // Months are 0-indexed
+    const dd = pad(date.getDate());
+    const hh = pad(date.getHours());
+    const min = pad(date.getMinutes());
+
+    // Outputs: "2026-07-15 14:02"
+    const formattedDate = `${yyyy}-${mm}-${dd} ${hh}:${min}`;
     const data = {
-      timestamp,
+      timestamp: formattedDate,
       diagnosticAnswers,
       hasNumbnessOrTingling,
       diagnosticEase,
