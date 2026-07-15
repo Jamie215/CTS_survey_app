@@ -205,8 +205,16 @@ export function useExport({
   assessmentResults,
 }) {
   const date = new Date();
-  const formattedDate = new Intl.DateTimeFormat('en-US', {
-    year: 'numeric', month: '2-digit', day: '2-digit'}).format(date).replace(/\//g, '-');
+  const pad = (num) => String(num).padStart(2, '0');
+
+  const yyyy = date.getFullYear();
+  const mm = pad(date.getMonth() + 1); // Months are 0-indexed
+  const dd = pad(date.getDate());
+  const hh = pad(date.getHours());
+  const min = pad(date.getMinutes());
+
+  // Outputs: "2026-07-15 14:02"
+  const formattedDate = `${yyyy}-${mm}-${dd} ${hh}:${min}`;
   const handleExportCSV = useCallback(() => {
     const data = {
       timestamp: formattedDate,
