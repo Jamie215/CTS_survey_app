@@ -206,7 +206,7 @@ export function useExport({
 }) {
   const date = new Date();
   const formattedDate = new Intl.DateTimeFormat('en-US', {
-    year: 'numeric', month: '2-digit', day: '2-digit'}).format(date).replace(/\//g, '-');
+    day: '2-digit', month: '2-digit', year: 'numeric'}).format(date).replace(/\//g, '-');
   const handleExportCSV = useCallback(() => {
     const data = {
       timestamp: formattedDate,

@@ -19,7 +19,7 @@ export function useRedcapSubmit({ enabled, active, data, resultsCanvasRefs }) {
 
     // Results draws the combined canvases on a short timer — wait past it.
     const timer = setTimeout(() => {
-      const fieldMap = buildFieldMap({ ...dataRef.current, timestamp: new Date().toISOString() });
+      const fieldMap = buildFieldMap({ ...dataRef.current, timestamp: dataRef.current.timestamp });
       const canvases = {
         img_left_palmar: resultsCanvasRefs.combinedLeftVolar.current,
         img_left_dorsal: resultsCanvasRefs.combinedLeftDorsal.current,
