@@ -1,17 +1,19 @@
 import { provisionRecordKeys, json } from '../_lib/redcap.js';
 
-// 3 Longitudinal events that each need their own access key
+// The three longitudinal events that each need their own access key.
+// Must match the unique event names in your REDCap project exactly.
 const EVENT_NAMES = ['baseline_arm_1', '6_weeks_arm_1', '3_months_arm_1'];
 
 /**
  * REDCap Data Entry Trigger (DET) handler.
+ *
  * REDCap POSTs here (application/x-www-form-urlencoded) every time a record
  * is created or saved. On the first fire for a record we generate a unique
  * access key for each of the three events and write them back via the API,
  * so the scheduled Alerts can later pipe [access_key] into the invitation
  * link. Idempotent — subsequent saves find the keys already present and do
  * nothing.
- * 
+ *
  * Security: DET requests are unauthenticated by REDCap, so we gate on a
  * shared secret carried in the URL (?s=...) and verify the project id.
  */
