@@ -143,8 +143,19 @@ function buildKatzHandFields(data, handKey) {
  * @returns {Object<string, string|number>}
  */
 export function buildFieldMap(data) {
+  const date = new Date();
+  const pad = (num) => String(num).padStart(2, '0');
+
+  const yyyy = date.getFullYear();
+  const mm = pad(date.getMonth() + 1); // Months are 0-indexed
+  const dd = pad(date.getDate());
+  const hh = pad(date.getHours());
+  const min = pad(date.getMinutes());
+
+  // Outputs: "2026-07-15 14:02"
+  const formattedDate = `${yyyy}-${mm}-${dd} ${hh}:${min}`;
   return {
-    timestamp: data.timestamp,
+    timestamp: formattedDate,
     ...buildQuestionFields(data),
     ...buildFeedbackFields(data),
     ...buildKamathScoreFields(data),
@@ -204,10 +215,18 @@ export function useExport({
   diagramComments,
   assessmentResults,
 }) {
-  const date = new Date();
-  const formattedDate = new Intl.DateTimeFormat('en-US', {
-    day: '2-digit', month: '2-digit', year: 'numeric'}).format(date).replace(/\//g, '-');
   const handleExportCSV = useCallback(() => {
+    const date = new Date();
+    const pad = (num) => String(num).padStart(2, '0');
+
+    const yyyy = date.getFullYear();
+    const mm = pad(date.getMonth() + 1); // Months are 0-indexed
+    const dd = pad(date.getDate());
+    const hh = pad(date.getHours());
+    const min = pad(date.getMinutes());
+
+    // Outputs: "2026-07-15 14:02"
+    const formattedDate = `${yyyy}-${mm}-${dd} ${hh}:${min}`;
     const data = {
       timestamp: formattedDate,
       diagnosticAnswers,
