@@ -89,7 +89,11 @@ const CTSSurveyApp = ({}) => {
   const { redcapEnabled, status: redcapStatus, timepoint } = useRedcapSession();
 
   // Auto-submit to REDCap once the Results section renders with scores ready.
-  const { status: redcapSubmitStatus, retry: retryRedcapSubmit } = useRedcapSubmit({
+  const {
+    status: redcapSubmitStatus,
+    missingImages: redcapMissingImages,
+    retry: retryRedcapSubmit,
+  } = useRedcapSubmit({
     enabled: redcapEnabled,
     active: currentSection === 2,
     data: {
@@ -307,6 +311,7 @@ const CTSSurveyApp = ({}) => {
           onResults={currentSection === 2}
           isResultsDetailShown={isResultsDetailShown}
           onRetry={retryRedcapSubmit}
+          missingImages={redcapMissingImages}
         />
 
         {/* ── Progress Stepper ── */}
@@ -415,7 +420,7 @@ const CTSSurveyApp = ({}) => {
  * auto-submission outcome on the Results page. The CSV fallback is only
  * offered in the healthcare-professional view, where the download exists.
  */
-function RedcapBanner({ sessionStatus, submitStatus, timepoint, onResults, isResultsDetailShown, onRetry }) {
+function RedcapBanner({ sessionStatus, submitStatus, timepoint, onResults, isResultsDetailShown, onRetry, missingImages = [] }) {
   if (sessionStatus === 'none') return null;
 
   let tone = 'bg-blue-50 border-blue-200 text-blue-800';
@@ -436,6 +441,14 @@ function RedcapBanner({ sessionStatus, submitStatus, timepoint, onResults, isRes
       message = `Your ${label} has been submitted to the study. Thank you!`;
     } else if (onResults && submitStatus === 'submitting') {
       message = 'Submitting your responses to the study…';
+    } else if (onResults && submitStatus === 'partial') {
+      // Answers are saved; only drawings are missing. Not retryable from
+      // here (the timepoint is now closed), so the coordinator follows up.
+      tone = 'bg-yellow-50 border-yellow-200 text-yellow-800';
+      const n = missingImages.length;
+      message = `Your answers for the ${label} were submitted, but ${n} of your 4 hand drawings could not be saved. `
+        + 'Please let your study coordinator know.'
+        + (isResultsDetailShown ? ` Missing: ${missingImages.join(', ')}.` : '');
     } else if (onResults && submitStatus === 'already_submitted') {
       tone = 'bg-yellow-50 border-yellow-200 text-yellow-800';
       message = `Your ${label} was already submitted, so these responses were not saved. Submitted responses cannot be changed.`;

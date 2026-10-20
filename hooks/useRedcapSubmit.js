@@ -4,8 +4,10 @@ import { buildFieldMap } from './useExport';        // reuses the existing field
 import { submitAssessment } from '../lib/redcapClient';
 
 export function useRedcapSubmit({ enabled, active, data, resultsCanvasRefs }) {
-  // idle → submitting → success | error | already_submitted
+  // idle → submitting → success | partial | error | already_submitted
+  // partial = answers saved, but some hand-diagram images are missing.
   const [status, setStatus] = useState('idle');
+  const [missingImages, setMissingImages] = useState([]);  // REDCap field names
   const [attempt, setAttempt] = useState(0);         // bumped by retry() to re-run the effect
   const submittedRef = useRef(false);                // fire at most once per attempt
   const dataRef = useRef(data);                      // latest-ref: data is rebuilt every render
@@ -30,7 +32,11 @@ export function useRedcapSubmit({ enabled, active, data, resultsCanvasRefs }) {
       };
       submitAssessment({ fieldMap, canvases })
         .then((result) => {
-          if (result.ok) setStatus('success');
+          if (result.ok) {
+            const missing = (result.imageErrors || []).map((e) => e.field);
+            setMissingImages(missing);
+            setStatus(missing.length > 0 ? 'partial' : 'success');
+          }
           else if (result.error === 'already_submitted') setStatus('already_submitted'); // final, no retry
           else { setStatus('error'); submittedRef.current = false; }                     // allow retry
         })
@@ -45,5 +51,5 @@ export function useRedcapSubmit({ enabled, active, data, resultsCanvasRefs }) {
     setAttempt((n) => n + 1);
   }, []);
 
-  return { status, retry };
+  return { status, missingImages, retry };
 }

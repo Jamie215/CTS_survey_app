@@ -41,10 +41,11 @@ Each instrument produces an independent score. Together they provide a more robu
 2. A REDCap Alert emails the participant `https://<site>/?k=[access_key]`.
 3. The browser sends the key to `/api/redcap/session`, which looks up the record and timepoint and sets a signed, HttpOnly session cookie (2 hours). The record ID never reaches the browser.
 4. When Results appear, the browser posts the field map and four PNGs to `/api/redcap/submit`, which imports the record, then uploads each image into its file-upload field (`katz_l_palmar`, `katz_l_dorsal`, `katz_r_palmar`, `katz_r_dorsal`).
-5. If submission fails, a banner offers **Try again** and asks the participant to contact the study coordinator (the professional view also points to the CSV download).
-6. Responses are final once submitted. A timepoint whose `timestamp` field is already filled in is closed: reopening its link (or an idle-timeout reload) shows an "already submitted" notice, and `/api/redcap/submit` refuses a second submission. Other timepoints for the same participant stay open.
+5. Images are best-effort and never block the saved answers, but they are never silent either. Each failed upload is retried once; any image still missing (never received, or rejected by REDCap) is reported back by field name, and the participant is asked to tell their coordinator. If `IMAGE_STATUS_FIELD` names a text field in the REDCap project, the server also writes `complete` or `missing: <fields>` there, so incomplete records can be found with a REDCap report.
+6. If submission fails, a banner offers **Try again** and asks the participant to contact the study coordinator (the professional view also points to the CSV download).
+7. Responses are final once submitted. A timepoint whose `timestamp` field is already filled in is closed: reopening its link (or an idle-timeout reload) shows an "already submitted" notice, and `/api/redcap/submit` refuses a second submission. Other timepoints for the same participant stay open.
 
-Required server secrets: `REDCAP_API_URL`, `REDCAP_API_TOKEN`, `SESSION_SECRET`, `PROVISION_SECRET`, and optionally `REDCAP_PROJECT_ID`. Never commit these to the repository.
+Required server secrets: `REDCAP_API_URL`, `REDCAP_API_TOKEN`, `SESSION_SECRET`, `PROVISION_SECRET`, and optionally `REDCAP_PROJECT_ID` and `IMAGE_STATUS_FIELD`. Never commit these to the repository.
 
 ## Data residency (open item)
 

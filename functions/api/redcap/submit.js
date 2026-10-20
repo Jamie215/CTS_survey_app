@@ -8,6 +8,9 @@ const IMAGE_FIELDS = {
   img_right_dorsal: 'katz_r_dorsal',
 };
 
+// A failed image upload is retried once before it is reported.
+const IMAGE_UPLOAD_ATTEMPTS = 2;
+
 export async function onRequestPost({ request, env }) {
   const session = await readSession(env, request);       // record id trusted only from signed cookie
   if (!session) return json({ ok: false, error: 'no_session' }, { status: 401 });
@@ -32,19 +35,51 @@ export async function onRequestPost({ request, env }) {
     return json({ ok: false, error: 'import_failed', detail: String(err) }, { status: 502 });
   }
 
-  // 2) Hand-diagram images (best-effort — never discards data imported above)
+  // 2) Hand-diagram images (best-effort — never discards data imported above).
+  //    Every expected image is accounted for: one that never arrived is
+  //    reported as not_received, one REDCap rejected (after one retry) as
+  //    upload_failed with REDCap's error text.
   const imageErrors = [];
   for (const [formKey, redcapField] of Object.entries(IMAGE_FIELDS)) {
     const file = form.get(formKey);
-    if (!file || typeof file === 'string') continue;
+    if (!file || typeof file === 'string') {
+      imageErrors.push({ field: redcapField, reason: 'not_received' });
+      continue;
+    }
+    let lastError;
+    for (let attempt = 1; attempt <= IMAGE_UPLOAD_ATTEMPTS; attempt++) {
+      try {
+        await importFile(env, {
+          recordId: session.recordId, eventName: session.eventName,
+          field: redcapField, blob: file, filename: `${formKey}.png`,
+        });
+        lastError = null;
+        break;
+      } catch (err) {
+        lastError = err;
+      }
+    }
+    if (lastError) imageErrors.push({ field: redcapField, reason: 'upload_failed', error: String(lastError) });
+  }
+
+  // 3) Optional coordinator flag: when IMAGE_STATUS_FIELD names a text
+  //    field in the REDCap project, record which drawings are missing so
+  //    the coordinator can find incomplete records with a report.
+  let imageStatusSaved = null;
+  if (env.IMAGE_STATUS_FIELD) {
+    const status = imageErrors.length === 0
+      ? 'complete'
+      : `missing: ${imageErrors.map((e) => e.field).join(', ')}`;
     try {
-      await importFile(env, {
+      await importRecord(env, {
         recordId: session.recordId, eventName: session.eventName,
-        field: redcapField, blob: file, filename: `${formKey}.png`,
+        fields: { [env.IMAGE_STATUS_FIELD]: status },
       });
-    } catch (err) {
-      imageErrors.push({ field: redcapField, error: String(err) });
+      imageStatusSaved = true;
+    } catch {
+      imageStatusSaved = false;
     }
   }
-  return json({ ok: true, imageErrors });
+
+  return json({ ok: true, imageErrors, imageStatusSaved });
 }
