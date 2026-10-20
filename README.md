@@ -69,6 +69,7 @@ The functions in `functions/api/` use only standard web APIs (fetch, FormData, W
 | Icons | lucide-react |
 | Onboarding | driver.js |
 | Tests | Vitest |
+| CI | GitHub Actions (lint, tests, build) |
 | Hosting (demo) | Cloudflare Pages |
 | REDCap server functions (`redcap` branch) | Cloudflare Pages Functions — to be replaced, see above |
 
@@ -142,7 +143,7 @@ Open [http://localhost:3000](http://localhost:3000). This runs standalone mode; 
 
 ### Checks
 
-There is no CI yet, so run these before pushing:
+GitHub Actions (`.github/workflows/ci.yml`) runs these on every push to `main`/`redcap` and on every pull request. Run them locally before pushing:
 
 ```bash
 npm run lint
