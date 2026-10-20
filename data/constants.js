@@ -92,3 +92,14 @@ export const KATZ_SYMPTOMS = ['pain', 'tingling', 'numbness'];
  */
 export const IDLE_TIMEOUT_MS = 10 * 60 * 1000;  // 10 minutes
 export const IDLE_WARNING_MS = 60 * 1000;        // 60 seconds
+
+/**
+ * Study timepoints for the in-person export. `event` is the REDCap
+ * unique event name the exported row is imported into; `slug` goes in
+ * the file name.
+ */
+export const STUDY_TIMEPOINTS = [
+  { event: 'baseline_arm_1', label: 'Baseline', slug: 'baseline' },
+  { event: '6_weeks_arm_1', label: '6-Week', slug: '6week' },
+  { event: '3_months_arm_1', label: '3-Month', slug: '3month' },
+];

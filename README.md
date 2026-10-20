@@ -20,9 +20,23 @@ Each instrument produces an independent score. Together they provide a more robu
 - **Dual scoring engine** — Kamath-based score (questionnaire, 0–11 scale) and Katz-based score (hand diagram pixel analysis with finger/palm zone detection)
 - **Clinician identification modal** — Results page conditionally shows detailed clinical breakdowns (score tables, coverage percentages, zone analysis) for healthcare professionals while presenting a simplified summary for patients
 - **Guided onboarding tours** — driver.js-powered walkthroughs for the questions section (highlight) and hand diagram section (step-by-step) to orient first-time users
-- **Export options** — Download results as JSON or CSV, or print directly from the browser
+- **Export options** — Download results as CSV, or print directly from the browser
+- **In-person study export** — Study staff save one ZIP per session (REDCap import row + the four hand drawings) to an encrypted study drive; see [In-person study mode](#in-person-study-mode-option-1a)
 - **Fully static** — Exports as a standalone site with no server-side dependencies; all processing happens client-side
 - **Accessible and responsive** — Tailwind CSS layout adapts to desktop, tablet and mobile viewports
+
+## In-person study mode (option 1a)
+
+This branch is the reference for collecting study data **in person**, with nothing sent over the internet. (Remote collection through REDCap lives on the `redcap` branch.)
+
+1. The participant completes the survey on a study device using the plain site address.
+2. On the Results page, study staff enter the **participant ID** and **timepoint** and click **Save study files (ZIP)**.
+3. The ZIP contains:
+   - `<base>_redcap.csv` — one row in REDCap's import format: `record_id`, `redcap_event_name`, then every field using REDCap's codes (Yes = 1, No = 0, …). Import it with REDCap's Data Import Tool.
+   - `<base>_katz_l_palmar.png`, `_katz_l_dorsal`, `_katz_r_palmar`, `_katz_r_dorsal` — the combined hand drawings, named after the REDCap file-upload fields they are uploaded to.
+4. Save the ZIP to the encrypted study drive, then click **Finish and start next participant** to clear the session.
+
+`<base>` is `CTS_<participant ID>_<timepoint>_<YYYYMMDD-HHMM>`. The REDCap coding lives in `lib/redcapCoding.js` (shared with the `redcap` branch); the export itself is `lib/studyExport.js`, `hooks/useStudyExport.js` and `components/StudyRecordPanel.js`.
 
 ## Tech Stack
 
