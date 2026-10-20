@@ -53,7 +53,7 @@ When running on Cloudflare Pages Functions, every REDCap call (including each pa
 
 | Option | Remote participation | REB likelihood |
 |--------|----------------------|----------------|
-| 1a. Web app, results saved to an encrypted study device and collected in person | No | High |
+| 1a. Web app, results saved to an encrypted study device and collected in person — **built on the `in-person` branch** ([PR #2](https://github.com/Jamie215/CTS_survey_app/pull/2) into `main`) | No | High |
 | 1b. Mobile app on a study-provided tablet | No | High |
 | 2a. Site and REDCap functions hosted on a Western-managed (WTS) server in Canada | Yes | High |
 | 2b. Same as 2a on a commercial cloud pinned to a Canadian region | Yes | Moderate / conditional |
@@ -93,7 +93,7 @@ CTS_survey_app/
 │   ├── constants.js            # Canvas size, colours, thresholds, Katz regions, timeouts
 │   └── diagnosticQuestions.js  # Questions, gateways, REDCap field names
 ├── functions/api/              # Cloudflare Pages Functions (redcap branch)
-│   ├── _lib/redcap.js          # REDCap API helpers, value coding, cookie signing
+│   ├── _lib/redcap.js          # REDCap API helpers, cookie signing
 │   └── redcap/                 # provision.js, session.js, submit.js
 ├── hooks/
 │   ├── useCanvasDrawing.js     # Canvas state, pointer handlers, SVG loading
@@ -108,6 +108,7 @@ CTS_survey_app/
 │   ├── kamathScoring.js        # Questionnaire weights and bands
 │   ├── katzScoring.js          # Hand diagram pixel analysis and classification
 │   ├── redcapClient.js         # Browser calls to /api/redcap/*
+│   ├── redcapCoding.js         # Answer labels → REDCap codes (same file on the in-person branch)
 │   └── tourConfig.js
 ├── public/
 │   ├── hands/                  # SVG and PNG hand diagram assets (SVG labels = region masks)
