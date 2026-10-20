@@ -81,7 +81,7 @@ function buildKamathScoreFields(data) {
   const kamath = data.assessmentResults?.kamath;
   if (!kamath) return {};
   return {
-    kamath_totalScore: kamath.totalScore,
+    kamath_score: kamath.totalScore,
     kamath_classification: kamath.classification,
   };
 }
@@ -136,15 +136,26 @@ function buildKatzHandFields(data, handKey) {
 /**
  * Canonical field map: REDCap variable name → value. Pure, sync. This is
  * the single source of truth for the REDCap field contract; both the CSV
- * emitter and the (forthcoming) REDCap submission payload builder consume
+ * emitter and the in-person study export (lib/studyExport.js) consume
  * from the same section helpers, so they cannot drift.
  *
  * @param {Object} data
  * @returns {Object<string, string|number>}
  */
 export function buildFieldMap(data) {
+  const date = new Date();
+  const pad = (num) => String(num).padStart(2, '0');
+
+  const yyyy = date.getFullYear();
+  const mm = pad(date.getMonth() + 1); // Months are 0-indexed
+  const dd = pad(date.getDate());
+  const hh = pad(date.getHours());
+  const min = pad(date.getMinutes());
+
+  // Outputs: "2026-07-15 14:02"
+  const formattedDate = `${yyyy}-${mm}-${dd} ${hh}:${min}`;
   return {
-    timestamp: data.timestamp,
+    timestamp: formattedDate,
     ...buildQuestionFields(data),
     ...buildFeedbackFields(data),
     ...buildKamathScoreFields(data),
@@ -190,10 +201,9 @@ export function rowsToCsv(rows) {
 }
 
 /**
- * Hook for the CSV backup download.  
- * canvas PNGs are REDCap-bound only and handled by the (forthcoming) submission path, not
- * here. CSV download is a user-initiated backup — typically used when API
- * submission has failed or when a coordinator requests a local copy.
+ * Hook for the CSV download and browser print. The hand-drawing PNGs are
+ * not part of the CSV; they are saved with the study export
+ * (hooks/useStudyExport.js).
  */
 export function useExport({
   diagnosticAnswers,
@@ -205,8 +215,19 @@ export function useExport({
   assessmentResults,
 }) {
   const handleExportCSV = useCallback(() => {
+    const date = new Date();
+    const pad = (num) => String(num).padStart(2, '0');
+
+    const yyyy = date.getFullYear();
+    const mm = pad(date.getMonth() + 1); // Months are 0-indexed
+    const dd = pad(date.getDate());
+    const hh = pad(date.getHours());
+    const min = pad(date.getMinutes());
+
+    // Outputs: "2026-07-15 14:02"
+    const formattedDate = `${yyyy}-${mm}-${dd} ${hh}:${min}`;
     const data = {
-      timestamp: new Date().toISOString(),
+      timestamp: formattedDate,
       diagnosticAnswers,
       hasNumbnessOrTingling,
       diagnosticEase,
@@ -230,5 +251,9 @@ export function useExport({
     diagramEase, diagramComments, assessmentResults,
   ]);
 
-  return { handleExportCSV };
+  const handlePrint = useCallback(() => {
+    window.print();
+  }, []);
+
+  return { handleExportCSV, handlePrint };
 }

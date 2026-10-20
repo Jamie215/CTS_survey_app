@@ -13,6 +13,7 @@ import { useTour } from '../hooks/useTour';
 import { useScoring } from '../hooks/useScoring';
 import { useExport } from '../hooks/useExport';
 import { useIdleTimeout } from '../hooks/useIdleTimeout';
+import { useStudyExport } from '../hooks/useStudyExport';
 
 // Canvas utilities
 import { drawSymptomsOnCanvas, hasAnyDrawings } from '../lib/canvasUtils';
@@ -23,6 +24,7 @@ import DiagnosticQuestions from './sections/DiagnosticQuestions';
 import HandDiagrams from './sections/HandDiagrams';
 import Results, { ResultsExportControls } from './sections/Results';
 import IdleWarningModal from './IdleWarningModal';
+import StudyRecordPanel from './StudyRecordPanel';
 
 const CTSSurveyApp = ({}) => {
   // ============================================
@@ -80,6 +82,20 @@ const CTSSurveyApp = ({}) => {
     diagramEase,
     diagramComments,
     assessmentResults,
+  });
+
+  // In-person study export (option 1a): answers + drawings as one ZIP.
+  const studyExport = useStudyExport({
+    data: {
+      diagnosticAnswers,
+      hasNumbnessOrTingling,
+      diagnosticEase,
+      diagnosticComments,
+      diagramEase,
+      diagramComments,
+      assessmentResults,
+    },
+    resultsCanvasRefs,
   });
 
   // ============================================
@@ -291,6 +307,14 @@ const CTSSurveyApp = ({}) => {
         {/* ── Main Content Card ── */}
         <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-8">
           {renderSection()}
+
+          {currentSection === 2 && (
+            <StudyRecordPanel
+              onSave={studyExport.saveStudyFiles}
+              status={studyExport.status}
+              savedName={studyExport.savedName}
+            />
+          )}
 
           {/* ── Navigation Buttons ── */}
           <div className={`flex flex-col-reverse sm:flex-row ${
