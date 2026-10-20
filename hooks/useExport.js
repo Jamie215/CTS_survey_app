@@ -201,9 +201,9 @@ export function rowsToCsv(rows) {
 }
 
 /**
- * Hook for the CSV backup download.  
- * canvas PNGs are REDCap-bound only and handled by the (forthcoming) submission path, not
- * here. CSV download is a user-initiated backup — typically used when API
+ * Hook for the CSV backup download and browser print.
+ * canvas PNGs are REDCap-bound only and handled by the submission path
+ * (hooks/useRedcapSubmit.js), not here. CSV download is a user-initiated backup — typically used when API
  * submission has failed or when a coordinator requests a local copy.
  */
 export function useExport({
@@ -252,5 +252,9 @@ export function useExport({
     diagramEase, diagramComments, assessmentResults,
   ]);
 
-  return { handleExportCSV };
+  const handlePrint = useCallback(() => {
+    window.print();
+  }, []);
+
+  return { handleExportCSV, handlePrint };
 }
