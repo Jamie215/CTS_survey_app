@@ -442,12 +442,14 @@ function RedcapBanner({ sessionStatus, submitStatus, timepoint, onResults, isRes
     } else if (onResults && submitStatus === 'submitting') {
       message = 'Submitting your responses to the study…';
     } else if (onResults && submitStatus === 'partial') {
-      // Answers are saved; only drawings are missing. Not retryable from
-      // here (the timepoint is now closed), so the coordinator follows up.
+      // Answers (including per-region coverage %) are saved; only the
+      // drawing images are missing. Not retryable from here (the timepoint
+      // is now closed), but the printed results page includes the drawings.
       tone = 'bg-yellow-50 border-yellow-200 text-yellow-800';
       const n = missingImages.length;
       message = `Your answers for the ${label} were submitted, but ${n} of your 4 hand drawings could not be saved. `
-        + 'Please let your study coordinator know.'
+        + 'Please use Print Results below to print or save a PDF copy of this page, which includes your drawings, '
+        + 'and share it with your study coordinator.'
         + (isResultsDetailShown ? ` Missing: ${missingImages.join(', ')}.` : '');
     } else if (onResults && submitStatus === 'already_submitted') {
       tone = 'bg-yellow-50 border-yellow-200 text-yellow-800';
