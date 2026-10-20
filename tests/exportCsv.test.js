@@ -7,8 +7,8 @@ import { buildCsvRows, rowsToCsv } from '../hooks/useExport';
  * buildCsvRows is the pure-function piece extracted from useExport.js
  * so the row contract with REDCap can be asserted without DOM/canvas
  * dependencies. The row labels emitted here ARE the REDCap
- * data-dictionary contract (the same helpers feed buildFieldMap, the
- * REDCap submission payload): a change to a label is a change to a
+ * data-dictionary contract (the same helpers feed buildFieldMap, used by
+ * the in-person study export): a change to a label is a change to a
  * REDCap field name, and these tests are the audit trail tying the
  * two together.
  *

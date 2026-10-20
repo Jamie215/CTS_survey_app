@@ -136,7 +136,7 @@ function buildKatzHandFields(data, handKey) {
 /**
  * Canonical field map: REDCap variable name → value. Pure, sync. This is
  * the single source of truth for the REDCap field contract; both the CSV
- * emitter and the (forthcoming) REDCap submission payload builder consume
+ * emitter and the in-person study export (lib/studyExport.js) consume
  * from the same section helpers, so they cannot drift.
  *
  * @param {Object} data
@@ -201,10 +201,9 @@ export function rowsToCsv(rows) {
 }
 
 /**
- * Hook for the CSV backup download and browser print.
- * canvas PNGs are REDCap-bound only and handled by the submission path
- * (hooks/useRedcapSubmit.js), not here. CSV download is a user-initiated backup — typically used when API
- * submission has failed or when a coordinator requests a local copy.
+ * Hook for the CSV download and browser print. The hand-drawing PNGs are
+ * not part of the CSV; they are saved with the study export
+ * (hooks/useStudyExport.js).
  */
 export function useExport({
   diagnosticAnswers,
