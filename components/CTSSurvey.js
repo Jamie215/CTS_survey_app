@@ -89,7 +89,7 @@ const CTSSurveyApp = ({}) => {
   const { redcapEnabled, status: redcapStatus, timepoint } = useRedcapSession();
 
   // Auto-submit to REDCap once the Results section renders with scores ready.
-  const { status: redcapSubmitStatus } = useRedcapSubmit({
+  const { status: redcapSubmitStatus, retry: retryRedcapSubmit } = useRedcapSubmit({
     enabled: redcapEnabled,
     active: currentSection === 2,
     data: {
@@ -201,6 +201,36 @@ const CTSSurveyApp = ({}) => {
   }
 
   // ============================================
+  // ALREADY SUBMITTED
+  // ============================================
+  // Responses are final once submitted: an invitation link for a closed
+  // timepoint shows a notice instead of the survey.
+  if (redcapStatus === 'submitted') {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <header className="bg-gray-50 pt-6 sm:pt-8 pb-4">
+          <div className="max-w-4xl mx-auto px-3 sm:px-6">
+            <h1 className="text-xl sm:text-3xl font-normal text-gray-800">
+              Carpal Tunnel Syndrome Diagnostic Tool
+            </h1>
+          </div>
+        </header>
+        <div className="max-w-4xl mx-auto px-3 sm:px-6 py-4 sm:py-8">
+          <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-8">
+            <h2 className="text-2xl font-semibold text-gray-800 mb-3">
+              {timepoint ? `${timepoint} assessment already submitted` : 'Assessment already submitted'}
+            </h2>
+            <p className="text-lg text-gray-600">
+              Thank you. Your responses for this assessment have already been submitted to the study
+              and can no longer be changed. If you think this is a mistake, please contact your study coordinator.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ============================================
   // RENDER SECTIONS
   // ============================================
   const renderSection = () => {
@@ -275,6 +305,8 @@ const CTSSurveyApp = ({}) => {
           submitStatus={redcapSubmitStatus}
           timepoint={timepoint}
           onResults={currentSection === 2}
+          isResultsDetailShown={isResultsDetailShown}
+          onRetry={retryRedcapSubmit}
         />
 
         {/* ── Progress Stepper ── */}
@@ -352,7 +384,10 @@ const CTSSurveyApp = ({}) => {
             )}
 
             {currentSection === 2 && (
-              <ResultsExportControls exportActions={exportActions} />
+              <ResultsExportControls
+                exportActions={exportActions}
+                showCsv={isResultsDetailShown === true}
+              />
             )}
           </div>
         </div>
@@ -377,9 +412,10 @@ const CTSSurveyApp = ({}) => {
 /**
  * Thin status banner for REDCap-linked sessions. Renders nothing in
  * standalone mode (no ?k= link). Shows the timepoint once linked, and the
- * auto-submission outcome on the Results page.
+ * auto-submission outcome on the Results page. The CSV fallback is only
+ * offered in the healthcare-professional view, where the download exists.
  */
-function RedcapBanner({ sessionStatus, submitStatus, timepoint, onResults }) {
+function RedcapBanner({ sessionStatus, submitStatus, timepoint, onResults, isResultsDetailShown, onRetry }) {
   if (sessionStatus === 'none') return null;
 
   let tone = 'bg-blue-50 border-blue-200 text-blue-800';
@@ -400,9 +436,25 @@ function RedcapBanner({ sessionStatus, submitStatus, timepoint, onResults }) {
       message = `Your ${label} has been submitted to the study. Thank you!`;
     } else if (onResults && submitStatus === 'submitting') {
       message = 'Submitting your responses to the study…';
+    } else if (onResults && submitStatus === 'already_submitted') {
+      tone = 'bg-yellow-50 border-yellow-200 text-yellow-800';
+      message = `Your ${label} was already submitted, so these responses were not saved. Submitted responses cannot be changed.`;
     } else if (onResults && submitStatus === 'error') {
       tone = 'bg-yellow-50 border-yellow-200 text-yellow-800';
-      message = 'We could not submit your responses automatically. Please download the CSV and send it to your study coordinator.';
+      message = isResultsDetailShown
+        ? 'We could not submit the responses automatically. Try again, or download the CSV and send it to the study coordinator.'
+        : 'We could not submit your responses automatically. Please try again. If this keeps happening, please contact your study coordinator.';
+      return (
+        <div className={`mb-4 rounded-lg border px-4 py-3 text-sm ${tone} print-hide flex flex-col sm:flex-row sm:items-center gap-3`}>
+          <span className="flex-1">{message}</span>
+          <button
+            onClick={onRetry}
+            className="self-start sm:self-auto px-4 py-2 rounded-lg font-semibold bg-yellow-600 text-white hover:bg-yellow-700 transition-colors"
+          >
+            Try again
+          </button>
+        </div>
+      );
     } else {
       message = `You are completing the ${label}. Your responses will be submitted automatically when you finish.`;
     }

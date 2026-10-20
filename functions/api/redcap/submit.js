@@ -1,4 +1,4 @@
-import { readSession, importRecord, importFile, json } from '../_lib/redcap.js';
+import { readSession, isEventSubmitted, importRecord, importFile, json } from '../_lib/redcap.js';
 
 // FormData key → REDCap file-upload field. Match these to your dictionary.
 const IMAGE_FIELDS = {
@@ -20,8 +20,13 @@ export async function onRequestPost({ request, env }) {
   try { fields = JSON.parse(form.get('fields')); }
   catch { return json({ ok: false, error: 'bad_fields' }, { status: 400 }); }
 
-  // 1) Questionnaire + scoring field map
+  // 1) Questionnaire + scoring field map. Refuse if this event was already
+  //    submitted (e.g. a second tab holding a still-valid session cookie).
   try {
+    if (await isEventSubmitted(env, session)) {
+      return json({ ok: false, error: 'already_submitted' }, { status: 409 });
+    }
+
     await importRecord(env, { recordId: session.recordId, eventName: session.eventName, fields });
   } catch (err) {
     return json({ ok: false, error: 'import_failed', detail: String(err) }, { status: 502 });

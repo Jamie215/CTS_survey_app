@@ -1,6 +1,9 @@
 // Shared helpers for the Cloudflare Pages Functions that talk to REDCap.
 export const ACCESS_KEY_FIELD = 'access_key';
 export const RECORD_ID_FIELD = 'record_id';
+// Always populated by buildFieldMap, so a non-blank value means this
+// record/event has already been submitted from the app.
+export const SUBMITTED_FIELD = 'timestamp';
 
 export const NON_REDCAP_FIELDS = new Set(); // app-only keys to strip (empty now)
 const PROTECTED_FIELDS = new Set([RECORD_ID_FIELD, 'redcap_event_name']);
@@ -159,6 +162,25 @@ export async function resolveAccessKey(env, accessKey) {
   const match = rows.find((r) => r[ACCESS_KEY_FIELD] === accessKey); // exact match in code
   if (!match) return null;
   return { recordId: match[RECORD_ID_FIELD], eventName: match.redcap_event_name || '' };
+}
+
+/**
+ * Has this record/event already been submitted? Responses are not
+ * editable once submitted, so both session resolution and submission
+ * refuse an event whose SUBMITTED_FIELD is already filled in.
+ */
+export async function isEventSubmitted(env, { recordId, eventName }) {
+  const rows = await redcapApi(env, {
+    content: 'record',
+    format: 'json',
+    type: 'flat',
+    records: String(recordId),
+    fields: `${RECORD_ID_FIELD},${SUBMITTED_FIELD}`,
+    returnFormat: 'json',
+  });
+  if (!Array.isArray(rows)) return false;
+  const row = rows.find((r) => (r.redcap_event_name || '') === (eventName || ''));
+  return Boolean(row && row[SUBMITTED_FIELD]);
 }
 
 /** Import field map into one record/event. Blank values never wipe data. */

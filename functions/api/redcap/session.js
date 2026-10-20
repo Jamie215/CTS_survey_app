@@ -1,4 +1,4 @@
-import { resolveAccessKey, createSessionCookie, json } from '../_lib/redcap.js';
+import { resolveAccessKey, isEventSubmitted, createSessionCookie, json } from '../_lib/redcap.js';
 
 // Adjust to your project's real unique event names.
 const TIMEPOINT_LABELS = {
@@ -12,12 +12,23 @@ export async function onRequestGet({ request, env }) {
   if (!accessKey) return json({ ok: false, error: 'missing_key' }, { status: 400 });
 
   let resolved;
+  let submitted;
   try {
     resolved = await resolveAccessKey(env, accessKey);
+    submitted = resolved ? await isEventSubmitted(env, resolved) : false;
   } catch (err) {
     return json({ ok: false, error: 'redcap_error', detail: String(err) }, { status: 502 });
   }
   if (!resolved) return json({ ok: false, error: 'invalid_key' }, { status: 404 });
+
+  // Once submitted, the timepoint is closed: no session cookie is issued,
+  // so reopening the link (or an idle-timeout reload) cannot start over.
+  if (submitted) {
+    return json(
+      { ok: false, error: 'already_submitted', timepoint: TIMEPOINT_LABELS[resolved.eventName] || null },
+      { status: 409 },
+    );
+  }
 
   const cookie = await createSessionCookie(env, resolved);
   return json(

@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { resolveSession } from '../lib/redcapClient';
 
 export function useRedcapSession() {
-  // 'none' | 'resolving' | 'ready' | 'invalid' | 'error'
+  // 'none' | 'resolving' | 'ready' | 'submitted' | 'invalid' | 'error'
   const [status, setStatus] = useState('none');
   const [timepoint, setTimepoint] = useState(null);
 
@@ -17,9 +17,9 @@ export function useRedcapSession() {
     resolveSession(accessKey)
       .then((result) => {
         if (cancelled) return;
-        if (result.ok) { 
-          setTimepoint(result.timepoint || null); setStatus('ready'); 
-        }
+        setTimepoint(result.timepoint || null);
+        if (result.ok) setStatus('ready');
+        else if (result.error === 'already_submitted') setStatus('submitted'); // responses are final
         else setStatus(result.error === 'invalid_key' ? 'invalid' : 'error');
       })
       .catch(() => { if (!cancelled) setStatus('error'); });

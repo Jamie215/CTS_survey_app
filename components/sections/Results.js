@@ -395,7 +395,7 @@ function KatzHandResult({ hand, result, isResultsDetailShown, volarRef, dorsalRe
  * Export controls for the Results section footer.
  * Separated to keep the navigation area clean.
  */
-export function ResultsExportControls({ exportActions }) {
+export function ResultsExportControls({ exportActions, showCsv }) {
   const { handleExportCSV, handlePrint } = exportActions;
   
   const handleScrollToTop = () => {
@@ -414,16 +414,18 @@ export function ResultsExportControls({ exportActions }) {
         <span className="sm:hidden">Print</span>
       </button>
 
-      {/* Download button */}
-      <div className="relative print-hide">
-        <button
-          onClick={handleExportCSV}
-          className="print-hide flex items-center gap-2 px-4 sm:px-6 py-3 rounded-lg text-lg font-semibold bg-purple-600 text-white hover:bg-purple-700 transition-colors"
-        >
-          <Download className="w-5 h-5" />
-          <span className="hidden sm:inline">Download Results (CSV)</span>
-        </button>
-      </div>
+      {/* Download button — healthcare-professional view only (PI decision) */}
+      {showCsv && (
+        <div className="relative print-hide">
+          <button
+            onClick={handleExportCSV}
+            className="print-hide flex items-center gap-2 px-4 sm:px-6 py-3 rounded-lg text-lg font-semibold bg-purple-600 text-white hover:bg-purple-700 transition-colors"
+          >
+            <Download className="w-5 h-5" />
+            <span className="hidden sm:inline">Download Results (CSV)</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }

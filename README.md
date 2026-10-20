@@ -23,7 +23,7 @@ Each instrument produces an independent score. Together they provide a more robu
 - **Dual scoring engine** — Kamath-based score (questionnaire) and Katz-based score per hand (pixel analysis with finger/palm zone detection)
 - **Patient / healthcare professional views** — Results show a simplified summary for patients and detailed breakdowns (score tables, coverage percentages, zone analysis) for professionals
 - **Guided onboarding tours** — driver.js-powered walkthroughs for the questions and hand diagram sections
-- **Export** — Download results as CSV (same field names as the REDCap project) or print the results page
+- **Export** — Print the results page; the healthcare professional view can also download results as CSV (same field names as the REDCap project)
 - **Session protection** — 10-minute idle timeout with a 60-second warning, after which the page resets; nothing is stored in the browser
 - **REDCap study mode** (`redcap` branch) — personalised invitation links resolve to a participant and timepoint, and results are submitted to REDCap automatically
 - **Accessible and responsive** — Tailwind CSS layout adapts to desktop, tablet and mobile viewports
@@ -41,7 +41,8 @@ Each instrument produces an independent score. Together they provide a more robu
 2. A REDCap Alert emails the participant `https://<site>/?k=[access_key]`.
 3. The browser sends the key to `/api/redcap/session`, which looks up the record and timepoint and sets a signed, HttpOnly session cookie (2 hours). The record ID never reaches the browser.
 4. When Results appear, the browser posts the field map and four PNGs to `/api/redcap/submit`, which imports the record, then uploads each image into its file-upload field (`katz_l_palmar`, `katz_l_dorsal`, `katz_r_palmar`, `katz_r_dorsal`).
-5. If submission fails, a banner asks the participant to download the CSV and send it to the study coordinator.
+5. If submission fails, a banner offers **Try again** and asks the participant to contact the study coordinator (the professional view also points to the CSV download).
+6. Responses are final once submitted. A timepoint whose `timestamp` field is already filled in is closed: reopening its link (or an idle-timeout reload) shows an "already submitted" notice, and `/api/redcap/submit` refuses a second submission. Other timepoints for the same participant stay open.
 
 Required server secrets: `REDCAP_API_URL`, `REDCAP_API_TOKEN`, `SESSION_SECRET`, `PROVISION_SECRET`, and optionally `REDCAP_PROJECT_ID`. Never commit these to the repository.
 

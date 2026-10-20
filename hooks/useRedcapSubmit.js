@@ -1,11 +1,13 @@
 "use client";
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { buildFieldMap } from './useExport';        // reuses the existing field contract
 import { submitAssessment } from '../lib/redcapClient';
 
 export function useRedcapSubmit({ enabled, active, data, resultsCanvasRefs }) {
-  const [status, setStatus] = useState('idle');      // idle → submitting → success | error
-  const submittedRef = useRef(false);                // fire at most once
+  // idle → submitting → success | error | already_submitted
+  const [status, setStatus] = useState('idle');
+  const [attempt, setAttempt] = useState(0);         // bumped by retry() to re-run the effect
+  const submittedRef = useRef(false);                // fire at most once per attempt
   const dataRef = useRef(data);                      // latest-ref: data is rebuilt every render
   dataRef.current = data;
 
@@ -28,14 +30,20 @@ export function useRedcapSubmit({ enabled, active, data, resultsCanvasRefs }) {
       };
       submitAssessment({ fieldMap, canvases })
         .then((result) => {
-          setStatus(result.ok ? 'success' : 'error');
-          if (!result.ok) submittedRef.current = false; // allow retry
+          if (result.ok) setStatus('success');
+          else if (result.error === 'already_submitted') setStatus('already_submitted'); // final, no retry
+          else { setStatus('error'); submittedRef.current = false; }                     // allow retry
         })
         .catch(() => { setStatus('error'); submittedRef.current = false; });
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [enabled, active, resultsCanvasRefs]);
+  }, [enabled, active, resultsCanvasRefs, attempt]);
 
-  return { status };
+  const retry = useCallback(() => {
+    if (submittedRef.current) return;
+    setAttempt((n) => n + 1);
+  }, []);
+
+  return { status, retry };
 }
